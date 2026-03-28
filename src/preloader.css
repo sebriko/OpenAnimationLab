@@ -1,0 +1,157 @@
+/* ==============================================
+   PRELOADER STYLES WITH THEME SUPPORT
+   ============================================== */
+
+/* Default (Dark Theme) Preloader */
+#preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition:
+    opacity 0.5s ease-out,
+    background-color 0.3s ease;
+}
+
+/* Light Theme Preloader */
+body.light-theme #preloader {
+  background: #f5f5f5;
+}
+
+#preloader.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.preloader-content {
+  text-align: center;
+  color: #ffffff;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* Light Theme Content Colors */
+body.light-theme .preloader-content {
+  color: #333333;
+}
+
+.preloader-logo {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: #007bff;
+  letter-spacing: 1px;
+}
+
+/* Light Theme Logo */
+body.light-theme .preloader-logo {
+  color: #17a03a;
+}
+
+.preloader-spinner {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 30px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Light Theme Spinner */
+body.light-theme .preloader-spinner {
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #17a03a;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.preloader-progress {
+  width: 300px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+  overflow: hidden;
+}
+
+/* Light Theme Progress Background */
+body.light-theme .preloader-progress {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.preloader-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #007bff, #0056b3);
+  width: 0%;
+  transition: width 0.3s ease;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+/* Light Theme Progress Bar */
+body.light-theme .preloader-progress-bar {
+  background: linear-gradient(90deg, #17a03a, #138530);
+  box-shadow: 0 0 10px rgba(23, 160, 58, 0.5);
+}
+
+.preloader-status {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 10px;
+  min-height: 20px;
+}
+
+/* Light Theme Status */
+body.light-theme .preloader-status {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.preloader-percentage {
+  font-size: 24px;
+  font-weight: 600;
+  color: #007bff;
+  margin: 15px 0;
+}
+
+/* Light Theme Percentage */
+body.light-theme .preloader-percentage {
+  color: #17a03a;
+}
+
+/* Hide main content while loading */
+body.loading > *:not(#preloader) {
+  display: none;
+}
+
+/* Prevent scrollbar during loading */
+body.loading {
+  overflow: hidden;
+}
+
+/* Animation for content fade-in */
+body:not(.loading) > *:not(#preloader) {
+  animation: preloaderFadeIn 0.5s ease-in;
+}
+
+@keyframes preloaderFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

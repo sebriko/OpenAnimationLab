@@ -1,0 +1,200 @@
+/* ============================================
+   renderer-selector.css
+   Styles für den Renderer-Umschalter im Header (#filebar)
+   Gleiche Struktur wie language-selector.css
+   ============================================ */
+
+/* --- Container --- */
+.renderer-selector {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+/* --- Label "Renderer" --- */
+.renderer-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted, #888);
+  user-select: none;
+  white-space: nowrap;
+  height: 32px;
+  line-height: 32px;
+}
+
+.light-theme .renderer-label {
+  color: #666;
+}
+
+/* --- Button (wie language-button) --- */
+.renderer-button {
+  min-width: 60px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 0 12px;
+  font-size: 14px;
+  line-height: normal;
+  vertical-align: middle;
+  background-color: var(--primary-color);
+  color: var(--text-white);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.renderer-button:hover {
+  background-color: var(--primary-hover);
+}
+
+.renderer-button.active {
+  background-color: var(--primary-dark);
+}
+
+.renderer-text {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.renderer-arrow {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+}
+
+.renderer-button.active .renderer-arrow {
+  transform: rotate(180deg);
+}
+
+/* --- Dropdown (wie language-dropdown) --- */
+.renderer-dropdown {
+  position: absolute;
+  left: 0;
+  background-color: var(--bg-lighter);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 160px;
+  display: none;
+  overflow: hidden;
+}
+
+.renderer-dropdown.show {
+  display: block;
+  animation: rendererFadeInDown 0.2s ease;
+}
+
+@keyframes rendererFadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Option (wie language-option) --- */
+.renderer-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+.renderer-option:hover {
+  background-color: var(--bg-medium);
+}
+
+.renderer-option.active {
+  background-color: var(--primary-color);
+  color: var(--text-white);
+}
+
+.renderer-option.active:hover {
+  background-color: var(--primary-hover);
+}
+
+.renderer-name {
+  flex: 1;
+  font-weight: 400;
+}
+
+/* ============================================
+   Dark Theme
+   ============================================ */
+
+[data-theme="dark"] .renderer-dropdown {
+  background-color: var(--bg-dark);
+  border-color: var(--border-dark);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .renderer-option {
+  color: var(--text-light);
+}
+
+[data-theme="dark"] .renderer-option:hover {
+  background-color: var(--bg-lighter);
+}
+
+/* ============================================
+   Light Theme
+   ============================================ */
+
+[data-theme="light"] .renderer-dropdown {
+  background-color: var(--bg-light);
+  border-color: var(--border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .renderer-option {
+  color: var(--text-dark);
+}
+
+[data-theme="light"] .renderer-option:hover {
+  background-color: var(--bg-lighter);
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 768px) {
+  .renderer-label {
+    display: none;
+  }
+
+  .renderer-button {
+    min-width: 50px;
+    padding: 6px 10px;
+  }
+
+  .renderer-text {
+    font-size: 12px;
+  }
+
+  .renderer-dropdown {
+    min-width: 150px;
+  }
+
+  .renderer-option {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}

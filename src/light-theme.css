@@ -1,0 +1,55 @@
+/* ==============================================
+   LIGHT THEME VARIABLES
+   ============================================== */
+
+:root {
+  /* Tab Colors */
+  --tab-gradient-start: #f5f5f5;
+  --tab-gradient-end: #e8e8e8;
+  --tab-gradient-start-hover: #ffffff;
+  --tab-gradient-end-hover: #f0f0f0;
+
+  /* Primary Colors */
+  --primary-color: #17a03a;
+  --primary-hover: #4faf53;
+  --primary-dark: #388e3c;
+
+  /* Accent Colors */
+  --highlight: #e07b00;
+  --highlight-hover: #ee8b12;
+  --error-color: #d32f2f;
+
+  /* Text Colors */
+  --text-light: #333333;
+  --text-white: #ffffff;
+  --text-dark: #333333;
+
+  /* Border Colors */
+  --border-color: #cccccc;
+  --border-light: #dddddd;
+
+  /* Background Colors */
+  --bg-light: #f0f0f0;
+  --bg-lighter: #f8f8f8;
+  --bg-lighter-hover: #e5e5e5;
+  --bg-medium: #e0e0e0;
+  --bg-medium-hover: #d0d0d0;
+  --bg-dark: #ffffff;
+
+  /* Shadows */
+  --shadow-light: 0 2px 5px rgba(0, 0, 0, 0.08);
+  --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.12);
+
+  /* Component aliases */
+  --background-primary: var(--bg-dark);
+  --background-secondary: var(--bg-lighter);
+  --text-color: var(--text-light);
+  --text-secondary: #666666;
+  --border-dark: #bbbbbb;
+  --scrollbar-thumb: var(--border-color);
+  --scrollbar-thumb-hover: var(--bg-medium);
+  --code-color: #d63384;
+  --warning-background: #fff3cd;
+  --warning-text: #856404;
+  --warning-border: #ffc107;
+}

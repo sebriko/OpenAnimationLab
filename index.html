@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Open Animation Lab</title>
+    <meta name="description" content="Open-source editor for interactive learning animations. Supports vector objects and simple scripts. Ideal for teaching, tutorials, and technical visualizations." />
+
+    <!-- Early theme detection — must run before stylesheets to avoid flash of unstyled content -->
+    <script>
+        (function () {
+            "use strict";
+    
+            function getCookie(name) {
+              const nameEQ = name + "=";
+              const ca = document.cookie.split(";");
+              for (let i = 0; i < ca.length; i++) {
+                let c = ca[i].trim();
+                if (c.indexOf(nameEQ) === 0)
+                  return c.substring(nameEQ.length, c.length);
+              }
+              return null;
+            }
+    
+            var consentGiven =
+              localStorage.getItem("cookie_consent") === "accepted";
+    
+            // Read from localStorage always; read cookie only if consent was given
+            var savedTheme = localStorage.getItem("theme");
+            if (!savedTheme && consentGiven) {
+              savedTheme = getCookie("theme");
+            }
+    
+            var themeToApply = savedTheme === "dark" ? "dark" : "light";
+    
+            document.documentElement.classList.add(themeToApply + "-theme");
+            window.__earlyTheme = themeToApply;
+          })();
+    </script>
+
+    <!-- Early language detection — dynamically loads the matching template file -->
+    <script>
+        (function () {
+            "use strict";
+    
+            function getCookieLocal(name) {
+              const nameEQ = name + "=";
+              const ca = document.cookie.split(";");
+              for (let i = 0; i < ca.length; i++) {
+                let c = ca[i].trim();
+                if (c.indexOf(nameEQ) === 0)
+                  return c.substring(nameEQ.length, c.length);
+              }
+              return null;
+            }
+    
+            var consentGiven =
+              localStorage.getItem("cookie_consent") === "accepted";
+    
+            // Priority: URL param > localStorage > cookie (with consent) > browser language
+            var detectedLanguage = "en";
+            var urlParams = new URLSearchParams(window.location.search);
+            var urlLang = urlParams.get("lang");
+    
+            if (urlLang && ["de", "en"].includes(urlLang)) {
+              detectedLanguage = urlLang;
+            } else {
+              var storedLang = localStorage.getItem("language");
+              if (storedLang && ["de", "en"].includes(storedLang)) {
+                detectedLanguage = storedLang;
+              } else {
+                if (consentGiven) {
+                  var cookieLang = getCookieLocal("language");
+                  if (cookieLang && ["de", "en"].includes(cookieLang)) {
+                    detectedLanguage = cookieLang;
+                  }
+                }
+                if (detectedLanguage === "en" && !storedLang) {
+                  if (navigator.language.toLowerCase().startsWith("de")) {
+                    detectedLanguage = "de";
+                  }
+                }
+              }
+            }
+    
+            window.__detectedLanguage = detectedLanguage;
+    
+            var templateFile =
+              detectedLanguage === "de"
+                ? "ProjectTemplates_de.js"
+                : "ProjectTemplates_en.js";
+    
+            var templateScript = document.createElement("script");
+            templateScript.src = "custom/" + templateFile;
+            templateScript.id = "dynamic-project-templates";
+            templateScript.onerror = function () {
+              console.warn("Failed to load " + templateFile + ", falling back to default");
+              if (templateFile !== "ProjectTemplates_en.js") {
+                var fallbackScript = document.createElement("script");
+                fallbackScript.src = "custom/ProjectTemplates_en.js";
+                document.head.appendChild(fallbackScript);
+              }
+            };
+            document.head.appendChild(templateScript);
+          })();
+    </script>
+
+    <script src="src/cleanup-manager.js"></script>
+    <script src="src/tab-memory-management.js"></script>
+
+    <!-- External Scripts -->
+    <script src="https://pixijs.download/release/pixi.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.5/svg.min.js"></script>
+    <script src="lib/acorn/8.8.2/acorn.min.js"></script>
+    <script src="src/core/PixiJSEdu.js"></script>
+    <script src="src/core/SvgJSEdu.js"></script>
+    <script src="src/core/HtmlSvgEdu.js"></script>
+    <script src="src/safeCode.js"></script>
+    <script src="src/core/Board.js"></script>
+    <script src="src/core/BoardSVG.js"></script>
+
+
+    <!-- External Libraries -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <script type="module">
+        import { optimize } from "https://cdn.jsdelivr.net/npm/svgo@3.0.2/dist/svgo.browser.js"; window.svgoOptimize = optimize;
+    </script>
+
+    <!-- Internationalization System -->
+    <script src="src/i18n.js"></script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="src/preloader.css" />
+    <link rel="stylesheet" href="src/style.css" />
+    <link rel="stylesheet" href="src/UI-components.css" />
+    <link rel="stylesheet" href="src/language-selector.css" />
+    <link rel="stylesheet" href="src/renderer-selector.css" />
+    <link rel="stylesheet" href="src/modal-windows.css" />
+
+    <!-- CodeMirror themes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/neat.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/darcula.css" />
+
+    <!-- External Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.8/dist/handlebars.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+
+    <!-- Local CodeMirror Files -->
+    <link rel="stylesheet" href="lib/codemirror/codemirror.min.css" />
+    <script src="lib/codemirror/codemirror.min.js"></script>
+    <script src="lib/codemirror/mode/javascript/javascript.min.js"></script>
+    <script src="lib/codemirror/addon/hint/show-hint.min.js"></script>
+    <script src="lib/codemirror/addon/hint/javascript-hint.min.js"></script>
+    <link rel="stylesheet" href="lib/codemirror/addon/hint/show-hint.min.css" />
+    <script src="lib/codemirror/addon/search/search.min.js"></script>
+    <script src="lib/codemirror/addon/search/searchcursor.min.js"></script>
+    <script src="lib/codemirror/addon/fold/foldcode.min.js"></script>
+    <script src="lib/codemirror/addon/fold/foldgutter.min.js"></script>
+    <script src="lib/codemirror/addon/fold/brace-fold.min.js"></script>
+    <link rel="stylesheet" href="lib/codemirror/addon/fold/foldgutter.min.css" />
+    <script src="lib/codemirror/addon/lint/lint.min.js"></script>
+    <script src="lib/codemirror/addon/lint/javascript-lint.min.js"></script>
+    <link rel="stylesheet" href="lib/codemirror/addon/lint/lint.min.css" />
+    <script src="lib/codemirror/addon/fold/backtick.js"></script>
+    <script src="lib/codemirror/addon/brackets/matchbrackets.min.js"></script>
+    <script src="lib/codemirror/addon/brackets/closebrackets.min.js"></script>
+    <script src="lib/codemirror/addon/brackets/active-line.min.js"></script>
+    <script src="lib/codemirror/addon/brackets/match-highlighter.min.js"></script>
+
+    <!-- External Libraries for Screenshots -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jshint/2.13.5/jshint.min.js"></script>
+
+    <!-- Three.js Core -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Three.js addons -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- Daily Tips -->
+    <link rel="stylesheet" href="src/daily-tips.css" />
+
+    <!-- Preloader Script -->
+    <script src="src/preloader.js"></script>
+
+    <script>
+        window.APP_CONFIG = {
+            version: "3.1.0",
+            build: "2026-03-26",
+            status: "Release",
+          };
+    </script>
+</head>
+
+<body class="loading">
+    <script>
+        if (window.__earlyTheme === "dark") {
+            document.body.classList.add("dark-theme");
+            document.body.setAttribute("data-theme", "dark");
+          } else {
+            document.body.classList.add("light-theme");
+            document.body.setAttribute("data-theme", "light");
+          }
+    </script>
+
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="preloader-content">
+            <div class="preloader-logo">Open Animation Lab</div>
+
+            <div class="preloader-progress">
+                <div class="preloader-progress-bar"></div>
+            </div>
+            <div class="preloader-percentage">0%</div>
+            <div class="preloader-status" data-i18n="initializing">
+                Initializing...
+            </div>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="tabs-container">
+            <div class="tabs">
+                <div class="plus-tab" onclick="addTab()">+</div>
+            </div>
+            <div class="app-title"></div>
+        </div>
+
+        <div id="filebar">
+            <button class="regular-button show-button" onclick="openInfoWindow()" data-i18n-title="info">
+                <span class="material-icons">info</span>
+            </button>
+            <button class="regular-button show-button" onclick="saveCode()" data-i18n-title="save_code">
+                <span class="material-icons">save</span>
+            </button>
+            <label for="loadFile" class="file-label show-button" data-i18n-title="load_code">
+                <span class="material-icons">folder_open</span>
+            </label>
+            <input type="file" id="loadFile" onchange="loadCode(event)" />
+            <button class="regular-button" onclick="publishCode()" data-i18n-title="publish_animation" data-i18n="publish">
+                Publish
+            </button>
+            <button class="show-button active" id="theme-toggle" onclick="" data-i18n-title="theme_toggle">
+                <span class="material-icons">brightness_6</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="content-container">
+            <!-- Editor Area -->
+            <div class="editor" id="editorArea">
+                <div class="editor-content">
+                    <form title=""></form>
+                    <textarea id="code" data-i18n-placeholder="js_placeholder" title=""></textarea>
+
+                    <!-- Search Form -->
+                    <div id="search-form" class="floating-search" data-i18n-title="search_function">
+                        <div class="search-controls">
+                            <div class="search-row">
+                                <input type="text" id="search-input" data-i18n-placeholder="search_placeholder" data-i18n-title="enter_search_term" />
+                                <button id="search-prev-btn" class="search-btn" data-i18n-title="previous_result">
+                                    <span class="material-icons">arrow_back</span>
+                                </button>
+                                <button id="search-next-btn" class="search-btn" data-i18n-title="next_result">
+                                    <span class="material-icons">arrow_forward</span>
+                                </button>
+                                <button id="toggle-replace-btn" class="search-btn" data-i18n-title="toggle_replace">
+                                    <span class="material-icons">find_replace</span>
+                                </button>
+                                <button id="close-search-btn" class="search-btn" data-i18n-title="close_search">
+                                    <span class="material-icons">close</span>
+                                </button>
+                            </div>
+                            <div id="replace-row" class="replace-row" style="display: none">
+                                <input type="text" id="replace-input" data-i18n-placeholder="replace_with" data-i18n-title="enter_replacement" />
+                                <button id="replace-btn" class="search-btn" data-i18n-title="replace">
+                                    <span class="material-icons">swap_horiz</span>
+                                </button>
+                                <button id="replace-all-btn" class="search-btn" data-i18n-title="replace_all">
+                                    <span class="material-icons">swap_horizontal_circle</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="search-results" data-i18n-title="search_results"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Area -->
+            <div id="preview" title="">
+                <div id="canvas-container"></div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="actions">
+                <div class="left-actions" id="left-actions">
+                    <button onclick="runCode()" class="show-button" data-i18n-title="run_code_tooltip">
+                        <span class="material-icons">play_arrow</span>
+                    </button>
+                    <button id="search-btn" class="show-button" onclick="toggleSearchForm()" data-i18n-title="search_code">
+                        <span class="material-icons">search</span>
+                    </button>
+                    <button id="copy-btn" onclick="copySelectedText()" style="display: none" class="show-button-high regular-button" data-i18n-title="copy_selected">
+                        <span class="material-icons">content_copy</span>
+                    </button>
+
+                    <button id="undo-btn" class="regular-button show-button" onclick="performUndo()" data-i18n-title="undo_action">
+                        <span class="material-icons">undo</span>
+                    </button>
+                    <button id="redo-btn" class="regular-button show-button" onclick="performRedo()" data-i18n-title="redo_action">
+                        <span class="material-icons">redo</span>
+                    </button>
+
+                    <button class="regular-button show-button" onclick="openMessageWindow()" data-i18n-title="message_reports">
+                        <span class="material-icons">notifications</span>
+                    </button>
+                </div>
+                <div class="right-actions" id="right-actions">
+                    <div>
+                        <button class="show-button" id="screenshotButton" data-i18n-title="create_screenshot">
+                            <span class="material-icons">photo_camera</span>
+                        </button>
+                        <button id="preview-fullscreen-btn" class="show-button" onclick="togglePreviewFullscreen()" data-i18n-title="toggle_preview_fullscreen">
+                            <span class="material-icons">fullscreen</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Report Window -->
+    <div id="messageWindow" class="modal-window">
+        <div class="modal-window-header" id="messageWindowHeader">
+            <div class="modal-window-title">
+                <span class="material-icons">notifications</span>
+                <span data-i18n="console_outputs">Console Outputs</span>
+            </div>
+            <button class="modal-window-close" onclick="closeMessageWindow()">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <div class="modal-window-content">
+            <div class="message-controls">
+                <button class="control-button clear" onclick="clearMessageLog()" data-i18n="clear">
+                    Clear
+                </button>
+            </div>
+
+            <div id="messageLog" class="message-log">
+                <div class="no-messages" data-i18n="no_outputs_available">
+                    No outputs available.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Class Info Window -->
+    <div id="classInfoWindow" class="modal-window">
+        <div class="modal-window-header" id="classInfoWindowHeader">
+            <div class="modal-window-title">
+                <span class="material-icons">code</span>
+                <span data-i18n="class_information">Class Information for AI</span>
+            </div>
+            <button class="modal-window-close" onclick="closeClassInfoWindow()">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <div class="modal-window-content">
+            <div class="class-info-controls">
+                <button class="control-button" onclick="copyClassInfo()" data-i18n="copy_to_clipboard">
+                    Copy to clipboard
+                </button>
+            </div>
+
+            <div id="classInfoContent" class="class-info-content"></div>
+        </div>
+    </div>
+
+    <!-- Info Window -->
+    <div id="infoWindow" class="modal-window">
+        <div class="modal-window-header" id="infoWindowHeader">
+            <div class="modal-window-title">
+                <span class="material-icons">info</span>
+                <span data-i18n="software_information">Software Information</span>
+            </div>
+            <button class="modal-window-close" onclick="closeInfoWindow()">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <div class="modal-window-content info-content">
+            <h2>Open Animation Lab</h2>
+
+            <div class="version">
+                <span data-i18n="version">Version</span>
+                <span class="app-version"></span>
+            </div>
+
+            <p>
+                <strong data-i18n="developer">Developer:</strong>
+                <a href="https://www.educational-animation.org" target="_blank">www.educational-animation.org</a
+          >
+        </p>
+        <p>
+          <strong data-i18n="purpose">Purpose:</strong>
+          <span data-i18n="purpose_text"
+            >Interactive JavaScript editor for creating educational animations
+            and interactive learning content</span
+          >
+        </p>
+        <p>
+          <strong data-i18n="license">License:</strong>
+          <span data-i18n="license_text"
+            >This software is licensed under the Creative Commons Attribution
+            4.0 International (CC BY 4.0)</span
+          >
+        </p>
+
+        <div class="info-actions">
+          <h3
+            style="margin-top: 0; color: #0056b3"
+            data-i18n="support_feedback"
+          >
+            Support & Feedback
+          </h3>
+          <p data-i18n="help_improve">Help us improve the editor:</p>
+          <a
+            href="https://www.educational-animation.org/de/kontakt/"
+            target="_blank"
+            class="info-action-button support"
+            data-i18n="support_me"
+            >Support me</a
+          >
+          <a
+            href="https://www.educational-animation.org/de/kontakt/"
+            target="_blank"
+            class="info-action-button"
+            data-i18n="bug_report"
+            >Bug report</a
+          >
+        </div>
+
+        <h3 data-i18n="imprint">Imprint</h3>
+        <div class="credits">
+          <p>
+            <strong data-i18n="responsible_content"
+              >Responsible for content:</strong
+            ><br />
+            Educational-Animation.org<br />
+            Dr. Sebastian Rikowski<br />
+            Düppenbäckerweg 2<br />
+            45481 Mülheim an der Ruhr<br />
+            Germany
+          </p>
+
+          <p>
+            <strong data-i18n="contact">Contact:</strong><br />
+            E-Mail:
+            <a
+              href="/cdn-cgi/l/email-protection"
+              class="__cf_email__"
+              data-cfemail="314654535c504245544371545544525045585e5f505d1c505f585c5045585e5f1f5e4356"
+              >[email&#160;protected]</a
+            ><br />
+            Web: www.educational-animation.org
+          </p>
+        </div>
+
+        <h3 data-i18n="used_opensource">Used Open Source Software</h3>
+        <p data-i18n="used_opensource_text">
+          This tool uses various excellent open source libraries and frameworks.
+          We would like to thank all developers:
+        </p>
+
+        <div class="library-list">
+          <div class="library-item">
+            <div class="library-name">PixiJS</div>
+            <div class="library-description">
+              <span data-i18n="pixijs_desc"
+                >2D WebGL renderer for fast, interactive graphics</span
+              ><br />
+              Copyright © 2013-2024 Mathew Groves & PixiJS Contributors<br />
+              License: MIT License
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">SVG.js 3.2.5</div>
+            <div class="library-description">
+              <span data-i18n="svgjs_desc"
+                >Lightweight library for manipulating and animating SVG</span
+              ><br />
+              Copyright © 2012-2024 Wout Fierens & SVG.js Contributors<br />
+              License: MIT License
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">CodeMirror 5.65.5</div>
+            <div class="library-description">
+              <span data-i18n="codemirror_desc"
+                >Versatile code editor for web browsers</span
+              ><br />
+              Copyright © 2017-2024 Marijn Haverbeke & CodeMirror
+              Contributors<br />
+              License: MIT License
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">Acorn 8.8.2</div>
+            <div class="library-description">
+              <span data-i18n="acorn_desc"
+                >JavaScript parser for ECMAScript standards</span
+              ><br />
+              Copyright © 2012-2024 Acorn Contributors<br />
+              License: MIT License
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">JSZip 3.10.1</div>
+            <div class="library-description">
+              <span data-i18n="jszip_desc"
+                >Library for creating, reading and editing ZIP files</span
+              ><br />
+              Copyright © 2009-2024 Stuart Knightley, David Duponchel & JSZip
+              Contributors<br />
+              License: MIT License
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">Handlebars.js 4.7.8</div>
+            <div class="library-description">
+              <span data-i18n="handlebars_desc"
+                >Template engine for semantic templates</span
+              ><br />
+              Copyright © 2011-2024 Yehuda Katz & Handlebars Contributors<br />
+              License: MIT License
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">MathJax 3</div>
+            <div class="library-description">
+              <span data-i18n="mathjax_desc"
+                >JavaScript engine for displaying mathematical notation</span
+              ><br />
+              Copyright © 2009-2024 The MathJax Consortium<br />
+              License: Apache License 2.0
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">html-to-image 1.11.11</div>
+            <div class="library-description">
+              <span data-i18n="htmltoimage_desc"
+                >Modern library for converting DOM to images with superior text
+                rendering</span
+              ><br />
+              Copyright © 2017-2024 Vitalii Bobrov & html-to-image
+              Contributors<br />
+              License: MIT License
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">JSHint 2.13.5</div>
+            <div class="library-description">
+              <span data-i18n="jshint_desc">JavaScript code quality tool</span
+              ><br />
+              Copyright © 2011-2024 JSHint Contributors<br />
+              License: MIT License
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">SVGO 3.0.2</div>
+            <div class="library-description">
+              <span data-i18n="svgo_desc">SVG optimization tool</span><br />
+              Copyright © 2012-2024 SVGO Contributors<br />
+              License: MIT License
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">Google Material Icons</div>
+            <div class="library-description">
+              <span data-i18n="material_icons_desc"
+                >Icon font from Google for modern user interfaces</span
+              ><br />
+              Copyright © 2024 Google Inc.<br />
+              License: Apache License 2.0
+            </div>
+          </div>
+
+          <div class="library-item">
+            <div class="library-name">Google Fonts</div>
+            <div class="library-description">
+              <span data-i18n="google_fonts_desc"
+                >Web font service from Google</span
+              ><br />
+              Copyright © 2024 Google Inc.<br />
+              License:
+              <span data-i18n="license_various"
+                >Various open source licenses</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="license-note">
+          <strong data-i18n="license_notice">License Notice:</strong>
+          <span data-i18n="license_notice_text"
+            >All used libraries are under open source licenses (mainly MIT
+            License and Apache License 2.0). The complete license texts are
+            available in the respective projects. This tool respects all license
+            terms and passes on the appropriate credits to the original
+            authors.</span
+          >
+        </div>
+
+        <p>
+          <strong data-i18n="last_update">Last Update:</strong>
+          <span class="app-build-date"></span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="src/core/GuiFunctions.js"></script>
+    <script src="src/core/CodeEditor.js"></script>
+    <script src="src/theme-switcher.js"></script>
+    <script src="src/core/TabFunctions.js"></script>
+    <script src="src/core/Form.js"></script>
+    <script src="src/core/ColorPicker.js"></script>
+    <script src="src/core/Search.js"></script>
+
+    <!-- Performance Optimizations -->
+    <script src="src/performance-optimizations.js"></script>
+
+    <!-- Language Selector -->
+    <script src="src/language-selector.js"></script>
+
+    <!-- Cookie Consent Banner -->
+    <script src="src/cookie-consent.js"></script>
+
+    <!-- Renderer Selector -->
+    <script src="src/renderer-selector.js"></script>
+
+    <script src="src/splitter.js"></script>
+
+    <!-- Message System -->
+    <script src="src/message-system.js"></script>
+
+    <!-- Main Initialization -->
+    <script src="src/main.js"></script>
+
+    <!-- Template Organizer -->
+    <script src="src/template-organizer.js"></script>
+
+    <script src="src/autoLoad.js"></script>
+    <script src="src/undo-redo.js"></script>
+
+    <script src="src/daily-tips.js"></script>
+
+    <script>
+      function setAppVersion() {
+        if (!window.APP_CONFIG) return;
+
+        document.querySelectorAll(".app-version").forEach((el) => {
+          el.textContent = window.APP_CONFIG.version;
+        });
+
+        const appTitle = document.querySelector(".app-title");
+        if (appTitle) {
+          appTitle.textContent = `Version ${window.APP_CONFIG.version}`;
+        }
+
+        document.querySelectorAll(".app-build-date").forEach((el) => {
+          el.textContent = window.APP_CONFIG.build;
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", setAppVersion);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1618 @@
+/* ==============================================
+   CSS ANIMATION TIMING CONSTANTS (Verbesserung 18)
+   ============================================== */
+
+:root {
+  /* Animation Timing Constants */
+  --transition-fast: 0.1s;
+  --transition-normal: 0.2s;
+  --transition-slow: 0.3s;
+  --transition-easing: ease;
+}
+
+/* ==============================================
+   IMPROVED LAYOUT - FIXING FOOTER OVERLAP ISSUE
+   ============================================== */
+
+/* Base Layout */
+body {
+  background-color: var(--bg-dark);
+  font-family: Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  color: var(--text-light);
+  overflow: hidden;
+}
+
+.header {
+  background-color: var(--bg-lighter);
+  color: var(--text-light);
+  padding-right: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0; /* Prevent header from shrinking */
+  z-index: 1001; /* Above everything except modals */
+  height: 40px; /* Feste Höhe - gleich wie Actions-Leiste */
+  box-sizing: border-box;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0; /* Important for flex items */
+}
+
+/* NOTE: .content-container wird im SPLITTER STYLES Bereich (weiter unten)
+   erneut definiert mit zusätzlicher position: relative */
+.content-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0; /* Important for flex items */
+  padding-bottom: 40px; /* Platz für fixierte Actions-Bar */
+}
+
+/* ==============================================
+   EDITOR SECTION
+   ============================================== */
+
+/* NOTE: .editor wird im SPLITTER STYLES Bereich (weiter unten) mit
+   erweiterten Eigenschaften erneut definiert (min-width, flex-shrink etc.) */
+.editor {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--border-color);
+}
+
+.editor-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+textarea,
+.CodeMirror {
+  resize: none;
+  font-family: monospace;
+  border: none;
+  outline: none;
+  height: 100%;
+  background-color: #222;
+  color: #e0e0e0;
+}
+
+.CodeMirror {
+  font-size: 17px;
+}
+
+/* ==============================================
+   TABS CONTAINER UND TABS - NEUE STRUKTUR
+   ============================================== */
+
+/* Neuer Container für Tabs und App-Title */
+.tabs-container {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Abstand zwischen Tabs und App-Title */
+  flex: 1;
+  min-width: 0;
+}
+
+.tabs {
+  display: flex;
+  background-color: var(--bg-lighter);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tab {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  position: relative;
+  padding: 6px 12px; /* Links von 22px auf 19px reduziert (3px weniger) */
+  padding-right: 25px;
+  cursor: pointer;
+  border: 1px solid var(--border-light);
+  background: linear-gradient(
+    to bottom,
+    var(--tab-gradient-start),
+    var(--tab-gradient-end)
+  );
+  user-select: none;
+  min-height: 26px; /* 3px zurück hinzugefügt: von 23px auf 26px */
+  display: flex;
+  align-items: center; /* Vertikale Zentrierung des Inhalts */
+}
+
+.tab:hover {
+  background: var(--bg-lighter-hover);
+}
+
+.tab.active {
+  background: linear-gradient(
+    to bottom,
+    var(--tab-gradient-start-hover),
+    var(--tab-gradient-end-hover)
+  );
+  box-shadow: inset 0 -2px 0 0 var(--primary-color);
+}
+
+.tab.active:hover {
+  background: var(--tab-gradient-end-hover);
+}
+
+.tab-connector {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--primary-color);
+  display: none;
+}
+
+.tab.active .tab-connector {
+  display: block;
+}
+
+.plus-tab {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  cursor: pointer;
+  padding: 6px 15px; /* 3px zurück hinzugefügt: von 3px auf 6px */
+  background-color: var(--bg-medium);
+  border-left: 1px solid var(--border-color);
+  user-select: none;
+  min-height: 26px; /* 3px zurück hinzugefügt: von 23px auf 26px */
+  display: flex;
+  align-items: center;
+}
+
+.plus-tab:hover {
+  background-color: var(--bg-medium-hover);
+}
+
+.close-tab {
+  position: absolute; /* Absolute Positionierung */
+  right: 8px; /* Positioniert das Kreuz 8px vom rechten Rand */
+  cursor: pointer;
+  font-size: 14px;
+  color: #999;
+  font-weight: bold;
+  line-height: 1; /* Verhindert zusätzliche Höhe durch Zeilenhöhe */
+  display: inline-flex; /* Bessere Kontrolle über das Layout */
+  align-items: center;
+  justify-content: center;
+}
+
+/* Erweiterter Klickbereich durch Pseudo-Element */
+.close-tab::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  bottom: -4px;
+  left: -4px;
+  /* Unsichtbar, aber klickbar */
+}
+
+.close-tab:hover {
+  color: var(--error-color);
+}
+
+/* ==============================================
+   APP TITLE - NEUE POSITIONIERUNG
+   ============================================== */
+
+.app-title {
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 14px;
+  user-select: none;
+  opacity: 0.8;
+  white-space: nowrap;
+  height: 100%; /* Volle Höhe des Headers nutzen */
+  line-height: 40px; /* Gleiche Höhe wie Header für vertikale Zentrierung */
+  flex-shrink: 0; /* Verhindert Schrumpfen bei wenig Platz */
+}
+
+/* Light theme override for app title */
+.light-theme .app-title {
+  color: #666;
+}
+
+/* ==============================================
+   PREVIEW SECTION - KEY CHANGES HERE
+   ============================================== */
+
+/* NOTE: #preview wird im SPLITTER STYLES Bereich (weiter unten) mit
+   erweiterten Eigenschaften erneut definiert (min-width, flex-shrink etc.) */
+#preview {
+  width: 50%;
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  border: none;
+  background-color: var(--bg-light);
+  overflow: hidden;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+#canvas-container {
+  border: 1px solid var(--border-light);
+  box-sizing: border-box;
+  position: absolute;
+  overflow: hidden;
+  transform-origin: center center;
+  /* Remove any manual positioning - let Board.js handle it */
+}
+
+#canvas-container canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  visibility: visible !important;
+}
+
+/* ==============================================
+   FULLSCREEN MODES - UPDATED
+   ============================================== */
+
+/* Preview Fullscreen */
+#preview.fullscreen-preview {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  padding: 0 !important;
+  background-color: var(--bg-light) !important;
+}
+
+#preview.fullscreen-preview #canvas-container {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
+/* Editor Fullscreen */
+.fullscreen-editor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999;
+  background: #2c2c2c;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 50px;
+}
+
+.fullscreen-editor textarea {
+  flex: 1;
+  font-size: 16px;
+}
+
+.fullscreen-editor .actions {
+  background: var(--bg-lighter);
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+#preview.fullscreen-editor {
+  width: 100vw !important;
+  height: 100vh !important;
+  padding: 0;
+}
+
+#preview.fullscreen-editor #canvas-container {
+  margin: 0;
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Body class for fullscreen mode */
+body.fullscreen-mode {
+  overflow: hidden;
+}
+
+/* Hide actions bar in fullscreen */
+body.fullscreen-mode .actions {
+  display: none;
+}
+
+/* ==============================================
+   CONSOLE & BOTTOM PANEL
+   ============================================== */
+
+.console {
+  height: 150px;
+  overflow-y: auto;
+  background-color: var(--bg-light);
+  padding: 10px;
+  font-family: monospace;
+  border-top: 1px solid var(--border-color);
+  display: none;
+}
+
+.bottom-panel {
+  max-height: 150px;
+  overflow: auto;
+  margin-bottom: 50px;
+}
+
+/* ==============================================
+   ACTIONS BAR - IMPROVED POSITIONING
+   ============================================== */
+
+.actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: var(--bg-lighter);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px;
+  z-index: 1000;
+  box-shadow:
+    var(--shadow-light),
+    0 -2px 4px rgba(0, 0, 0, 0.1); /* Add top shadow */
+  box-sizing: border-box;
+  border-top: 1px solid var(--border-color);
+  height: 40px; /* Fixed height - adjust as needed */
+}
+
+.left-actions,
+.right-actions {
+  display: none;
+  gap: 5px;
+}
+
+.left-actions {
+  justify-content: flex-start;
+}
+
+.right-actions {
+  justify-content: flex-end;
+}
+
+.right-actions > div {
+  display: flex;
+  gap: 5px;
+}
+
+/* ==============================================
+   BUTTONS & INPUTS
+   ============================================== */
+
+/* Base Button Styles */
+.regular-button,
+.file-label,
+.show-button,
+.toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-color);
+  color: var(--text-white);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  box-sizing: border-box;
+  user-select: none;
+  transition: background-color var(--transition-normal) var(--transition-easing);
+}
+
+.regular-button,
+.file-label {
+  padding: 8px 15px;
+  font-size: 14px;
+  height: 32px;
+  line-height: normal;
+  vertical-align: middle;
+}
+
+.file-label {
+  font-weight: normal;
+  font-family: inherit;
+  padding-bottom: 6px;
+}
+
+.show-button,
+.show-button-high,
+.toggle-button {
+  width: 32px;
+  height: 32px;
+}
+
+/* Button Hover States */
+.regular-button:hover,
+.file-label:hover,
+.show-button:hover,
+.toggle-button:hover {
+  background-color: var(--primary-hover);
+}
+
+.toggle-button.active {
+  background-color: var(--primary-dark);
+}
+
+.regular-button:disabled,
+.show-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+/* Form Inputs */
+.form-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+}
+
+/* Header Elements Alignment Fix */
+.header .regular-button,
+.header .file-label,
+.header .show-button,
+.header .toggle-button,
+.header .custom-dropdown,
+.header select,
+.header .language-selector {
+  vertical-align: middle;
+  margin: 0;
+}
+
+.language-selector {
+  margin-right: 4px !important;
+}
+
+#theme-toggle {
+  margin-right: 3px;
+}
+
+/* ==============================================
+   SEARCH & REPLACE FUNCTIONALITY - THEME INTEGRATED
+   ============================================== */
+
+/* Floating Search Window */
+.floating-search {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: var(--bg-lighter);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 10px;
+  box-shadow: var(--shadow-medium);
+  z-index: 1000;
+  display: none;
+  min-width: 320px;
+}
+
+/* Search Controls Container */
+.search-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Search and Replace Rows */
+.search-row,
+.replace-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Input Fields */
+#search-input,
+#replace-input {
+  flex: 1;
+  height: 28px;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+#search-input:focus,
+#replace-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.2);
+}
+
+/* Search Buttons */
+.search-btn {
+  height: 28px;
+  width: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-medium);
+  color: var(--text-light);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all var(--transition-normal) var(--transition-easing);
+}
+
+.search-btn:hover {
+  background-color: var(--bg-medium-hover);
+  border-color: var(--border-light);
+}
+
+.search-btn:active {
+  transform: scale(0.95);
+}
+
+.search-btn .material-icons {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Toggle Replace Button Active State */
+#toggle-replace-btn.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--text-white);
+}
+
+#toggle-replace-btn.active:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* Search Results Display */
+#search-results {
+  margin-top: 6px;
+  font-size: 12px;
+  text-align: center;
+  min-height: 16px;
+  color: var(--text-muted);
+}
+
+#search-results.success {
+  color: var(--primary-color);
+}
+
+#search-results.error {
+  color: var(--error-color);
+}
+
+/* Replace Row Animation */
+.replace-row {
+  animation: slideDown 0.2s ease-out;
+  display: none;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Special Button Styles */
+#replace-btn,
+#replace-all-btn {
+  min-width: 32px;
+}
+
+/* Hover effect for close button */
+#close-search-btn:hover {
+  background-color: var(--error-color);
+  border-color: var(--error-color);
+  color: var(--text-white);
+}
+
+/* Light Theme Overrides */
+.light-theme .floating-search {
+  background-color: #ffffff;
+  border-color: #ddd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.light-theme #search-input,
+.light-theme #replace-input {
+  background-color: #f8f8f8;
+  border-color: #ddd;
+  color: #333;
+}
+
+.light-theme #search-input:focus,
+.light-theme #replace-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.15);
+}
+
+.light-theme .search-btn {
+  background-color: #f0f0f0;
+  border-color: #ddd;
+  color: #333;
+}
+
+.light-theme .search-btn:hover {
+  background-color: #e0e0e0;
+  border-color: #ccc;
+}
+
+.light-theme .search-btn .material-icons {
+  color: #333;
+}
+
+.light-theme #toggle-replace-btn.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.light-theme #toggle-replace-btn.active .material-icons {
+  color: white;
+}
+
+.light-theme #search-results {
+  color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .floating-search {
+    min-width: 280px;
+    right: 5px;
+    top: 5px;
+    padding: 8px;
+  }
+
+  #search-input,
+  #replace-input {
+    font-size: 12px;
+    height: 26px;
+    padding: 3px 6px;
+  }
+
+  .search-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .search-btn .material-icons {
+    font-size: 16px;
+  }
+}
+
+/* Zusätzliche Styles für bessere Integration */
+.floating-search input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.light-theme .floating-search input::placeholder {
+  color: #999;
+}
+
+/* Focus-visible für bessere Accessibility */
+.search-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Disabled State */
+.search-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.search-btn:disabled:hover {
+  background-color: var(--bg-medium);
+  border-color: var(--border-color);
+}
+
+/* ==============================================
+   FORM COMPONENTS
+   ============================================== */
+
+/* Form Element selbst - wichtig für korrektes Layout */
+form {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.form-container {
+  padding: 15px;
+  background-color: var(--bg-light);
+  overflow-y: auto;
+  position: relative;
+  flex: 1;
+  min-height: 0; /* Wichtig für Firefox */
+}
+
+/* Parameter Groups */
+.parameter-group {
+  margin-bottom: 8px;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px;
+  background-color: var(--bg-medium);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  user-select: none;
+}
+
+.group-header-icon {
+  margin-right: 10px;
+  transition: transform var(--transition-normal);
+  user-select: none;
+}
+
+.group-header-icon.collapsed {
+  transform: rotate(-90deg);
+}
+
+.group-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: normal;
+  user-select: none;
+}
+
+.group-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 9px 0;
+  overflow: hidden;
+  transition:
+    max-height var(--transition-fast),
+    opacity 0s;
+  max-height: 2000px;
+  opacity: 1;
+}
+
+.group-fields.collapsed {
+  max-height: 0;
+  opacity: 0;
+  padding: 0;
+}
+
+/* Row Containers */
+.row-container {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 10px;
+  position: relative;
+  gap: 15px;
+  padding: 2px;
+}
+
+.label-column {
+  width: 30%;
+  flex-shrink: 0;
+}
+
+.flex-column-gap {
+  flex-grow: 1;
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.headers-row {
+  font-weight: bold;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 5px;
+}
+
+.buttons-row {
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.buttons-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+/* ==============================================
+   SPECIALIZED INPUT COMPONENTS
+   ============================================== */
+
+/* Matrix Editor */
+.inline-matrix-editor {
+  padding: 15px;
+  border: 1px solid var(--border-light);
+  background-color: var(--bg-lighter);
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.row-count-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.row-count-input {
+  width: 60px;
+}
+
+.matrix-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.matrix-input {
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+/* Close Button */
+.close-button {
+  position: absolute !important;
+  top: 5px !important;
+  right: 5px !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  background-color: var(--primary-color) !important;
+  color: var(--text-white) !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: none !important;
+  transition: background-color var(--transition-normal) var(--transition-easing) !important;
+}
+
+.close-button:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+/* ==============================================
+   DROPDOWN COMPONENTS
+   ============================================== */
+
+.custom-dropdown {
+  position: relative;
+  width: 200px;
+  font-family: inherit;
+}
+
+.selected {
+  background-color: var(--primary-color);
+  color: var(--text-white);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 15px;
+  font-size: 14px;
+  height: 32px;
+  line-height: 16px;
+  cursor: pointer;
+  box-sizing: border-box;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="white" height="10" viewBox="0 0 20 20" width="10" xmlns="http://www.w3.org/2000/svg"><polygon points="10,0 20,10 0,10"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
+  padding-right: 30px;
+  transition: background-color var(--transition-normal) var(--transition-easing);
+}
+
+.selected:hover {
+  background-color: var(--primary-hover);
+}
+
+.dropdown-options {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--primary-color);
+  border: 1px solid #ccc;
+  border-bottom: none;
+  max-height: 160px;
+  overflow-y: auto;
+  display: none;
+  z-index: 1000;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+  border-radius: 4px 4px 0 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
+}
+
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+.dropdown-options li {
+  padding: 8px 15px;
+  font-size: 14px;
+  color: var(--text-white);
+  cursor: pointer;
+  transition: background-color var(--transition-normal) var(--transition-easing);
+}
+
+.dropdown-options li:hover,
+.dropdown-options li.highlight {
+  background-color: var(--primary-hover);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-options.show {
+  display: block;
+  animation: fadeIn var(--transition-normal) var(--transition-easing);
+}
+
+/* ==============================================
+   CODEMIRROR CUSTOMIZATIONS
+   ============================================== */
+
+.CodeMirror-gutters .custom-gutter {
+  width: 17px;
+  margin-left: -13px !important;
+}
+
+.CodeMirror-foldgutter {
+  margin-left: 3px !important;
+  margin-right: 0px !important; /* Kleiner Abstand zum nächsten Gutter */
+}
+
+.CodeMirror-lint-markers {
+  margin-left: -13px !important;
+}
+
+.custom-gutter .my-button {
+  cursor: pointer;
+  color: white;
+  font-size: 12px;
+  padding-left: 2px;
+}
+
+.form-Start-btn {
+  position: relative;
+  top: 0px;
+}
+
+/* ==============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================== */
+
+@media (max-width: 768px) {
+  .content-container {
+    flex-direction: column;
+    padding-bottom: 70px; /* Slightly more space on mobile */
+  }
+
+  .editor,
+  #preview {
+    width: 100%;
+    height: 50%;
+  }
+
+  .actions {
+    height: 60px; /* Slightly taller on mobile */
+    flex-wrap: wrap;
+  }
+
+  /* Hide app title on mobile to save space */
+  .app-title {
+    display: none;
+  }
+
+  /* Tabs-Container anpassen */
+  .tabs-container {
+    gap: 10px; /* Weniger Abstand auf mobilen Geräten */
+  }
+}
+
+/* ==============================================
+   UTILITY CLASSES FOR JAVASCRIPT INTEGRATION
+   ============================================== */
+
+.codesnippets {
+  overflow: visible;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Class to add to body when measuring layout */
+.measuring-layout {
+  pointer-events: none;
+}
+
+/* Class for when canvas is being resized */
+.resizing-canvas #canvas-container {
+  transition: none !important;
+}
+
+/* Class for export mode - removes all overlays */
+.export-mode .actions,
+.export-mode .floating-search,
+.export-mode .form-container {
+  display: none !important;
+}
+
+/* ==============================================
+   FORM COMPONENT STYLES (Enhanced)
+   ============================================== */
+
+/* Matrix Input Container */
+.matrix-input-container,
+.color-input-container,
+.svg-input-container,
+.x3d-input-container,
+.variable-input-container {
+  width: 100%;
+}
+
+/* Button Focus States */
+.copy-button:focus,
+.close-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
+}
+
+/* Method Example Display */
+.method-example {
+  flex: 1;
+  font-family: monospace;
+  background-color: rgba(0, 0, 0, 0.03);
+  padding: 4px 8px;
+  border-radius: 3px;
+  margin-right: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Copy Button Styles */
+.copy-button {
+  min-width: 60px;
+  height: 28px; /* Feste Höhe für alle Copy-Buttons */
+  padding: 0 8px; /* Nur horizontales Padding */
+  font-size: 0.8em;
+  background-color: var(--bg-light);
+  color: var(--text-light);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: background-color var(--transition-normal) var(--transition-easing);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
+}
+.copy-button:hover {
+  background-color: var(--border-light);
+}
+
+/* Form Button Styles */
+.form-button {
+  padding: 6px 12px;
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-light);
+  color: var(--text-light);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color var(--transition-normal) var(--transition-easing);
+  white-space: nowrap;
+}
+
+.form-button:hover {
+  background-color: var(--border-light);
+}
+
+/* Info Text */
+.info-text {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* Field Labels */
+.field-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+/* Variable Input Container Styles */
+.variable-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* Color Picker Container */
+.color-input-container [id^="color-picker-"] {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  background-color: var(--bg-lighter);
+}
+
+/* Buttons Row Styling */
+.buttons-row {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 15px;
+}
+
+/* Success State for Copy Button */
+.copy-button.success {
+  background-color: #d1e7dd !important;
+  border-color: #badbcc !important;
+  color: #0f5132 !important;
+}
+
+/* ==============================================
+   SPLITTER STYLES
+   ============================================== */
+
+/* Splitter zwischen Editor und Preview */
+.splitter {
+  width: 5px;
+  background-color: var(--border-color);
+  cursor: col-resize;
+  position: relative;
+  flex-shrink: 0;
+  transition: background-color var(--transition-normal) var(--transition-easing);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Splitter Handle (optionaler visueller Indikator) */
+.splitter-handle {
+  width: 2px;
+  height: 50px;
+  background-color: var(--border-light);
+  border-radius: 1px;
+  opacity: 0.5;
+  transition: opacity var(--transition-normal) var(--transition-easing);
+}
+
+.splitter:hover {
+  background-color: var(--primary-color);
+}
+
+.splitter:hover .splitter-handle {
+  opacity: 1;
+}
+
+.splitter.dragging {
+  background-color: var(--primary-color);
+}
+
+/* Overlay während des Dragging */
+.resize-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9998;
+  cursor: col-resize;
+  display: none;
+}
+
+.resize-overlay.active {
+  display: block;
+}
+
+/* Splitter-Anpassungen: Überschreiben die Basis-Definitionen von oben
+   mit erweiterten Eigenschaften für den Splitter-Modus */
+.editor {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  border-right: none; /* Border wird durch Splitter ersetzt */
+  flex-shrink: 0;
+}
+
+#preview {
+  width: 50%;
+  position: relative;
+  height: 100%;
+  min-width: 200px;
+  border: none;
+  background-color: var(--bg-light);
+  overflow: hidden;
+  padding: 20px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Überschreibt Basis-Definition: zusätzlich position: relative für Splitter */
+.content-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  padding-bottom: 40px;
+  position: relative;
+}
+
+/* Responsive - Splitter auf mobilen Geräten verstecken */
+@media (max-width: 768px) {
+  .splitter {
+    display: none;
+  }
+
+  .editor,
+  #preview {
+    width: 100% !important;
+    min-width: unset;
+  }
+}
+/* ==============================================
+   TEMPLATE ACTION BUTTONS - Dezente Formular-Stil Buttons
+   ============================================== */
+
+/* Container für Template-Buttons */
+.load-templates-container {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-light);
+  text-align: center;
+}
+
+/* Button-Reihe */
+.template-button-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+/* Template Action Buttons im Formular-Stil */
+.template-action-button {
+  padding: 6px 12px !important;
+  background-color: var(--bg-light) !important;
+  border: 1px solid var(--border-light) !important;
+  color: var(--text-light) !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: background-color var(--transition-normal) var(--transition-easing) !important;
+  white-space: nowrap !important;
+  font-size: 14px !important;
+  font-weight: normal !important;
+  line-height: normal !important;
+  font-family: inherit !important;
+}
+
+.template-action-button:hover {
+  background-color: var(--border-light) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Status Text */
+#template-load-status {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+#template-load-status[style*="success-color"] {
+  font-weight: 500;
+}
+
+/* ==============================================
+   REFERENCE WINDOW STYLES
+   ============================================== */
+
+/* Reference Content Styling */
+.reference-content {
+  padding: 20px;
+  min-height: 200px;
+  color: var(--text-light);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Placeholder Text für leeren Inhalt */
+.reference-content:empty::after {
+  content: "Noch kein Inhalt verfügbar.";
+  color: var(--text-muted);
+  font-style: italic;
+  display: block;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+/* Light Theme Overrides for Reference Window */
+.light-theme .reference-content {
+  color: #333;
+}
+
+.light-theme .reference-content:empty::after {
+  color: #999;
+}
+
+/* Reference Window spezifische Styles */
+#referenceWindow .modal-window-content {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* Reference Button Spacing */
+#referenceButton {
+  margin-right: 2px;
+}
+
+/* ==============================================
+   PORTRAIT / MOBILE LAYOUT
+   Bei Hochformat: Animation oben, Editor darunter
+
+   ERSETZE den bestehenden @media Block (Zeilen 1470-1481)
+   in deiner style.css mit diesem kompletten Block!
+   ============================================== */
+
+/* Portrait-Modus erkennen: Wenn Höhe > Breite ODER schmale Bildschirme */
+@media (max-width: 768px), (orientation: portrait) and (max-width: 1024px) {
+  /* Body scrollbar im Portrait-Modus */
+  body {
+    overflow: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  body.portrait-mode {
+    overflow: auto;
+    height: auto;
+  }
+
+  /* Main Container anpassen */
+  .main-container {
+    flex: none;
+    height: auto;
+    min-height: calc(100vh - 40px); /* Minus Header */
+    overflow: visible;
+  }
+
+  /* Content Container: Vertikal statt horizontal */
+  .content-container {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    height: auto;
+    overflow: visible;
+    padding-bottom: 50px; /* Platz für Actions-Bar */
+  }
+
+  /* Splitter ausblenden */
+  .splitter {
+    display: none !important;
+  }
+
+  /* Preview (Animation) zuerst anzeigen */
+  #preview {
+    order: 1;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 200px;
+    flex-shrink: 0;
+    padding: 10px;
+    position: relative;
+    min-width: unset;
+  }
+
+  /* Canvas-Container im Portrait-Modus */
+  #preview #canvas-container {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto;
+    transform: none !important;
+  }
+
+  /* Editor danach */
+  .editor {
+    order: 2;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 300px;
+    flex-shrink: 0;
+    border-right: none;
+    border-top: 1px solid var(--border-color);
+    min-width: unset;
+  }
+
+  /* Editor Content anpassen */
+  .editor-content {
+    flex: none;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* CodeMirror im Portrait-Modus: Auto-Höhe */
+  .editor .CodeMirror {
+    height: auto !important;
+    min-height: 300px;
+  }
+
+  .editor .CodeMirror-scroll {
+    height: auto !important;
+    min-height: 300px;
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: auto !important;
+  }
+
+  .editor .CodeMirror-sizer {
+    min-height: 300px !important;
+  }
+
+  /* Actions-Bar im Portrait-Modus */
+  .actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background-color: var(--bg-lighter);
+  }
+
+  /* Header im Portrait-Modus - kompakter */
+  .header {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 40px;
+    padding: 5px;
+  }
+
+  .tabs-container {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .app-title {
+    display: none; /* Titel auf Mobile ausblenden */
+  }
+
+  /* Filebar auf Mobile */
+  #filebar {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  #filebar button,
+  #filebar .file-label {
+    padding: 5px 8px;
+  }
+}
+
+/* Zusätzliche Anpassungen für sehr kleine Bildschirme */
+@media (max-width: 480px) {
+  #preview {
+    padding: 5px;
+  }
+
+  .editor .CodeMirror {
+    font-size: 14px;
+  }
+
+  .header {
+    padding: 3px;
+  }
+
+  .tab {
+    padding: 4px 8px;
+    padding-right: 20px;
+    font-size: 12px;
+  }
+
+  .plus-tab {
+    padding: 4px 10px;
+  }
+}

@@ -1,0 +1,332 @@
+/* ==============================================
+   DARK THEME VARIABLES
+   ============================================== */
+
+:root {
+  /* Tab Colors */
+  --tab-gradient-start: #3a3a3a;
+  --tab-gradient-end: #2c2c2c;
+  --tab-gradient-start-hover: #4a4a4a;
+  --tab-gradient-end-hover: #3c3c3c;
+
+  /* Primary Colors */
+  --primary-color: #17a03a;
+  --primary-hover: #4faf53;
+  --primary-dark: #388e3c;
+
+  /* Accent Colors */
+  --highlight: #e07b00;
+  --highlight-hover: #ee8b12;
+  --error-color: #ff5733;
+
+  /* Text Colors */
+  --text-light: #e0e0e0;
+  --text-white: #ffffff;
+  --text-dark: #333333;
+
+  /* Border Colors */
+  --border-color: #444444;
+  --border-light: #555555;
+
+  /* Background Colors */
+  --bg-light: #2c2c2c;
+  --bg-lighter: #3a3a3a;
+  --bg-lighter-hover: #444444;
+  --bg-medium: #555555;
+  --bg-medium-hover: #666666;
+  --bg-dark: #2c2c2c;
+
+  /* Shadows */
+  --shadow-light: 0 2px 5px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.2);
+
+  /* Component aliases */
+  --background-primary: var(--bg-dark);
+  --background-secondary: var(--bg-lighter);
+  --text-color: var(--text-light);
+  --text-secondary: #aaaaaa;
+  --border-dark: #666666;
+  --scrollbar-thumb: var(--border-color);
+  --scrollbar-thumb-hover: var(--bg-medium);
+  --code-color: #e77bb0;
+  --warning-background: #3d3000;
+  --warning-text: #ffd700;
+  --warning-border: #ffc107;
+}
+
+/* ==============================================
+   MODAL WINDOWS DARK THEME OVERRIDES
+   ============================================== */
+
+/* Modal Window Base */
+body[data-theme="dark"] .modal-window {
+  background-color: var(--bg-lighter);
+  color: var(--text-light);
+}
+
+body[data-theme="dark"] .modal-window-header {
+  background-color: var(--bg-medium);
+  color: var(--text-light);
+}
+
+body[data-theme="dark"] .modal-window-content {
+  background-color: var(--bg-light);
+  color: var(--text-light);
+}
+
+/* Info Window Specific Dark Theme Styles */
+body[data-theme="dark"] #infoWindow {
+  background-color: var(--bg-lighter);
+}
+
+body[data-theme="dark"] #infoWindow .modal-window-content {
+  background-color: var(--bg-light);
+  color: var(--text-light);
+}
+
+body[data-theme="dark"] .info-content {
+  background-color: var(--bg-light);
+  color: var(--text-light);
+}
+
+/* All text elements in info-content */
+body[data-theme="dark"] .info-content * {
+  color: var(--text-light);
+}
+
+body[data-theme="dark"] .info-content h2,
+body[data-theme="dark"] .info-content h3 {
+  color: var(--text-white);
+}
+
+body[data-theme="dark"] .info-content strong {
+  color: var(--text-white);
+}
+
+/* Version Display - Specific Fix */
+body[data-theme="dark"] .version {
+  color: var(--text-light) !important;
+  background-color: transparent !important; /* Explizit transparent */
+}
+
+body[data-theme="dark"] .version span {
+  color: var(--text-light) !important;
+}
+
+body[data-theme="dark"] .app-version {
+  color: var(--text-light) !important;
+}
+
+/* Fix für mögliche helle Hintergründe die von style.css kommen */
+body[data-theme="dark"] .modal-window,
+body[data-theme="dark"] .modal-window * {
+  background-color: inherit; /* Erbt den dunklen Hintergrund */
+}
+
+/* Explizite dunkle Hintergründe für alle wichtigen Container */
+body[data-theme="dark"] .modal-window {
+  background-color: var(--bg-lighter) !important;
+}
+
+body[data-theme="dark"] .modal-window-content {
+  background-color: var(--bg-light) !important;
+}
+
+body[data-theme="dark"] .info-content {
+  background-color: var(--bg-light) !important;
+}
+
+/* Paragraphs and general text */
+body[data-theme="dark"] .info-content p {
+  color: var(--text-light) !important;
+}
+
+body[data-theme="dark"] .info-content p span {
+  color: var(--text-light) !important;
+}
+
+/* Links */
+body[data-theme="dark"] .info-content a {
+  color: var(--primary-color);
+}
+
+body[data-theme="dark"] .info-content a:hover {
+  color: var(--primary-hover);
+}
+
+/* Info Actions */
+body[data-theme="dark"] .info-actions {
+  background-color: var(--bg-lighter);
+  padding: 15px;
+  border-radius: 4px;
+  margin: 15px 0;
+}
+
+body[data-theme="dark"] .info-actions h3 {
+  color: var(--primary-color) !important;
+}
+
+body[data-theme="dark"] .info-actions p {
+  color: var(--text-light) !important;
+}
+
+/* Info Action Buttons */
+body[data-theme="dark"] .info-action-button {
+  background-color: var(--primary-color);
+  color: var(--text-white);
+  border: 1px solid var(--primary-color);
+}
+
+body[data-theme="dark"] .info-action-button:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+body[data-theme="dark"] .info-action-button.support {
+  background-color: var(--highlight);
+  border-color: var(--highlight);
+}
+
+body[data-theme="dark"] .info-action-button.support:hover {
+  background-color: var(--highlight-hover);
+  border-color: var(--highlight-hover);
+}
+
+/* Credits Section - Specific Fix */
+body[data-theme="dark"] .credits {
+  background-color: var(--bg-lighter) !important;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 10px 0;
+  color: var(--text-light) !important;
+}
+
+body[data-theme="dark"] .credits * {
+  color: var(--text-light) !important;
+  background-color: transparent !important; /* Kinder erben den dunklen Hintergrund */
+}
+
+body[data-theme="dark"] .credits p {
+  color: var(--text-light) !important;
+}
+
+body[data-theme="dark"] .credits strong {
+  color: var(--text-white) !important;
+}
+
+/* Library List */
+body[data-theme="dark"] .library-list {
+  background-color: var(--bg-dark);
+  padding: 10px;
+  border-radius: 4px;
+}
+
+body[data-theme="dark"] .library-item {
+  background-color: var(--bg-lighter);
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+body[data-theme="dark"] .library-name {
+  color: var(--text-white);
+  font-weight: bold;
+}
+
+body[data-theme="dark"] .library-description {
+  color: var(--text-light) !important;
+}
+
+body[data-theme="dark"] .library-description span {
+  color: var(--text-light) !important;
+}
+
+/* License Note - Specific Fix */
+body[data-theme="dark"] .license-note {
+  background-color: var(--bg-lighter) !important;
+  background: var(
+    --bg-lighter
+  ) !important; /* Überschreibt auch background shorthand */
+  padding: 15px;
+  border-radius: 4px;
+  margin-top: 15px;
+  border: 1px solid var(--border-color);
+  color: var(--text-light) !important;
+}
+
+body[data-theme="dark"] .modal-window .license-note,
+body[data-theme="dark"] .modal-window-content .license-note,
+body[data-theme="dark"] .info-content .license-note,
+body[data-theme="dark"] #infoWindow .license-note {
+  background-color: var(--bg-lighter) !important;
+  background: var(--bg-lighter) !important;
+}
+
+body[data-theme="dark"] .license-note * {
+  color: var(--text-light) !important;
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+body[data-theme="dark"] .license-note strong {
+  color: var(--text-white) !important;
+}
+
+body[data-theme="dark"] .license-note span {
+  color: var(--text-light) !important;
+}
+
+/* Close Button */
+body[data-theme="dark"] .modal-window-close {
+  color: var(--text-light);
+}
+
+body[data-theme="dark"] .modal-window-close:hover {
+  background-color: var(--bg-medium-hover);
+  color: var(--text-white);
+}
+
+/* Scrollbar für Modal Windows im Dark Theme */
+body[data-theme="dark"] .modal-window-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+body[data-theme="dark"] .modal-window-content::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+body[data-theme="dark"] .modal-window-content::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
+}
+
+body[data-theme="dark"] .modal-window-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--border-light);
+}
+
+/* Message Window Dark Theme */
+body[data-theme="dark"] #messageWindow {
+  background-color: var(--bg-lighter);
+}
+
+body[data-theme="dark"] #messageWindow .modal-window-content {
+  background-color: var(--bg-light);
+}
+
+body[data-theme="dark"] .message-controls {
+  background-color: var(--bg-light);
+  border-bottom-color: var(--border-color);
+}
+
+body[data-theme="dark"] .message-log {
+  background-color: var(--bg-dark);
+}
+
+body[data-theme="dark"] .message-entry {
+  background-color: var(--bg-lighter);
+}
+
+body[data-theme="dark"] .no-messages {
+  color: var(--text-muted);
+}
