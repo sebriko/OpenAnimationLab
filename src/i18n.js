@@ -416,8 +416,8 @@ class I18nManager {
         de: "Lizenz",
       },
       license_text: {
-        en: "This software is licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0)",
-        de: "Diese Software steht unter der Creative Commons Namensnennung 4.0 International (CC BY 4.0)",
+        en: "This software is licensed under the MIT License",
+        de: "Diese Software steht unter der MIT-Lizenz",
       },
       support_feedback: {
         en: "Support & Feedback",

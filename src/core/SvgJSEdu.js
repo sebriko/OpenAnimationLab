@@ -2,7 +2,7 @@
  * SvgJSEdu.js - SVG.js-basiertes Framework für Bildungsanimationen
  * Konvertiert von PixiJSEdu.js (PIXI.js Canvas) zu SVG.js (natives SVG DOM)
  *
- * @license GNU GPLv3
+ * @license MIT
  * @author Sebastian Rikowski
  * @version 1.0.0
  *

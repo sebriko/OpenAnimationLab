@@ -11,7 +11,7 @@
  * Behält die gleiche öffentliche API bei, damit bestehender Code
  * (PixiJSEdu-Animationen) mit minimalen Änderungen weiterläuft.
  *
- * @license GNU GPLv3
+ * @license MIT
  * @author Sebastian Rikowski
  * @version 2.0.0 (SVG.js-Migration)
  *

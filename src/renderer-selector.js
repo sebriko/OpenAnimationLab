@@ -6,7 +6,7 @@
  *   • getRendererNamespace() → PixiJSEdu | SvgJSEdu
  *   • applyRendererAliases() → sets global aliases (Board → BoardSVG, etc.)
  *
- * @license GNU GPLv3
+ * @license MIT
  * @author Sebastian Rikowski
  */
 
