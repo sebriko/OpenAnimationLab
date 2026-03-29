@@ -1,5 +1,5 @@
-Die Datei ProjectTemplates enthält alle Codebeispiele, die im Programm enthalten sind.
+The ProjectTemplates file contains all code examples included in the program.
 
-Ändern Sie diese Datei nicht. Um eigene Templates anzulegen kopieren Sie die Datei zuvor. 
+Do not modify this file. To create your own templates, make a copy of it first.
 
-Sie können eigene Templates laden, indem Sie auf "eigene Templates laden" klicken.
+You can load your own templates by clicking "Load custom templates".
