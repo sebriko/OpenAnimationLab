@@ -9424,3 +9424,319 @@ PixiJSEdu.SimplePNG = class SimplePNG extends PIXI.Container {
     super.destroy();
   }
 };
+PixiJSEdu.Model3D = class Model3D extends PIXI.Container {
+  static serializationMap = {
+    description: {
+      de: "3D-Modell-Viewer als iframe mit postMessage-API",
+      en: "3D model viewer as iframe with postMessage API",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example:
+      'let myModel = new Model3D("https://example.com/model", 600, 400);',
+    constructor: {
+      url: {
+        name: "url",
+        info: {
+          en: "URL of the 3D model viewer to embed",
+          de: "URL des einzubettenden 3D-Modell-Viewers",
+        },
+      },
+      width: {
+        name: "width",
+        info: {
+          en: "Width of the iframe in pixels",
+          de: "Breite des iframes in Pixeln",
+        },
+      },
+      height: {
+        name: "height",
+        info: {
+          en: "Height of the iframe in pixels",
+          de: "Höhe des iframes in Pixeln",
+        },
+      },
+    },
+    setter: {
+      x: {
+        name: "x",
+        info: {
+          en: "Horizontal position of the element",
+          de: "Horizontale Position des Elements",
+        },
+        example: "x = 100",
+      },
+      y: {
+        name: "y",
+        info: {
+          en: "Vertical position of the element",
+          de: "Vertikale Position des Elements",
+        },
+        example: "y = 200",
+      },
+      width: {
+        name: "width",
+        info: {
+          en: "Width of the iframe in pixels",
+          de: "Breite des iframes in Pixeln",
+        },
+        example: "width = 600",
+      },
+      height: {
+        name: "height",
+        info: {
+          en: "Height of the iframe in pixels",
+          de: "Höhe des iframes in Pixeln",
+        },
+        example: "height = 400",
+      },
+      visible: {
+        name: "visible",
+        info: {
+          en: "Defines whether the object is visible or invisible",
+          de: "Legt fest, ob das Objekt sichtbar oder unsichtbar ist",
+        },
+        example: "visible = true",
+      },
+    },
+    methods: {
+      setProperty: {
+        name: "setProperty",
+        info: {
+          en: "Sets a property of an object in the 3D scene",
+          de: "Setzt eine Eigenschaft eines Objekts in der 3D-Szene",
+        },
+        example: 'setProperty("Zahnrad_1", "color", "#ff0000")',
+      },
+      setCamera: {
+        name: "setCamera",
+        info: {
+          en: "Controls the camera in the 3D scene",
+          de: "Steuert die Kamera in der 3D-Szene",
+        },
+        example: 'setCamera({ position: { x: 0, y: 5, z: 10 } })',
+      },
+      setMode: {
+        name: "setMode",
+        info: {
+          en: "Sets the viewer mode",
+          de: "Setzt den Viewer-Modus",
+        },
+        example: 'setMode("wireframe")',
+      },
+      setBackground: {
+        name: "setBackground",
+        info: {
+          en: "Sets the background of the 3D scene",
+          de: "Setzt den Hintergrund der 3D-Szene",
+        },
+        example: 'setBackground("#ffffff")',
+      },
+      hideObject: {
+        name: "hideObject",
+        info: {
+          en: "Hides an object in the 3D scene",
+          de: "Versteckt ein Objekt in der 3D-Szene",
+        },
+        example: 'hideObject("Zahnrad_1")',
+      },
+      showObject: {
+        name: "showObject",
+        info: {
+          en: "Shows a previously hidden object in the 3D scene",
+          de: "Zeigt ein zuvor verstecktes Objekt in der 3D-Szene",
+        },
+        example: 'showObject("Zahnrad_1")',
+      },
+      selectObject: {
+        name: "selectObject",
+        info: {
+          en: "Selects an object in the 3D scene",
+          de: "Wählt ein Objekt in der 3D-Szene aus",
+        },
+        example: 'selectObject("Zahnrad_1")',
+      },
+      deselectAll: {
+        name: "deselectAll",
+        info: {
+          en: "Deselects all objects in the 3D scene",
+          de: "Hebt die Auswahl aller Objekte in der 3D-Szene auf",
+        },
+        example: "deselectAll()",
+      },
+      getSceneInfo: {
+        name: "getSceneInfo",
+        info: {
+          en: "Requests scene information from the 3D viewer",
+          de: "Fordert Szeneninformationen vom 3D-Viewer an",
+        },
+        example: "getSceneInfo()",
+      },
+      onMessage: {
+        name: "onMessage",
+        info: {
+          en: "Registers a callback for messages from the 3D viewer (objectSelected, propertyChanged, etc.)",
+          de: "Registriert einen Callback für Nachrichten vom 3D-Viewer (objectSelected, propertyChanged, usw.)",
+        },
+        example: "onMessage((data) => { console.log(data); })",
+      },
+    },
+  };
+
+  constructor(url, width = 600, height = 400) {
+    super();
+    this._url = url;
+    this._iframeWidth = width;
+    this._iframeHeight = height;
+    this._visible = true;
+    this._messageCallback = null;
+    this._boundMessageHandler = this._handleMessage.bind(this);
+
+    this._iframe = this._createIframe();
+    window.addEventListener("message", this._boundMessageHandler);
+    Board[INSTANCE_KEY].addChild(this);
+  }
+
+  _createIframe() {
+    const iframe = document.createElement("iframe");
+    iframe.src = this._url;
+    iframe.style.position = "absolute";
+    iframe.style.left = this.x + "px";
+    iframe.style.top = this.y + "px";
+    iframe.style.width = this._iframeWidth + "px";
+    iframe.style.height = this._iframeHeight + "px";
+    iframe.style.border = "none";
+    iframe.style.overflow = "hidden";
+    iframe.setAttribute("scrolling", "no");
+
+    const uiContainer =
+      document.getElementById("pixi-ui-overlay") ||
+      this._createUiContainer();
+    uiContainer.appendChild(iframe);
+    return iframe;
+  }
+
+  _createUiContainer() {
+    const container = document.createElement("div");
+    container.id = "pixi-ui-overlay";
+    container.style.position = "absolute";
+    container.style.top = "0";
+    container.style.left = "0";
+    container.style.width = "100%";
+    container.style.height = "100%";
+    container.style.pointerEvents = "none";
+    document.getElementById("canvas-container").appendChild(container);
+    return container;
+  }
+
+  _handleMessage(event) {
+    if (!this._messageCallback) return;
+    const data = event.data;
+    if (data && data.type === "sceneEditor") {
+      this._messageCallback(data);
+    }
+  }
+
+  _postMessage(payload) {
+    if (this._iframe && this._iframe.contentWindow) {
+      this._iframe.contentWindow.postMessage(payload, "*");
+    }
+  }
+
+  set x(value) {
+    super.x = value;
+    if (this._iframe) this._iframe.style.left = value + "px";
+  }
+
+  get x() {
+    return super.x;
+  }
+
+  set y(value) {
+    super.y = value;
+    if (this._iframe) this._iframe.style.top = value + "px";
+  }
+
+  get y() {
+    return super.y;
+  }
+
+  set width(value) {
+    this._iframeWidth = value;
+    if (this._iframe) this._iframe.style.width = value + "px";
+  }
+
+  get width() {
+    return this._iframeWidth;
+  }
+
+  set height(value) {
+    this._iframeHeight = value;
+    if (this._iframe) this._iframe.style.height = value + "px";
+  }
+
+  get height() {
+    return this._iframeHeight;
+  }
+
+  set visible(value) {
+    this._visible = value;
+    super.visible = value;
+    if (this._iframe)
+      this._iframe.style.display = value ? "block" : "none";
+  }
+
+  get visible() {
+    return this._visible;
+  }
+
+  setProperty(object, property, value) {
+    this._postMessage({ action: "setProperty", object, property, value });
+  }
+
+  setCamera(cameraData) {
+    this._postMessage({ action: "setCamera", ...cameraData });
+  }
+
+  setMode(mode) {
+    this._postMessage({ action: "setMode", mode });
+  }
+
+  setBackground(color) {
+    this._postMessage({ action: "setBackground", color });
+  }
+
+  hideObject(object) {
+    this._postMessage({ action: "hideObject", object });
+  }
+
+  showObject(object) {
+    this._postMessage({ action: "showObject", object });
+  }
+
+  selectObject(object) {
+    this._postMessage({ action: "selectObject", object });
+  }
+
+  deselectAll() {
+    this._postMessage({ action: "deselectAll" });
+  }
+
+  getSceneInfo() {
+    this._postMessage({ action: "getSceneInfo" });
+  }
+
+  onMessage(callback) {
+    this._messageCallback = callback;
+  }
+
+  destroy() {
+    window.removeEventListener("message", this._boundMessageHandler);
+    if (this._iframe && this._iframe.parentNode) {
+      this._iframe.parentNode.removeChild(this._iframe);
+    }
+    super.destroy();
+  }
+};

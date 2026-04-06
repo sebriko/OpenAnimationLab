@@ -16,6 +16,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Local content not for repository
+codes/
+
 # Logs
 *.log
 npm-debug.log*

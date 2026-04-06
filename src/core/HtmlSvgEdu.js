@@ -3635,587 +3635,6 @@ HtmlSvgEdu.MathForm = class MathForm extends HtmlSvgEdu.Component {
     this._applyStyles();
   }
 };
-HtmlSvgEdu.ThreeJSCanvasSimple = class ThreeJSCanvasSimple extends (
-  HtmlSvgEdu.Component
-) {
-  static serializationMap = {
-    description: {
-      de: "Three.js 3D-Canvas für 3D-Modelle",
-      en: "Three.js 3D canvas for 3D models",
-    },
-    weblink: {
-      de: "https://www.educational-animation.org",
-      en: "https://www.educational-animation.org",
-    },
-    example:
-      "let my3DCanvas = new ThreeJSCanvasSimple(null, 400, 300, 0xffffff, true, false);",
-    constructor: {
-      glbContent: {
-        name: "glbContent",
-        info: {
-          en: "GLB model as URL or data:model/gltf-binary;base64,... string",
-          de: "GLB-Modell als URL oder data:model/gltf-binary;base64,... String",
-        },
-      },
-      width: {
-        name: "width",
-        info: {
-          en: "Width of the canvas in pixels",
-          de: "Breite der Leinwand in Pixeln",
-        },
-      },
-      height: {
-        name: "height",
-        info: {
-          en: "Height of the canvas in pixels",
-          de: "Höhe der Leinwand in Pixeln",
-        },
-      },
-      backgroundColor: {
-        name: "backgroundColor",
-        info: {
-          en: "Background color of the scene (hex value like 0xffffff)",
-          de: "Hintergrundfarbe der Szene (Hex-Wert wie 0xffffff)",
-        },
-      },
-      enableShadows: {
-        name: "enableShadows",
-        info: {
-          en: "Enable shadows in the scene (true/false)",
-          de: "Schatten in der Szene aktivieren (true/false)",
-        },
-      },
-      autoRotate: {
-        name: "autoRotate",
-        info: {
-          en: "Auto-rotate the camera around the model (true/false)",
-          de: "Kamera automatisch um das Modell rotieren (true/false)",
-        },
-      },
-    },
-  };
-  constructor(
-    glbContent = null,
-    width = 400,
-    height = 300,
-    backgroundColor = 0xffffff,
-    enableShadows = true,
-    autoRotate = false,
-  ) {
-    super();
-    this._glbContent = glbContent;
-    this._width = width;
-    this._height = height;
-    this._backgroundColor = backgroundColor;
-    this._enableShadows = enableShadows;
-    this._autoRotate = autoRotate;
-    this._isLibraryLoaded = false;
-    this._loadingPromise = null;
-    this._isReady = false;
-    this._pendingOperations = [];
-    this._objects = new Map();
-    this._borderColor = null;
-    this._borderWidth = 0;
-    this._scene = null;
-    this._camera = null;
-    this._renderer = null;
-    this._controls = null;
-    this._gltfLoader = null;
-    this._animationMixer = null;
-    this._clock = null;
-    this._container = this._createElement("div");
-    this._container.className = "pixi-html-ui pixi-threejs-container";
-    this._element = this._container;
-    if (Board.getInstance()) {
-      Board.getInstance().addUIChild(this);
-    }
-    this._initializeThreeJS();
-    this._applyStyles();
-    return this._setupObjectProxy();
-  }
-  _setupObjectProxy() {
-    return new Proxy(this, {
-      get: (target, prop) => {
-        if (prop in target || typeof prop === "symbol") {
-          return target[prop];
-        }
-        if (typeof prop === "string" && this._objects.has(prop)) {
-          return this._objects.get(prop);
-        }
-        return undefined;
-      },
-    });
-  }
-  async _initializeThreeJS() {
-    try {
-      await this._loadThreeJSLibrary();
-      this._createScene();
-      this._isReady = true;
-      this._executePendingOperations();
-      if (this._glbContent) {
-        await this._loadInitialModel();
-      }
-    } catch (error) {
-      console.error("Failed to initialize Three.js:", error);
-    }
-  }
-  async _loadInitialModel() {
-    try {
-      await this.loadGLB(this._glbContent);
-    } catch (error) {
-      console.error("Failed to load initial model:", error);
-    }
-  }
-  _loadThreeJSLibrary() {
-    if (this._loadingPromise) {
-      return this._loadingPromise;
-    }
-    if (window.THREE && window.THREE.GLTFLoader) {
-      this._isLibraryLoaded = true;
-      return Promise.resolve();
-    }
-    this._loadingPromise = new Promise((resolve, reject) => {
-      const loadScriptsSequentially = async () => {
-        const scripts = [
-          "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js",
-          "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js",
-          "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js",
-        ];
-        for (const src of scripts) {
-          try {
-            await this._loadScript(src);
-          } catch (error) {
-            throw error;
-          }
-        }
-        this._isLibraryLoaded = true;
-        resolve();
-      };
-      loadScriptsSequentially().catch(reject);
-    });
-    return this._loadingPromise;
-  }
-  _loadScript(src) {
-    return new Promise((resolve, reject) => {
-      const existingScript = document.querySelector(
-        'script[src="' + src + '"]',
-      );
-      if (existingScript) {
-        resolve();
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = src;
-      script.onload = resolve;
-      script.onerror = () => reject(new Error("Failed to load script: " + src));
-      document.head.appendChild(script);
-    });
-  }
-  _createScene() {
-    this._scene = new THREE.Scene();
-    this._scene.background = new THREE.Color(this._backgroundColor);
-    this._camera = new THREE.PerspectiveCamera(
-      75,
-      this._width / this._height,
-      0.1,
-      1000,
-    );
-    this._camera.position.set(5, 5, 5);
-    this._camera.lookAt(0, 0, 0);
-    this._renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-    });
-    this._renderer.setSize(this._width, this._height);
-    this._renderer.shadowMap.enabled = this._enableShadows;
-    this._renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this._container.appendChild(this._renderer.domElement);
-    this._controls = new THREE.OrbitControls(
-      this._camera,
-      this._renderer.domElement,
-    );
-    this._controls.enableDamping = true;
-    this._controls.dampingFactor = 0.05;
-    this._controls.autoRotate = this._autoRotate;
-    this._controls.autoRotateSpeed = 2.0;
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    this._scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 10, 5);
-    directionalLight.castShadow = this._enableShadows;
-    directionalLight.shadow.camera.left = -10;
-    directionalLight.shadow.camera.right = 10;
-    directionalLight.shadow.camera.top = 10;
-    directionalLight.shadow.camera.bottom = -10;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    this._scene.add(directionalLight);
-    this._gltfLoader = new THREE.GLTFLoader();
-    this._clock = new THREE.Clock();
-    this._animate();
-    this._applyBorderStyles();
-  }
-  _animate() {
-    if (!this._isReady) return;
-    requestAnimationFrame(() => this._animate());
-    const delta = this._clock.getDelta();
-    if (this._animationMixer) {
-      this._animationMixer.update(delta);
-    }
-    this._controls.update();
-    this._renderer.render(this._scene, this._camera);
-  }
-  async loadGLB(urlOrData) {
-    return new Promise((resolve, reject) => {
-      this._queueOperation(() => {
-        this.clear();
-        const onLoad = (gltf) => {
-          const model = gltf.scene;
-          const box = new THREE.Box3().setFromObject(model);
-          const center = box.getCenter(new THREE.Vector3());
-          const size = box.getSize(new THREE.Vector3());
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const scale = 5 / maxDim;
-          model.position.sub(center);
-          model.scale.multiplyScalar(scale);
-          model.traverse((child) => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
-          this._scene.add(model);
-          this._objects.set("model", model);
-          if (gltf.animations && gltf.animations.length > 0) {
-            this._animationMixer = new THREE.AnimationMixer(model);
-            const action = this._animationMixer.clipAction(gltf.animations[0]);
-            action.play();
-          }
-          this._camera.position.set(8, 6, 8);
-          this._camera.lookAt(0, 0, 0);
-          this._controls.target.set(0, 0, 0);
-          resolve(model);
-        };
-        const onError = (error) => {
-          console.error("Error loading GLB:", error);
-          reject(error);
-        };
-        if (urlOrData.startsWith("data:")) {
-          let base64Data;
-          if (urlOrData.includes("base64,")) {
-            base64Data = urlOrData.split("base64,")[1];
-          } else {
-            console.error("Invalid data URL format");
-            reject(new Error("Invalid data URL format"));
-            return;
-          }
-          const binary = atob(base64Data);
-          const bytes = new Uint8Array(binary.length);
-          for (let i = 0; i < binary.length; i++) {
-            bytes[i] = binary.charCodeAt(i);
-          }
-          const blob = new Blob([bytes], { type: "model/gltf-binary" });
-          const objectUrl = URL.createObjectURL(blob);
-          this._gltfLoader.load(
-            objectUrl,
-            (gltf) => {
-              URL.revokeObjectURL(objectUrl);
-              onLoad(gltf);
-            },
-            undefined,
-            onError,
-          );
-        } else if (
-          urlOrData.startsWith("http://") ||
-          urlOrData.startsWith("https://") ||
-          urlOrData.startsWith("/") ||
-          urlOrData.includes(".glb") ||
-          urlOrData.includes(".gltf")
-        ) {
-          this._gltfLoader.load(urlOrData, onLoad, undefined, onError);
-        } else {
-          const dataUrl = "data:model/gltf-binary;base64," + urlOrData;
-          this.loadGLB(dataUrl).then(resolve).catch(reject);
-        }
-      });
-    });
-  }
-  async loadGLBFromString(base64String) {
-    const dataUrl = "data:model/gltf-binary;base64," + base64String;
-    return this.loadGLB(dataUrl);
-  }
-  addPrimitive(type, params = {}, name = null) {
-    this._queueOperation(() => {
-      let geometry;
-      switch (type.toLowerCase()) {
-        case "box":
-          geometry = new THREE.BoxGeometry(
-            params.width || 1,
-            params.height || 1,
-            params.depth || 1,
-          );
-          break;
-        case "sphere":
-          geometry = new THREE.SphereGeometry(
-            params.radius || 0.5,
-            params.widthSegments || 32,
-            params.heightSegments || 16,
-          );
-          break;
-        case "cylinder":
-          geometry = new THREE.CylinderGeometry(
-            params.radiusTop || 0.5,
-            params.radiusBottom || 0.5,
-            params.height || 1,
-            params.radialSegments || 32,
-          );
-          break;
-        case "cone":
-          geometry = new THREE.ConeGeometry(
-            params.radius || 0.5,
-            params.height || 1,
-            params.radialSegments || 32,
-          );
-          break;
-        case "torus":
-          geometry = new THREE.TorusGeometry(
-            params.radius || 1,
-            params.tube || 0.4,
-            params.radialSegments || 16,
-            params.tubularSegments || 100,
-          );
-          break;
-        case "plane":
-          geometry = new THREE.PlaneGeometry(
-            params.width || 1,
-            params.height || 1,
-          );
-          break;
-        default:
-          console.error("Unknown primitive type: " + type);
-          return null;
-      }
-      const material = new THREE.MeshPhongMaterial({
-        color: params.color || 0x00ff00,
-        shininess: 100,
-      });
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      if (params.position) {
-        mesh.position.set(
-          params.position.x || 0,
-          params.position.y || 0,
-          params.position.z || 0,
-        );
-      }
-      if (params.rotation) {
-        mesh.rotation.set(
-          params.rotation.x || 0,
-          params.rotation.y || 0,
-          params.rotation.z || 0,
-        );
-      }
-      if (params.scale) {
-        const scale = typeof params.scale === "number" ? params.scale : 1;
-        mesh.scale.set(scale, scale, scale);
-      }
-      const objectName = name || type + "_" + Date.now();
-      mesh.name = objectName;
-      this._scene.add(mesh);
-      this._objects.set(objectName, mesh);
-      return mesh;
-    });
-  }
-  setCamera(position, target) {
-    this._queueOperation(() => {
-      if (position) {
-        this._camera.position.set(
-          position.x || 0,
-          position.y || 0,
-          position.z || 0,
-        );
-      }
-      if (target) {
-        const targetVec = new THREE.Vector3(
-          target.x || 0,
-          target.y || 0,
-          target.z || 0,
-        );
-        this._camera.lookAt(targetVec);
-        this._controls.target = targetVec;
-      }
-    });
-  }
-  setBorder(color, width = 1) {
-    this._borderColor = this._normalizeColor(color);
-    this._borderWidth = width;
-    this._applyBorderStyles();
-  }
-  removeBorder() {
-    this._borderColor = null;
-    this._borderWidth = 0;
-    this._applyBorderStyles();
-  }
-  _applyBorderStyles() {
-    if (!this._renderer || !this._renderer.domElement) return;
-    if (this._borderColor && this._borderWidth > 0) {
-      this._renderer.domElement.style.border =
-        this._borderWidth + "px solid " + this._borderColor;
-      this._renderer.domElement.style.boxSizing = "border-box";
-    } else {
-      this._renderer.domElement.style.border = "none";
-      this._renderer.domElement.style.boxSizing = "content-box";
-    }
-  }
-  getObjectByName(name) {
-    return this._objects.get(name) || this._scene.getObjectByName(name);
-  }
-  clear() {
-    this._queueOperation(() => {
-      const toRemove = [];
-      this._scene.traverse((child) => {
-        if (child.isMesh || child.isGroup) {
-          toRemove.push(child);
-        }
-      });
-      toRemove.forEach((obj) => {
-        this._scene.remove(obj);
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) {
-          if (Array.isArray(obj.material)) {
-            obj.material.forEach((mat) => mat.dispose());
-          } else {
-            obj.material.dispose();
-          }
-        }
-      });
-      this._objects.clear();
-      this._animationMixer = null;
-    });
-  }
-  render() {
-    this._renderer.render(this._scene, this._camera);
-  }
-  setSize(width, height) {
-    this._width = width;
-    this._height = height;
-    this._applyStyles();
-    this._queueOperation(() => {
-      if (this._renderer) {
-        this._renderer.setSize(width, height);
-        this._camera.aspect = width / height;
-        this._camera.updateProjectionMatrix();
-      }
-    });
-  }
-  async setGlbContent(glbContent) {
-    this._glbContent = glbContent;
-    if (glbContent && this._isReady) {
-      return await this.loadGLB(glbContent);
-    }
-  }
-  setBackgroundColor(color) {
-    this._backgroundColor = color;
-    this._queueOperation(() => {
-      if (this._scene) {
-        this._scene.background = new THREE.Color(color);
-      }
-    });
-  }
-  setAutoRotate(enabled) {
-    this._autoRotate = enabled;
-    if (this._controls) {
-      this._controls.autoRotate = enabled;
-    }
-  }
-  setShadows(enabled) {
-    this._enableShadows = enabled;
-    if (this._renderer) {
-      this._renderer.shadowMap.enabled = enabled;
-    }
-  }
-  _normalizeColor(color) {
-    if (typeof color === "number") {
-      return "#" + color.toString(16).padStart(6, "0");
-    } else if (typeof color === "string") {
-      if (color.startsWith("0x")) {
-        return "#" + color.substring(2);
-      }
-      if (!color.startsWith("#")) {
-        return "#" + color;
-      }
-      return color;
-    }
-    return "#ffffff";
-  }
-  _applyStyles() {
-    if (!this._container) return;
-    this._container.style.width = this._width + "px";
-    this._container.style.height = this._height + "px";
-    this._container.style.overflow = "hidden";
-    this._container.style.backgroundColor = "#f8f8f8";
-    this._container.style.borderRadius = "0";
-  }
-  _queueOperation(operation) {
-    if (this._isReady) {
-      operation();
-    } else {
-      this._pendingOperations.push(operation);
-    }
-  }
-  _executePendingOperations() {
-    while (this._pendingOperations.length > 0) {
-      const operation = this._pendingOperations.shift();
-      try {
-        operation();
-      } catch (error) {
-        console.warn("Error executing pending operation:", error);
-      }
-    }
-  }
-  get width() {
-    return this._width;
-  }
-  get height() {
-    return this._height;
-  }
-  get backgroundColor() {
-    return this._backgroundColor;
-  }
-  get enableShadows() {
-    return this._enableShadows;
-  }
-  get autoRotate() {
-    return this._autoRotate;
-  }
-  get isReady() {
-    return this._isReady;
-  }
-  get scene() {
-    return this._scene;
-  }
-  get camera() {
-    return this._camera;
-  }
-  get renderer() {
-    return this._renderer;
-  }
-  get controls() {
-    return this._controls;
-  }
-  get glbContent() {
-    return this._glbContent;
-  }
-  destroy() {
-    this._isReady = false;
-    this.clear();
-    if (this._renderer) {
-      this._renderer.dispose();
-    }
-    super.remove();
-  }
-};
 
 HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
   static serializationMap = {
@@ -5589,5 +5008,264 @@ HtmlSvgEdu.ParameterTable = class ParameterTable extends HtmlSvgEdu.Component {
     return this._rounding.has(cleanName)
       ? this._rounding.get(cleanName)
       : this._defaultRounding;
+  }
+};
+HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
+  static serializationMap = {
+    description: {
+      de: "3D-Modell-Viewer als iframe mit postMessage-API",
+      en: "3D model viewer as iframe with postMessage API",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example:
+      'let myModel = new Model3D("https://example.com/model", 600, 400);',
+    constructor: {
+      url: {
+        name: "url",
+        info: {
+          en: "URL of the 3D model viewer to embed",
+          de: "URL des einzubettenden 3D-Modell-Viewers",
+        },
+      },
+      width: {
+        name: "width",
+        info: {
+          en: "Width of the iframe in pixels",
+          de: "Breite des iframes in Pixeln",
+        },
+      },
+      height: {
+        name: "height",
+        info: {
+          en: "Height of the iframe in pixels",
+          de: "Höhe des iframes in Pixeln",
+        },
+      },
+    },
+    setter: {
+      x: {
+        name: "x",
+        info: {
+          en: "Horizontal position of the element",
+          de: "Horizontale Position des Elements",
+        },
+        example: "x = 100",
+      },
+      y: {
+        name: "y",
+        info: {
+          en: "Vertical position of the element",
+          de: "Vertikale Position des Elements",
+        },
+        example: "y = 200",
+      },
+      width: {
+        name: "width",
+        info: {
+          en: "Width of the iframe in pixels",
+          de: "Breite des iframes in Pixeln",
+        },
+        example: "width = 600",
+      },
+      height: {
+        name: "height",
+        info: {
+          en: "Height of the iframe in pixels",
+          de: "Höhe des iframes in Pixeln",
+        },
+        example: "height = 400",
+      },
+      visible: {
+        name: "visible",
+        info: {
+          en: "Visibility of the element (true/false)",
+          de: "Sichtbarkeit des Elements (true/false)",
+        },
+        example: "visible = true",
+      },
+    },
+    methods: {
+      setProperty: {
+        name: "setProperty",
+        info: {
+          en: "Sets a property of an object in the 3D scene",
+          de: "Setzt eine Eigenschaft eines Objekts in der 3D-Szene",
+        },
+        example: 'setProperty("Zahnrad_1", "color", "#ff0000")',
+      },
+      setCamera: {
+        name: "setCamera",
+        info: {
+          en: "Controls the camera in the 3D scene",
+          de: "Steuert die Kamera in der 3D-Szene",
+        },
+        example: 'setCamera({ position: { x: 0, y: 5, z: 10 } })',
+      },
+      setMode: {
+        name: "setMode",
+        info: {
+          en: "Sets the viewer mode",
+          de: "Setzt den Viewer-Modus",
+        },
+        example: 'setMode("wireframe")',
+      },
+      setBackground: {
+        name: "setBackground",
+        info: {
+          en: "Sets the background of the 3D scene",
+          de: "Setzt den Hintergrund der 3D-Szene",
+        },
+        example: 'setBackground("#ffffff")',
+      },
+      hideObject: {
+        name: "hideObject",
+        info: {
+          en: "Hides an object in the 3D scene",
+          de: "Versteckt ein Objekt in der 3D-Szene",
+        },
+        example: 'hideObject("Zahnrad_1")',
+      },
+      showObject: {
+        name: "showObject",
+        info: {
+          en: "Shows a previously hidden object in the 3D scene",
+          de: "Zeigt ein zuvor verstecktes Objekt in der 3D-Szene",
+        },
+        example: 'showObject("Zahnrad_1")',
+      },
+      selectObject: {
+        name: "selectObject",
+        info: {
+          en: "Selects an object in the 3D scene",
+          de: "Wählt ein Objekt in der 3D-Szene aus",
+        },
+        example: 'selectObject("Zahnrad_1")',
+      },
+      deselectAll: {
+        name: "deselectAll",
+        info: {
+          en: "Deselects all objects in the 3D scene",
+          de: "Hebt die Auswahl aller Objekte in der 3D-Szene auf",
+        },
+        example: "deselectAll()",
+      },
+      getSceneInfo: {
+        name: "getSceneInfo",
+        info: {
+          en: "Requests scene information from the 3D viewer",
+          de: "Fordert Szeneninformationen vom 3D-Viewer an",
+        },
+        example: "getSceneInfo()",
+      },
+      onMessage: {
+        name: "onMessage",
+        info: {
+          en: "Registers a callback for messages from the 3D viewer (objectSelected, propertyChanged, etc.)",
+          de: "Registriert einen Callback für Nachrichten vom 3D-Viewer (objectSelected, propertyChanged, usw.)",
+        },
+        example: "onMessage((data) => { console.log(data); })",
+      },
+    },
+  };
+
+  constructor(url, width = 600, height = 400) {
+    super();
+    this._url = url;
+    this._width = width;
+    this._height = height;
+    this._messageCallback = null;
+    this._boundMessageHandler = this._handleMessage.bind(this);
+
+    const iframe = this._createElement("iframe");
+    iframe.src = this._url;
+    iframe.style.width = this._width + "px";
+    iframe.style.height = this._height + "px";
+    iframe.style.border = "none";
+    iframe.scrolling = "no";
+    iframe.style.overflow = "hidden";
+    iframe.style.pointerEvents = "auto";
+    iframe.setAttribute("scrolling", "no");
+
+    window.addEventListener("message", this._boundMessageHandler);
+  }
+
+  _handleMessage(event) {
+    if (!this._messageCallback) return;
+    const data = event.data;
+    if (data && data.type === "sceneEditor") {
+      this._messageCallback(data);
+    }
+  }
+
+  _postMessage(payload) {
+    if (this._element && this._element.contentWindow) {
+      this._element.contentWindow.postMessage(payload, "*");
+    }
+  }
+
+  set width(value) {
+    this._width = value;
+    if (this._element) this._element.style.width = value + "px";
+  }
+
+  get width() {
+    return this._width;
+  }
+
+  set height(value) {
+    this._height = value;
+    if (this._element) this._element.style.height = value + "px";
+  }
+
+  get height() {
+    return this._height;
+  }
+
+  setProperty(object, property, value) {
+    this._postMessage({ action: "setProperty", object, property, value });
+  }
+
+  setCamera(cameraData) {
+    this._postMessage({ action: "setCamera", ...cameraData });
+  }
+
+  setMode(mode) {
+    this._postMessage({ action: "setMode", mode });
+  }
+
+  setBackground(color) {
+    this._postMessage({ action: "setBackground", color });
+  }
+
+  hideObject(object) {
+    this._postMessage({ action: "hideObject", object });
+  }
+
+  showObject(object) {
+    this._postMessage({ action: "showObject", object });
+  }
+
+  selectObject(object) {
+    this._postMessage({ action: "selectObject", object });
+  }
+
+  deselectAll() {
+    this._postMessage({ action: "deselectAll" });
+  }
+
+  getSceneInfo() {
+    this._postMessage({ action: "getSceneInfo" });
+  }
+
+  onMessage(callback) {
+    this._messageCallback = callback;
+  }
+
+  remove() {
+    window.removeEventListener("message", this._boundMessageHandler);
+    super.remove();
   }
 };
