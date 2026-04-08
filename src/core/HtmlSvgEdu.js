@@ -3710,6 +3710,22 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
         },
         example: "visible = true",
       },
+      width: {
+        name: "width",
+        info: {
+          en: "Width of the text box for word wrapping (null to disable)",
+          de: "Breite des Textfelds für Zeilenumbruch (null zum Deaktivieren)",
+        },
+        example: "width = 200",
+      },
+      height: {
+        name: "height",
+        info: {
+          en: "Height of the text box (null for automatic height)",
+          de: "Höhe des Textfelds (null für automatische Höhe)",
+        },
+        example: "height = 100",
+      },
     },
     methods: {
       setText: {
@@ -3745,6 +3761,38 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
         },
         example: "setTextColor(0xFF0000)",
       },
+      setSize: {
+        name: "setSize",
+        info: {
+          en: "Sets the text box dimensions for word wrapping. Pass null to disable the box.",
+          de: "Setzt die Textfeld-Abmessungen für automatischen Zeilenumbruch. null deaktiviert das Textfeld.",
+        },
+        example: "setSize(200, 100)",
+      },
+      setLineHeight: {
+        name: "setLineHeight",
+        info: {
+          en: "Sets the line height factor (1.0 = single, 1.5 = one-and-a-half, 2.0 = double)",
+          de: "Setzt den Zeilenabstandsfaktor (1.0 = einfach, 1.5 = anderthalbfach, 2.0 = doppelt)",
+        },
+        example: "setLineHeight(1.5)",
+      },
+      setLetterSpacing: {
+        name: "setLetterSpacing",
+        info: {
+          en: "Sets the letter spacing in pixels",
+          de: "Setzt den Zeichenabstand in Pixeln",
+        },
+        example: "setLetterSpacing(2)",
+      },
+      setHyphenation: {
+        name: "setHyphenation",
+        info: {
+          en: "Enables or disables automatic hyphenation (only effective when a text box width is set)",
+          de: "Aktiviert oder deaktiviert die automatische Silbentrennung (nur wirksam wenn eine Textfeld-Breite gesetzt ist)",
+        },
+        example: "setHyphenation(true)",
+      },
     },
   };
   constructor(
@@ -3760,6 +3808,12 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     this._fontSize = fontSize;
     this._textColor = textColor;
     this._textAlign = textAlign;
+    this._lineHeightFactor = 1.2;
+    this._letterSpacing = 0;
+    this._hyphenate = false;
+    this._boxWidth = null;
+    this._boxHeight = null;
+    this._wrappedLines = null;
     this._instanceId = "text-" + Math.random().toString(36).substr(2, 9);
     this._cssTextColor = this._hexToCSS(textColor);
     this._container = this._createElement("div");
@@ -3847,7 +3901,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       totalHeight += lineHeight;
     });
     if (lines.length > 1) {
-      totalHeight += (lines.length - 1) * (this._fontSize * 0.2);
+      totalHeight += (lines.length - 1) * (this._fontSize * (this._lineHeightFactor - 1.0));
     }
     totalHeight += this._fontSize * 0.4; // extra space for sub/sup characters
     return {
@@ -3858,17 +3912,115 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     };
   }
   _calculateSvgSize() {
-    const textDimensions = this._calculateTextDimensions();
-    const padding = 20;
-    const svgWidth = textDimensions.width + padding;
-    const svgHeight = textDimensions.height + padding;
+    let svgWidth, svgHeight;
+    if (this._boxWidth !== null) {
+      this._wrappedLines = this._getWrappedLines();
+      svgWidth = this._boxWidth;
+      const lineHeight = this._fontSize * this._lineHeightFactor;
+      const totalTextHeight = this._wrappedLines.length * lineHeight;
+      svgHeight =
+        this._boxHeight !== null ? this._boxHeight : totalTextHeight + 20;
+      this._textDimensions = {
+        width: svgWidth - 20,
+        height: svgHeight - 20,
+        lineCount: this._wrappedLines.length,
+        lines: this._wrappedLines,
+      };
+    } else {
+      this._wrappedLines = null;
+      const textDimensions = this._calculateTextDimensions();
+      const padding = 20;
+      svgWidth = textDimensions.width + padding;
+      svgHeight = textDimensions.height + padding;
+      this._textDimensions = textDimensions;
+    }
     this._svgElement.setAttribute("width", svgWidth);
     this._svgElement.setAttribute("height", svgHeight);
     this._svgElement.setAttribute(
       "viewBox",
       "0 0 " + svgWidth + " " + svgHeight,
     );
-    this._textDimensions = textDimensions;
+  }
+  _estimateTextWidth(text) {
+    const plainText = text.replace(/<[^>]+>/g, "");
+    return (
+      plainText.length * (this._fontSize * 0.6) +
+      Math.max(0, plainText.length - 1) * this._letterSpacing
+    );
+  }
+  _getWrappedLines() {
+    const hardLines = this._text.split("\\n");
+    const result = [];
+    for (const line of hardLines) {
+      const wrapped = this._wrapLine(line);
+      result.push(...wrapped);
+    }
+    return result;
+  }
+  _wrapLine(text) {
+    if (!text) return [""];
+    const availWidth = this._boxWidth - 20;
+    const words = text.split(" ");
+    const lines = [];
+    let currentLine = "";
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const testLine = currentLine ? currentLine + " " + word : word;
+      if (this._estimateTextWidth(testLine) <= availWidth) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) {
+          lines.push(currentLine);
+          currentLine = "";
+        }
+        if (this._estimateTextWidth(word) <= availWidth) {
+          currentLine = word;
+        } else if (this._hyphenate) {
+          let remaining = word;
+          while (remaining.length > 0) {
+            if (this._estimateTextWidth(remaining) <= availWidth) {
+              currentLine = remaining;
+              remaining = "";
+            } else {
+              const splitPos = this._findHyphenPoint(remaining, availWidth);
+              lines.push(remaining.substring(0, splitPos) + "-");
+              remaining = remaining.substring(splitPos);
+            }
+          }
+        } else {
+          currentLine = word;
+        }
+      }
+    }
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    return lines.length > 0 ? lines : [""];
+  }
+  _findHyphenPoint(word, maxWidth) {
+    const vowels = "aeiouäöüAEIOUÄÖÜ";
+    const isVowel = (c) => vowels.includes(c);
+    let bestSyllablePos = -1;
+    let lastFitPos = -1;
+    for (let i = 2; i < word.length - 1; i++) {
+      if (this._estimateTextWidth(word.substring(0, i) + "-") > maxWidth)
+        break;
+      lastFitPos = i;
+      if (i >= 2 && i < word.length - 2) {
+        if (!isVowel(word[i - 1]) && isVowel(word[i])) {
+          bestSyllablePos = i;
+        } else if (
+          isVowel(word[i - 1]) &&
+          !isVowel(word[i]) &&
+          i + 1 < word.length &&
+          !isVowel(word[i + 1])
+        ) {
+          bestSyllablePos = i + 1;
+        }
+      }
+    }
+    const splitPos = bestSyllablePos > 0 ? bestSyllablePos : lastFitPos;
+    return splitPos > 0 ? splitPos : Math.max(2, Math.floor(word.length / 2));
   }
   _addStyles() {
     const style = document.createElementNS(
@@ -3893,6 +4045,9 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       ";" +
       "dominant-baseline: middle;" +
       "user-select: none;" +
+      "letter-spacing: " +
+      this._letterSpacing +
+      "px;" +
       "}" +
       "." +
       this._instanceId +
@@ -3924,10 +4079,16 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     this._svgElement.appendChild(this._textGroup);
   }
   _createStyledLabel(svgWidth, svgHeight) {
-    const lines = this._text.split("\\n");
-    const lineHeight = this._fontSize * 1.2;
+    const lines =
+      this._wrappedLines !== null
+        ? this._wrappedLines
+        : this._text.split("\\n");
+    const lineHeight = this._fontSize * this._lineHeightFactor;
     const totalTextHeight = lines.length * lineHeight;
-    const textStartY = svgHeight / 2 - totalTextHeight / 2;
+    const textStartY =
+      this._wrappedLines !== null
+        ? 0
+        : svgHeight / 2 - totalTextHeight / 2;
     lines.forEach((line, lineIndex) => {
       const textElement = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -4024,6 +4185,39 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
   setTextAlign(textAlign) {
     this._textAlign = textAlign;
     this._refreshText();
+  }
+  get width() {
+    return this._boxWidth;
+  }
+  set width(value) {
+    this._boxWidth = value;
+    this._refreshText();
+  }
+  get height() {
+    return this._boxHeight;
+  }
+  set height(value) {
+    this._boxHeight = value;
+    this._refreshText();
+  }
+  setSize(width, height = null) {
+    this._boxWidth = width;
+    this._boxHeight = height;
+    this._refreshText();
+  }
+  setLineHeight(factor) {
+    this._lineHeightFactor = factor;
+    this._refreshText();
+  }
+  setLetterSpacing(px) {
+    this._letterSpacing = px;
+    this._refreshText();
+  }
+  setHyphenation(enabled) {
+    this._hyphenate = enabled;
+    if (this._boxWidth !== null) {
+      this._refreshText();
+    }
   }
   _updateStyles() {
     const oldStyle = this._svgElement.querySelector("style");
@@ -5168,6 +5362,22 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
         },
         example: "onMessage((data) => { console.log(data); })",
       },
+      onReady: {
+        name: "onReady",
+        info: {
+          en: "Registers a callback that fires once the 3D viewer is fully loaded and ready to receive commands.",
+          de: "Registriert einen Callback, der ausgelöst wird, sobald der 3D-Viewer vollständig geladen und bereit ist, Befehle zu empfangen.",
+        },
+        example: "onReady(() => { getSceneInfo(); })",
+      },
+      onObjectSelected: {
+        name: "onObjectSelected",
+        info: {
+          en: "Registers a callback that fires when a clickable object in the 3D scene is clicked. The callback receives an event object with a 'value' property containing the object name.",
+          de: "Registriert einen Callback, der ausgelöst wird, wenn ein anklickbares Objekt in der 3D-Szene angeklickt wird. Der Callback erhält ein Event-Objekt mit der Eigenschaft 'value', die den Objektnamen enthält.",
+        },
+        example: "onObjectSelected((event) => { console.log(event.value); })",
+      },
     },
   };
 
@@ -5177,10 +5387,11 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     this._width = width;
     this._height = height;
     this._messageCallback = null;
+    this._objectSelectedCallback = null;
+    this._readyCallback = null;
     this._boundMessageHandler = this._handleMessage.bind(this);
 
     const iframe = this._createElement("iframe");
-    iframe.src = this._url;
     iframe.style.width = this._width + "px";
     iframe.style.height = this._height + "px";
     iframe.style.border = "none";
@@ -5188,15 +5399,28 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     iframe.style.overflow = "hidden";
     iframe.style.pointerEvents = "auto";
     iframe.setAttribute("scrolling", "no");
+    iframe.addEventListener("load", () => {
+      if (window.logEvalMessage) window.logEvalMessage("[Model3D] iframe geladen: " + this._url, "log");
+      if (this._readyCallback) this._readyCallback();
+    });
+    iframe.src = this._url;
+    if (window.logEvalMessage) window.logEvalMessage("[Model3D] iframe src gesetzt: " + this._url, "log");
 
     window.addEventListener("message", this._boundMessageHandler);
   }
 
   _handleMessage(event) {
-    if (!this._messageCallback) return;
     const data = event.data;
-    if (data && data.type === "sceneEditor") {
+    if (!data || data.type !== "sceneEditor") return;
+    if (window.logEvalMessage) window.logEvalMessage("[Model3D] Nachricht empfangen: " + data.action, "log");
+    if (this._readyCallback && data.action === "ready") {
+      this._readyCallback();
+    }
+    if (this._messageCallback) {
       this._messageCallback(data);
+    }
+    if (this._objectSelectedCallback && data.action === "objectSelected") {
+      this._objectSelectedCallback({ value: data.data.name });
     }
   }
 
@@ -5260,8 +5484,16 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     this._postMessage({ action: "getSceneInfo" });
   }
 
+  onReady(callback) {
+    this._readyCallback = callback;
+  }
+
   onMessage(callback) {
     this._messageCallback = callback;
+  }
+
+  onObjectSelected(callback) {
+    this._objectSelectedCallback = callback;
   }
 
   remove() {

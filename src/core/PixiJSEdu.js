@@ -9574,6 +9574,14 @@ PixiJSEdu.Model3D = class Model3D extends PIXI.Container {
         },
         example: "getSceneInfo()",
       },
+      onReady: {
+        name: "onReady",
+        info: {
+          en: "Registers a callback that fires once the 3D viewer is fully loaded and ready to receive commands.",
+          de: "Registriert einen Callback, der ausgelöst wird, sobald der 3D-Viewer vollständig geladen und bereit ist, Befehle zu empfangen.",
+        },
+        example: "onReady(() => { getSceneInfo(); })",
+      },
       onMessage: {
         name: "onMessage",
         info: {
@@ -9581,6 +9589,14 @@ PixiJSEdu.Model3D = class Model3D extends PIXI.Container {
           de: "Registriert einen Callback für Nachrichten vom 3D-Viewer (objectSelected, propertyChanged, usw.)",
         },
         example: "onMessage((data) => { console.log(data); })",
+      },
+      onObjectSelected: {
+        name: "onObjectSelected",
+        info: {
+          en: "Registers a callback that fires when a clickable object in the 3D scene is clicked. The callback receives an event object with a 'value' property containing the object name.",
+          de: "Registriert einen Callback, der ausgelöst wird, wenn ein anklickbares Objekt in der 3D-Szene angeklickt wird. Der Callback erhält ein Event-Objekt mit der Eigenschaft 'value', die den Objektnamen enthält.",
+        },
+        example: "onObjectSelected((event) => { console.log(event.value); })",
       },
     },
   };
@@ -9592,6 +9608,8 @@ PixiJSEdu.Model3D = class Model3D extends PIXI.Container {
     this._iframeHeight = height;
     this._visible = true;
     this._messageCallback = null;
+    this._objectSelectedCallback = null;
+    this._readyCallback = null;
     this._boundMessageHandler = this._handleMessage.bind(this);
 
     this._iframe = this._createIframe();
@@ -9610,6 +9628,9 @@ PixiJSEdu.Model3D = class Model3D extends PIXI.Container {
     iframe.style.border = "none";
     iframe.style.overflow = "hidden";
     iframe.setAttribute("scrolling", "no");
+    iframe.addEventListener("load", () => {
+      if (this._readyCallback) this._readyCallback();
+    });
 
     const uiContainer =
       document.getElementById("pixi-ui-overlay") ||
@@ -9632,10 +9653,16 @@ PixiJSEdu.Model3D = class Model3D extends PIXI.Container {
   }
 
   _handleMessage(event) {
-    if (!this._messageCallback) return;
     const data = event.data;
-    if (data && data.type === "sceneEditor") {
+    if (!data || data.type !== "sceneEditor") return;
+    if (this._readyCallback && data.action === "ready") {
+      this._readyCallback();
+    }
+    if (this._messageCallback) {
       this._messageCallback(data);
+    }
+    if (this._objectSelectedCallback && data.action === "objectSelected") {
+      this._objectSelectedCallback({ value: data.data.name });
     }
   }
 
@@ -9728,8 +9755,16 @@ PixiJSEdu.Model3D = class Model3D extends PIXI.Container {
     this._postMessage({ action: "getSceneInfo" });
   }
 
+  onReady(callback) {
+    this._readyCallback = callback;
+  }
+
   onMessage(callback) {
     this._messageCallback = callback;
+  }
+
+  onObjectSelected(callback) {
+    this._objectSelectedCallback = callback;
   }
 
   destroy() {
