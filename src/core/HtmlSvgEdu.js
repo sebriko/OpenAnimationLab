@@ -5205,6 +5205,8 @@ HtmlSvgEdu.ParameterTable = class ParameterTable extends HtmlSvgEdu.Component {
   }
 };
 HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
+  static _instances = new Set();
+
   static serializationMap = {
     description: {
       de: "3D-Modell-Viewer als iframe mit postMessage-API",
@@ -5389,7 +5391,10 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     this._messageCallback = null;
     this._objectSelectedCallback = null;
     this._readyCallback = null;
+    this._screenshotResolve = null;
+    this._screenshotId = null;
     this._boundMessageHandler = this._handleMessage.bind(this);
+    HtmlSvgEdu.Model3D._instances.add(this);
 
     const iframe = this._createElement("iframe");
     iframe.style.width = this._width + "px";
@@ -5416,6 +5421,14 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     if (this._readyCallback && data.action === "ready") {
       this._readyCallback();
     }
+    if (data.action === "screenshotData" && data.data && data.data.screenshotId === this._screenshotId) {
+      if (this._screenshotResolve) {
+        this._screenshotResolve(data.data);
+        this._screenshotResolve = null;
+        this._screenshotId = null;
+      }
+      return;
+    }
     if (this._messageCallback) {
       this._messageCallback(data);
     }
@@ -5428,6 +5441,62 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     if (this._element && this._element.contentWindow) {
       this._element.contentWindow.postMessage(payload, "*");
     }
+  }
+
+  captureScreenshot() {
+    // Direkter Canvas-Zugriff (same-origin)
+    try {
+      const win = this._element && this._element.contentWindow;
+      const doc = this._element && this._element.contentDocument;
+      if (win && doc) {
+        const canvas = doc.querySelector("canvas");
+        if (canvas) {
+          if (win.sceneEditor && win.sceneEditor.sceneManager) {
+            const sm = win.sceneEditor.sceneManager;
+            sm.renderer.render(sm.scene, sm.camera);
+          }
+          const canvasLeft = canvas.offsetLeft || 0;
+          const canvasTop = canvas.offsetTop || 0;
+          const bcrInner = canvas.getBoundingClientRect();
+          console.log("[3D-SVG] this._x:", this._x, "this._y:", this._y, "_width:", this._width, "_height:", this._height);
+          console.log("[3D-SVG] iframe style.width:", this._element.style.width, "style.height:", this._element.style.height);
+          console.log("[3D-SVG] canvas.clientWidth:", canvas.clientWidth, "canvas.clientHeight:", canvas.clientHeight);
+          console.log("[3D-SVG] canvas.offsetLeft:", canvas.offsetLeft, "canvas.offsetTop:", canvas.offsetTop);
+          console.log("[3D-SVG] getBoundingClientRect (inner):", JSON.stringify(bcrInner));
+          console.log("[3D-SVG] canvas.width (physical):", canvas.width, "canvas.height:", canvas.height);
+          return Promise.resolve({
+            imageData: canvas.toDataURL("image/png"),
+            x: this._x + canvasLeft,
+            y: this._y + canvasTop,
+            width: canvas.clientWidth,
+            height: canvas.clientHeight,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("[Model3D] Direkter Canvas-Zugriff fehlgeschlagen:", e.message);
+    }
+    // Fallback: postMessage (cross-origin)
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        this._screenshotResolve = null;
+        this._screenshotId = null;
+        reject(new Error("Screenshot timeout"));
+      }, 3000);
+      this._screenshotId = Math.random().toString(36).slice(2);
+      this._screenshotResolve = (responseData) => {
+        clearTimeout(timeoutId);
+        const cr = responseData.canvasRect;
+        resolve({
+          imageData: responseData.imageData,
+          x: this._x + (cr ? cr.left : 0),
+          y: this._y + (cr ? cr.top : 0),
+          width: cr ? cr.width : this._width,
+          height: cr ? cr.height : this._height,
+        });
+      };
+      this._postMessage({ action: "requestScreenshot", screenshotId: this._screenshotId });
+    });
   }
 
   set width(value) {
@@ -5498,6 +5567,7 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
 
   remove() {
     window.removeEventListener("message", this._boundMessageHandler);
+    HtmlSvgEdu.Model3D._instances.delete(this);
     super.remove();
   }
 };
