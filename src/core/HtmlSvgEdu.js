@@ -2569,6 +2569,7 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
     this._width = this._height / 2;
     this._trackLength = trackLength || 200;
     this._showValue = false;
+    this._valueFormatter = null;
     this._font = "Arial";
     this._fontSize = 16;
     this._displayCommaType = "dot";
@@ -2859,6 +2860,10 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
 
     if (this._displayCommaType === "comma") {
       displayString = displayString.replace(".", ",");
+    }
+
+    if (this._valueFormatter) {
+      displayString = String(this._valueFormatter(roundedValue, displayString));
     }
 
     return displayString;
@@ -3312,8 +3317,11 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
     this._trackLength = Number(length);
     this._applyStyles();
   }
-  enableValueDisplay() {
+  enableValueDisplay(formatter) {
     this._showValue = true;
+    if (typeof formatter === "function") {
+      this._valueFormatter = formatter;
+    }
     if (!this._valueDisplay) {
       this._valueDisplay = document.createElement("span");
       this._valueDisplay.className = "pixi-slider-value";
