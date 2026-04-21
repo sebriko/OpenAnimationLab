@@ -2527,13 +2527,6 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
         },
         example: "enableSnap([10, 20, 30])",
       },
-      setDisplayCommaType: {
-        info: {
-          en: 'Sets the type of decimal separator ("dot" for point, "comma" for comma)',
-          de: 'Setzt die Art des Dezimalzeichens ("dot" für Punkt, "comma" für Komma)',
-        },
-        example: 'setDisplayCommaType("comma")',
-      },
       setRangeMarker: {
         info: {
           en: "Sets a semi-transparent green range marker on the track",
@@ -2548,7 +2541,6 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
         },
         example: "setVertical()",
       },
-
       onChange: {
         info: {
           en: "Adds a listener for value changes",
@@ -2572,7 +2564,6 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
     this._valueFormatter = null;
     this._font = "Arial";
     this._fontSize = 16;
-    this._displayCommaType = "dot";
     this._snapValues = null;
     this._snapEnabled = false;
     this._thumbShape = thumbShape || "rectangle";
@@ -2858,10 +2849,6 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
 
     let displayString = roundedValue.toFixed(decimalPlaces);
 
-    if (this._displayCommaType === "comma") {
-      displayString = displayString.replace(".", ",");
-    }
-
     if (this._valueFormatter) {
       displayString = String(this._valueFormatter(roundedValue, displayString));
     }
@@ -2984,13 +2971,7 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
       const invertedPercentage = 1 - percentage;
       posY = invertedPercentage * this._trackLength;
       const svgWidth = this._svg.getAttribute("width");
-      if (this._thumbShape === "triangle-B") {
-        posX = svgWidth / 2 - this._width / 2;
-      } else if (this._thumbShape === "triangle-A") {
-        posX = svgWidth / 2 - this._width / 2;
-      } else {
-        posX = svgWidth / 2 - this._width / 2;
-      }
+      posX = svgWidth / 2 - this._width / 2;
     } else {
       posX = percentage * this._trackLength;
       if (this._thumbShape === "triangle-B") {
@@ -3099,7 +3080,6 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
       isDragging = true;
       const CTM = this._svg.getScreenCTM();
       if (!CTM) return;
-      const svgPoint = this._svg.createSVGPoint();
       const mousePoint = this._svg.createSVGPoint();
       mousePoint.x = e.clientX;
       mousePoint.y = e.clientY;
@@ -3336,12 +3316,6 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
       this._applyStyles();
     }
   }
-  setDisplayCommaType(commaType) {
-    this._displayCommaType = commaType === "comma" ? "comma" : "dot";
-    if (this._valueDisplay) {
-      this._valueDisplay.textContent = this._formatDisplayValue(this._value);
-    }
-  }
   setThumbShape(shape) {
     const validShapes = ["rectangle", "circle", "triangle-A", "triangle-B"];
     if (validShapes.includes(shape)) {
@@ -3395,12 +3369,6 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
   set thumbShape(shape) {
     this.setThumbShape(shape);
   }
-  get displayCommaType() {
-    return this._displayCommaType;
-  }
-  set displayCommaType(commaType) {
-    this.setDisplayCommaType(commaType);
-  }
   get rangeMarkerStart() {
     return this._rangeMarkerStart;
   }
@@ -3418,10 +3386,6 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
       this._element.addEventListener("slider-change", callback);
     }
   }
-  /**
-   * Enables snap-to-values feature with the specified values
-   * @param {Array} values - Array of values to snap to (must be between min and max)
-   */
   enableSnap(values) {
     if (Array.isArray(values)) {
       this._snapValues = values.filter(
