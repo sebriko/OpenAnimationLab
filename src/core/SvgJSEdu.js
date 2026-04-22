@@ -7132,6 +7132,13 @@ SvgJSEdu.Ruler = class Ruler extends SvgJSElement {
           de: "Aktualisiert die anzuzeigenden Werte",
         },
       },
+      setSubTicks: {
+        example: "setSubTicks(4, 5, 0xff0000, 1)",
+        info: {
+          en: "Adds sub tick marks between the main labeled ticks. Sub ticks are also drawn in the spacingOffset region between the ruler's origin and the first main tick. Parameters: count (number of sub ticks between main ticks), length (length of sub ticks in pixels), color (optional, hex color, defaults to main tick color), thickness (optional, line thickness, defaults to main tick thickness)",
+          de: "Fügt Zwischenteilstriche zwischen den beschrifteten Hauptteilstrichen hinzu. Zwischenteilstriche werden auch im spacingOffset-Bereich zwischen dem Nullpunkt des Lineals und dem ersten Hauptteilstrich gezeichnet. Parameter: count (Anzahl der Zwischenteilstriche zwischen zwei Hauptteilstrichen), length (Länge der Zwischenteilstriche in Pixeln), color (optional, Hex-Farbe, Standard ist die Farbe der Hauptteilstriche), thickness (optional, Linienstärke, Standard ist die Stärke der Hauptteilstriche)",
+        },
+      },
     },
   };
 
@@ -7164,6 +7171,12 @@ SvgJSEdu.Ruler = class Ruler extends SvgJSElement {
     this._decimalSeparator = decimalSeparator;
     this._ticksGroup = null;
 
+    // Sub tick properties (disabled by default)
+    this._subTickCount = 0;
+    this._subTickLength = 0;
+    this._subTickColor = null;
+    this._subTickThickness = null;
+
     this._draw();
     BoardSVG[INSTANCE_KEY].addChild(this);
   }
@@ -7181,41 +7194,87 @@ SvgJSEdu.Ruler = class Ruler extends SvgJSElement {
       return String(value);
     };
 
-    this._values.forEach((value, index) => {
-      const pos = this._spacingOffset + index * this._spacing;
-      const formattedValue = formatValue(value);
-
+    // Helper to compute tick start/end coordinates for a given position and length
+    const getTickCoords = (pos, length) => {
       let tickStart, tickEnd;
       switch (this._direction) {
         case "top":
           tickStart = [0, -pos];
           tickEnd = this._positionSwitch
-            ? [-this._tickLength, -pos]
-            : [this._tickLength, -pos];
+            ? [-length, -pos]
+            : [length, -pos];
           break;
         case "bottom":
           tickStart = [0, pos];
           tickEnd = this._positionSwitch
-            ? [-this._tickLength, pos]
-            : [this._tickLength, pos];
+            ? [-length, pos]
+            : [length, pos];
           break;
         case "left":
           tickStart = [-pos, 0];
           tickEnd = this._positionSwitch
-            ? [-pos, this._tickLength]
-            : [-pos, -this._tickLength];
+            ? [-pos, length]
+            : [-pos, -length];
           break;
         case "right":
           tickStart = [pos, 0];
           tickEnd = this._positionSwitch
-            ? [pos, this._tickLength]
-            : [pos, -this._tickLength];
+            ? [pos, length]
+            : [pos, -length];
           break;
       }
+      return { tickStart, tickEnd };
+    };
+
+    // Helper to draw a single sub tick at a given position
+    const drawSubTick = (pos) => {
+      const subColor =
+        this._subTickColor !== null ? this._subTickColor : this._color;
+      const subThickness =
+        this._subTickThickness !== null
+          ? this._subTickThickness
+          : this._thickness;
+      const { tickStart, tickEnd } = getTickCoords(pos, this._subTickLength);
+      this._ticksGroup
+        .line(tickStart[0], tickStart[1], tickEnd[0], tickEnd[1])
+        .stroke({ color: colorToHex(subColor), width: subThickness });
+    };
+
+    const subTicksActive =
+      this._subTickCount > 0 && this._subTickLength > 0;
+
+    // Draw sub ticks in the spacingOffset region (between origin and the first
+    // main tick). We extend the regular sub-tick pattern backwards from the
+    // first main tick so the sub-tick spacing stays consistent across the
+    // whole ruler.
+    if (subTicksActive && this._values.length > 0 && this._spacingOffset > 0) {
+      const subSpacing = this._spacing / (this._subTickCount + 1);
+      const firstMainPos = this._spacingOffset;
+      let subPos = firstMainPos - subSpacing;
+      // Small epsilon to avoid drawing at position 0 due to floating-point drift
+      while (subPos > 1e-9) {
+        drawSubTick(subPos);
+        subPos -= subSpacing;
+      }
+    }
+
+    this._values.forEach((value, index) => {
+      const pos = this._spacingOffset + index * this._spacing;
+      const formattedValue = formatValue(value);
+
+      const { tickStart, tickEnd } = getTickCoords(pos, this._tickLength);
 
       this._ticksGroup
         .line(tickStart[0], tickStart[1], tickEnd[0], tickEnd[1])
         .stroke({ color: colorToHex(this._color), width: this._thickness });
+
+      // Draw sub ticks between this main tick and the next one
+      if (subTicksActive && index < this._values.length - 1) {
+        const subSpacing = this._spacing / (this._subTickCount + 1);
+        for (let i = 1; i <= this._subTickCount; i++) {
+          drawSubTick(pos + i * subSpacing);
+        }
+      }
 
       const label = this._ticksGroup
         .text(formattedValue)
@@ -7339,6 +7398,15 @@ SvgJSEdu.Ruler = class Ruler extends SvgJSElement {
   setDecimalOptions(decimalPlaces, decimalSeparator = ".") {
     this._decimalPlaces = decimalPlaces;
     this._decimalSeparator = decimalSeparator;
+    this._draw();
+    return this;
+  }
+
+  setSubTicks(count, length, color = null, thickness = null) {
+    this._subTickCount = count;
+    this._subTickLength = length;
+    this._subTickColor = color;
+    this._subTickThickness = thickness;
     this._draw();
     return this;
   }
