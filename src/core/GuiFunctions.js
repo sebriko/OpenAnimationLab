@@ -522,28 +522,31 @@ async function takeScreenshot() {
 }
 
 // =========================================================================
-// Hilfsfunktion: Model3D-Iframes in Screenshot einblenden
+// Hilfsfunktionen: Model3D-Iframes in Screenshot einblenden
 // =========================================================================
+
+/**
+ * Prüft, ob Model3D-Instanzen vorhanden sind.
+ */
+function hasModel3DInstances() {
+  return (
+    typeof HtmlSvgEdu !== "undefined" &&
+    HtmlSvgEdu.Model3D &&
+    HtmlSvgEdu.Model3D._instances &&
+    HtmlSvgEdu.Model3D._instances.size > 0
+  );
+}
 
 /**
  * Erfasst die Bilder aller aktiven Model3D-Instanzen asynchron.
  * Gibt ein Array von { img, destX, destY, destW, destH } zurück,
  * bereit zum Zeichnen auf einen Canvas.
  *
- * Position und Größe kommen aus instance.x/y/width/height (Board-Koordinaten),
- * NICHT aus captureScreenshot() – dessen cr.left/cr.top können falsche Versätze
- * aus dem iframe-internen Koordinatensystem einbringen.
- *
  * @param {number} scaleFactor - Faktor zum Umrechnen von Board-Koordinaten in Canvas-Pixel
  * @returns {Promise<Array<{img:HTMLImageElement, destX:number, destY:number, destW:number, destH:number}>>}
  */
 async function collectModel3DImages(scaleFactor) {
-  if (
-    typeof HtmlSvgEdu === "undefined" ||
-    !HtmlSvgEdu.Model3D ||
-    !HtmlSvgEdu.Model3D._instances ||
-    HtmlSvgEdu.Model3D._instances.size === 0
-  ) {
+  if (!hasModel3DInstances()) {
     return [];
   }
 
@@ -577,7 +580,6 @@ async function collectModel3DImages(scaleFactor) {
 
 /**
  * Zeichnet vorbereitete Model3D-Bilder auf den Canvas-Kontext.
- * Erwartet das Ergebnis von collectModel3DImages().
  *
  * @param {CanvasRenderingContext2D} ctx
  * @param {Array} images - Ergebnis von collectModel3DImages()
@@ -588,12 +590,8 @@ function drawModel3DImages(ctx, images) {
   }
 }
 
-// =========================================================================
-// SVG-Renderer Screenshot
-// =========================================================================
-
 /**
- * Rendert ein SVG-Element als Canvas (boardWidth × boardHeight Pixel).
+ * Rendert ein SVG-Element als Canvas.
  * Nutzt XMLSerializer, um das SVG zu serialisieren und als Bild zu laden.
  */
 async function renderSVGToCanvas(svgElement, width, height) {
@@ -628,20 +626,19 @@ async function renderSVGToCanvas(svgElement, width, height) {
   });
 }
 
+// =========================================================================
+// SVG-Renderer Screenshot
+// =========================================================================
+
 /**
  * Screenshot für den SVG.js-Renderer.
  *
- * Strategie (spiegelt den PixiJS-Pfad):
- *   1) SVG-Element via XMLSerializer → Canvas (Hintergrund/Animation)
- *   2) Model3D-Screenshots erfassen
- *   3) pixi-ui-overlay (Text, Buttons) via html2canvas – genau wie im PixiJS-Pfad:
- *      Overlay temporär auf boardWidth×boardHeight setzen, transform entfernen,
- *      danach wiederherstellen.
- *   4) Komposition: SVG → 3D-Modell → HTML-Overlay → weißer Hintergrund
+ * Ohne Model3D: bewährter Ansatz – html2canvas auf den gesamten
+ * canvas-container, der SVG und Overlay enthält.
  *
- * Warum nicht html2canvas auf canvasContainer?
- *   Das SVG enthält ein _bgRect (weißes Hintergrundrechteck), das auch in
- *   den iframe-Bereichen opak bleibt – das 3D-Modell wäre dadurch verdeckt.
+ * Mit Model3D: Layer-Ansatz – SVG, 3D-Modelle und Overlay werden
+ * separat erfasst und kombiniert, damit die iframes nicht vom
+ * SVG-Hintergrund überdeckt werden.
  */
 async function takeScreenshotSVG() {
   const boardInstance =
@@ -671,6 +668,124 @@ async function takeScreenshotSVG() {
     ? activeTab.textContent.trim().slice(0, -1)
     : "screenshot";
 
+  if (hasModel3DInstances()) {
+    await takeScreenshotSVGWithModel3D(
+      canvasContainer,
+      boardWidth,
+      boardHeight,
+      tabName,
+    );
+  } else {
+    await takeScreenshotSVGClassic(
+      canvasContainer,
+      boardWidth,
+      boardHeight,
+      tabName,
+    );
+  }
+}
+
+/**
+ * Bewährter SVG-Screenshot ohne Model3D.
+ * Nutzt html2canvas auf den gesamten canvas-container.
+ */
+async function takeScreenshotSVGClassic(
+  canvasContainer,
+  boardWidth,
+  boardHeight,
+  tabName,
+) {
+  const guiElement = document.getElementById("pixi-ui-overlay");
+
+  // MathJax-Elemente temporär ausblenden
+  const mathJaxElements = guiElement
+    ? guiElement.querySelectorAll("mjx-assistive-mml")
+    : [];
+  mathJaxElements.forEach((el) => (el.style.display = "none"));
+
+  try {
+    await document.fonts.ready;
+
+    // html2canvas auf den gesamten canvas-container anwenden
+    const resultCanvas = await html2canvas(canvasContainer, {
+      backgroundColor: "#ffffff",
+      scale: boardWidth / canvasContainer.offsetWidth,
+      width: canvasContainer.offsetWidth,
+      height: canvasContainer.offsetHeight,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      letterRendering: true,
+      foreignObjectRendering: false,
+      onclone: async (clonedDoc) => {
+        await document.fonts.ready;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        const inputs = clonedDoc.querySelectorAll("input, textarea");
+        inputs.forEach((input) => {
+          if (input.value) {
+            const div = clonedDoc.createElement("div");
+            const computedStyle = window.getComputedStyle(input);
+            div.style.cssText = computedStyle.cssText;
+            div.style.pointerEvents = "none";
+            div.style.whiteSpace =
+              input.tagName === "TEXTAREA" ? "pre-wrap" : "nowrap";
+            div.textContent = input.value;
+            input.parentNode.replaceChild(div, input);
+          }
+        });
+      },
+    });
+
+    downloadCanvas(resultCanvas, `${tabName}.png`);
+  } catch (error) {
+    console.error("Fehler beim SVG-Screenshot (html2canvas):", error);
+
+    // Fallback: SVG direkt als Bild exportieren
+    try {
+      const svgElement = canvasContainer.querySelector("svg");
+      if (svgElement) {
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(svgElement);
+        const svgBlob = new Blob([svgString], {
+          type: "image/svg+xml;charset=utf-8",
+        });
+        const url = URL.createObjectURL(svgBlob);
+
+        const img = new Image();
+        img.onload = () => {
+          const fallbackCanvas = document.createElement("canvas");
+          fallbackCanvas.width = boardWidth;
+          fallbackCanvas.height = boardHeight;
+          const ctx = fallbackCanvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, boardWidth, boardHeight);
+          downloadCanvas(fallbackCanvas, `${tabName}.png`);
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      }
+    } catch (fallbackError) {
+      console.error(
+        "Auch der Fallback-Screenshot ist fehlgeschlagen:",
+        fallbackError,
+      );
+    }
+  } finally {
+    mathJaxElements.forEach((el) => (el.style.display = ""));
+  }
+}
+
+/**
+ * SVG-Screenshot mit Model3D-Unterstützung.
+ * Erfasst SVG, 3D-Modelle und Overlay separat und kombiniert sie,
+ * damit die iframes nicht vom SVG-Hintergrund überdeckt werden.
+ */
+async function takeScreenshotSVGWithModel3D(
+  canvasContainer,
+  boardWidth,
+  boardHeight,
+  tabName,
+) {
   const guiElement = document.getElementById("pixi-ui-overlay");
 
   // MathJax-Elemente temporär ausblenden
@@ -682,19 +797,18 @@ async function takeScreenshotSVG() {
   // Model3D-Screenshots starten, bevor iframes ausgeblendet werden
   const model3dPromise = collectModel3DImages(1);
 
-  // SVG-Inhalt erfassen (parallel, unabhängig von Overlay)
+  // SVG-Inhalt erfassen (parallel)
   const svgElement = canvasContainer.querySelector("svg");
   const svgPromise = svgElement
     ? renderSVGToCanvas(svgElement, boardWidth, boardHeight)
     : Promise.resolve(null);
 
-  // iframes jetzt ausblenden (nur für html2canvas auf dem Overlay)
+  // iframes ausblenden (nur für html2canvas auf dem Overlay)
   const iframeElements = guiElement
     ? [...guiElement.querySelectorAll("iframe")]
     : [];
   iframeElements.forEach((el) => (el.style.visibility = "hidden"));
 
-  // Original-Styles für das Overlay sichern
   let originalTransform, originalOrigin, originalWidth, originalHeight;
 
   try {
@@ -702,8 +816,6 @@ async function takeScreenshotSVG() {
 
     let guiCanvas = null;
     if (guiElement) {
-      // Overlay temporär auf Board-Dimensionen ohne Transform setzen –
-      // identisch zum PixiJS-Pfad.
       originalTransform = guiElement.style.transform || "";
       originalOrigin = guiElement.style.transformOrigin || "";
       originalWidth = guiElement.style.width;
@@ -728,7 +840,6 @@ async function takeScreenshotSVG() {
           await document.fonts.ready;
           await new Promise((resolve) => setTimeout(resolve, 200));
 
-          // Input-Felder in sichtbare Divs umwandeln
           const inputs = clonedDoc.querySelectorAll("input, textarea");
           inputs.forEach((input) => {
             if (input.value) {
@@ -745,27 +856,19 @@ async function takeScreenshotSVG() {
         },
       });
 
-      // Overlay-Styles sofort wiederherstellen
       guiElement.style.width = originalWidth;
       guiElement.style.height = originalHeight;
       guiElement.style.transform = originalTransform;
       guiElement.style.transformOrigin = originalOrigin;
     }
 
-    // iframes wiederherstellen
     iframeElements.forEach((el) => (el.style.visibility = ""));
 
-    // SVG-Canvas und Model3D-Bilder abwarten
     const [svgCanvas, model3dImages] = await Promise.all([
       svgPromise,
       model3dPromise,
     ]);
 
-    // Finales Canvas in vier Schichten:
-    //   1) SVG-Inhalt (Animation, Hintergrundfarbe)
-    //   2) 3D-Modelle (zwischen SVG und HTML-Overlay)
-    //   3) HTML-Overlay (Text, Buttons – transparent wo iframes waren)
-    //   4) Weißer Hintergrund ganz unten
     const finalCanvas = document.createElement("canvas");
     finalCanvas.width = boardWidth;
     finalCanvas.height = boardHeight;
@@ -784,9 +887,8 @@ async function takeScreenshotSVG() {
 
     downloadCanvas(finalCanvas, `${tabName}.png`);
   } catch (error) {
-    console.error("Fehler beim SVG-Screenshot:", error);
+    console.error("Fehler beim SVG-Screenshot mit Model3D:", error);
   } finally {
-    // Sicherheits-Restore
     iframeElements.forEach((el) => (el.style.visibility = ""));
     mathJaxElements.forEach((el) => (el.style.display = ""));
     if (guiElement && originalTransform !== undefined) {
@@ -861,10 +963,13 @@ async function takeScreenshotPixi() {
     const mathJaxElements = guiElement.querySelectorAll("mjx-assistive-mml");
     mathJaxElements.forEach((el) => (el.style.display = "none"));
 
-    // Model3D-Screenshots frühzeitig anfordern (parallel zu html2canvas),
-    // damit keine unnötige Wartezeit entsteht.
+    // Model3D-Screenshots frühzeitig anfordern (parallel zu html2canvas)
     const scaleFactor = pixiCanvas.width / boardWidth;
     const model3dPromise = collectModel3DImages(scaleFactor);
+
+    // iframes ausblenden, damit html2canvas korrekt rendert
+    const iframeElements = [...guiElement.querySelectorAll("iframe")];
+    iframeElements.forEach((el) => (el.style.visibility = "hidden"));
 
     // ---------------------------------------------------------------
     // Temporäre Overlay-Anpassung für html2canvas:
@@ -885,8 +990,6 @@ async function takeScreenshotPixi() {
     // html2canvas erfasst das Overlay in Board-Dimensionen.
     // scale sorgt dafür, dass die Ausgabe die gleiche Pixel-Auflösung
     // wie der PixiJS-Canvas hat (boardWidth × resolution).
-    // backgroundColor: null → iframe-Bereiche bleiben transparent, damit
-    // das 3D-Modell (Layer 2) durch das Overlay hindurch sichtbar ist.
     const guiCanvas = await html2canvas(guiElement, {
       backgroundColor: null,
       scale: scaleFactor,
@@ -918,7 +1021,8 @@ async function takeScreenshotPixi() {
       },
     });
 
-    // Styles sofort wiederherstellen
+    // Styles und iframes sofort wiederherstellen
+    iframeElements.forEach((el) => (el.style.visibility = ""));
     guiElement.style.width = originalWidth;
     guiElement.style.height = originalHeight;
     guiElement.style.transform = originalTransform;
@@ -936,15 +1040,13 @@ async function takeScreenshotPixi() {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
-    // Layer 1: PixiJS-Rendering (Hintergrund)
+    // Layer 1: PixiJS-Rendering
     ctx.drawImage(pixiCanvas, 0, 0);
 
-    // Layer 2: 3D-Modelle (zwischen PixiJS und GUI-Overlay, damit
-    // HTML-Elemente wie Texte im Layer 3 darüber liegen)
+    // Layer 2: 3D-Modelle (zwischen PixiJS und GUI-Overlay)
     drawModel3DImages(ctx, model3dImages);
 
-    // Layer 3: GUI-Overlay – backgroundColor:null lässt die iframe-Bereiche
-    // transparent, sodass Layer 2 hindurchscheint; Texte liegen oben drüber
+    // Layer 3: GUI-Overlay
     ctx.drawImage(guiCanvas, 0, 0, pixiCanvas.width, pixiCanvas.height);
 
     // Download
@@ -955,8 +1057,10 @@ async function takeScreenshotPixi() {
   } catch (error) {
     console.error("Fehler beim PixiJS-Screenshot:", error);
 
-    // Styles wiederherstellen falls noch nicht geschehen
+    // Styles und iframes wiederherstellen falls noch nicht geschehen
     if (guiElement && originalTransform !== undefined) {
+      const iframes = guiElement.querySelectorAll("iframe");
+      iframes.forEach((el) => (el.style.visibility = ""));
       guiElement.style.width = originalWidth;
       guiElement.style.height = originalHeight;
       guiElement.style.transform = originalTransform;

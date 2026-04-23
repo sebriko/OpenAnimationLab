@@ -1432,10 +1432,9 @@ for (let i = 0; i < 4; i++) {
 
 // UI-Elemente
 let winkelRegler = new ButtonSlider(-10, 20, 0, 0.1, 50, 200, "");
-winkelRegler.enableValueDisplay();
+winkelRegler.enableValueDisplay((value, str) => str.replace(".", ","));
 winkelRegler.x = 950;
 winkelRegler.y = 50;
-winkelRegler.setDisplayCommaType("comma");
 
 let winkelBeschriftung = new Text("Anstellwinkel α", 'Arial', 20, 0x444444, 'left');
 winkelBeschriftung.x = 950;
