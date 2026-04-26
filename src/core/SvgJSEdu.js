@@ -1339,7 +1339,31 @@ SvgJSEdu.Rectangle = class Rectangle extends SvgJSElement {
           add.stop(stop.offset, stop.color);
         });
       });
-      this._gradientDef.from(0, 0.5).to(1, 0.5);
+      const angle = this._gradientAngle || 0;
+      if (angle === 0) {
+        this._gradientDef.from(0, 0.5).to(1, 0.5);
+      } else {
+        const angleRad = (angle * Math.PI) / 180;
+        const w = this._width;
+        const h = this._height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const diagLength =
+          Math.abs(w * Math.cos(angleRad)) +
+          Math.abs(h * Math.sin(angleRad));
+        const halfDiag = diagLength / 2;
+        const x0 = cx - halfDiag * Math.cos(angleRad);
+        const y0 = cy - halfDiag * Math.sin(angleRad);
+        const x1 = cx + halfDiag * Math.cos(angleRad);
+        const y1 = cy + halfDiag * Math.sin(angleRad);
+        this._gradientDef.attr({
+          gradientUnits: 'userSpaceOnUse',
+          x1: x0,
+          y1: y0,
+          x2: x1,
+          y2: y1,
+        });
+      }
     }
 
     this._shapeElement.fill(this._gradientDef);
@@ -1489,9 +1513,11 @@ SvgJSEdu.Rectangle = class Rectangle extends SvgJSElement {
       { offset: 0, color: "#fff" },
       { offset: 1, color: "#000" },
     ],
+    angle = 0,
   ) {
     this._gradientType = type;
     this._gradientStops = colorStops;
+    this._gradientAngle = angle;
     this._draw();
     return this;
   }
@@ -1506,6 +1532,8 @@ SvgJSEdu.Rectangle = class Rectangle extends SvgJSElement {
         this._gradientType +
         '", ' +
         JSON.stringify(this._gradientStops) +
+        ", " +
+        (this._gradientAngle || 0) +
         ")";
     }
     if (this._alpha !== 1) {
