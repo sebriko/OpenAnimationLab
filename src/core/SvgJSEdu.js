@@ -8050,6 +8050,179 @@ SvgJSEdu.SimpleSVG = class SimpleSVG extends SvgJSElement {
 };
 
 // ============================================================================
+// SimplePNG – PNG image as object
+// ============================================================================
+
+SvgJSEdu.SimplePNG = class SimplePNG extends SvgJSElement {
+  static serializationMap = {
+    description: { de: "PNG-Bild als Objekt", en: "PNG image as object" },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example: 'let myPNG = new SimplePNG("image.png");',
+    constructor: {
+      pngContent: {
+        name: "pngContent",
+        info: {
+          en: "Source of the PNG image (URL or Base64)",
+          de: "Quelle des PNG-Bildes (URL oder Base64)",
+        },
+      },
+    },
+    setter: {
+      x: {
+        name: "x",
+        info: {
+          en: "Horizontal position of the element",
+          de: "Horizontale Position des Elements",
+        },
+        example: "x = 100",
+      },
+      y: {
+        name: "y",
+        info: {
+          en: "Vertical position of the element",
+          de: "Vertikale Position des Elements",
+        },
+        example: "y = 200",
+      },
+      visible: {
+        name: "visible",
+        info: {
+          en: "Defines whether the object is visible or invisible",
+          de: "Legt fest, ob das Objekt sichtbar oder unsichtbar ist",
+        },
+        example: "visible = true",
+      },
+      alpha: {
+        name: "alpha",
+        info: {
+          en: "Transparency of the image (0.0 to 1.0)",
+          de: "Transparenz des Bildes (0.0 bis 1.0)",
+        },
+        example: "alpha = 0.5",
+      },
+    },
+    methods: {
+      setScale: {
+        name: "setScale",
+        info: {
+          en: "Scales the element in both directions",
+          de: "Skaliert das Element in beide Richtungen",
+        },
+        example: "setScale(1.5, 1.5)",
+      },
+      onClick: {
+        example:
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+        info: {
+          en: "Defines a function to execute when the element is clicked.",
+          de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
+        },
+      },
+      setRotationPoint: {
+        example: "setRotationPoint(0, 0)",
+        info: {
+          en: "Sets the rotation pivot relative to the element's origin (0, 0)",
+          de: "Setzt den Rotationspunkt relativ zum Ursprung (0, 0) des Elements",
+        },
+      },
+      setTransformationPoint: {
+        name: "setTransformationPoint",
+        example: "setTransformationPoint(0, 0)",
+        info: {
+          en: "Defines the transformation point for position of the element",
+          de: "Definiert den Transformationspunkt für die Position des Elements",
+        },
+      },
+      removeFromParent: {
+        name: "removeFromParent",
+        info: {
+          en: "Removes the element from its parent container",
+          de: "Entfernt das Element aus seinem übergeordneten Container",
+        },
+        example: "removeFromParent()",
+      },
+    },
+  };
+
+  constructor(pngContent) {
+    super();
+    this._pngContent = pngContent;
+    this._imageElement = null;
+    this._originalDimensions = null;
+
+    this._loadPNGImage();
+    BoardSVG[INSTANCE_KEY].addChild(this);
+  }
+
+  _loadPNGImage() {
+    if (!this._pngContent) {
+      console.error("Keine Bildquelle angegeben");
+      return;
+    }
+
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+
+      img.onload = () => {
+        if (!this._originalDimensions) {
+          this._originalDimensions = { width: img.width, height: img.height };
+        }
+
+        if (this._imageElement) {
+          this._imageElement.remove();
+        }
+
+        this._imageElement = this._group.image(this._pngContent);
+        this._imageElement.size(img.width, img.height);
+
+        if (this._scaleX !== 1 || this._scaleY !== 1) {
+          this._applyScale();
+        }
+      };
+
+      img.onerror = (err) => {
+        console.error("Fehler beim Laden des PNG-Bildes:", err);
+        console.error("Bildquelle:", this._pngContent);
+      };
+
+      img.src = this._pngContent;
+    } catch (error) {
+      console.error("Fehler beim Erstellen des PNG-Bildes:", error);
+    }
+  }
+
+  getOriginalWidth() {
+    return this._originalDimensions ? this._originalDimensions.width : 0;
+  }
+
+  getOriginalHeight() {
+    return this._originalDimensions ? this._originalDimensions.height : 0;
+  }
+
+  getCurrentWidth() {
+    return this.getOriginalWidth() * this._scaleX;
+  }
+
+  getCurrentHeight() {
+    return this.getOriginalHeight() * this._scaleY;
+  }
+
+  _applyScale() {
+    if (this._imageElement && this._originalDimensions) {
+      this._imageElement.size(
+        this._originalDimensions.width * this._scaleX,
+        this._originalDimensions.height * this._scaleY,
+      );
+    }
+  }
+
+};
+
+// ============================================================================
 // Timer – Animation with keyframes and easing
 // ============================================================================
 
