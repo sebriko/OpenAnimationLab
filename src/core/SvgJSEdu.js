@@ -2897,11 +2897,13 @@ SvgJSEdu.Polygon = class Polygon {
   _updateTransform() {
     if (!this._group) return;
 
-    const effectiveX = this._visualX + this._rotationPivotX - this._pivotX;
-    const effectiveY = this._visualY + this._rotationPivotY - this._pivotY;
+    const scaledPivotX = this._rotationPivotX * this._scaleX;
+    const scaledPivotY = this._rotationPivotY * this._scaleY;
 
-    // SVG transform sequence: translate → rotate → scale
-    let transform = `translate(${effectiveX}, ${effectiveY})`;
+    const rpWorldX = this._visualX + scaledPivotX - this._pivotX;
+    const rpWorldY = this._visualY + scaledPivotY - this._pivotY;
+
+    let transform = `translate(${rpWorldX}, ${rpWorldY})`;
 
     if (this._rotationDegrees !== 0) {
       transform += ` rotate(${this._rotationDegrees})`;
@@ -2910,6 +2912,8 @@ SvgJSEdu.Polygon = class Polygon {
     if (this._scaleX !== 1 || this._scaleY !== 1) {
       transform += ` scale(${this._scaleX}, ${this._scaleY})`;
     }
+
+    transform += ` translate(${-this._rotationPivotX}, ${-this._rotationPivotY})`;
 
     this._group.attr("transform", transform);
   }

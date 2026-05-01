@@ -296,8 +296,10 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
   }
 
   _updatePosition() {
-    super.x = this._visualX + this._rotationPivotX - this._pivotX;
-    super.y = this._visualY + this._rotationPivotY - this._pivotY;
+    const sx = this.scale?.x ?? 1;
+    const sy = this.scale?.y ?? 1;
+    super.x = this._visualX + this._rotationPivotX * sx - this._pivotX;
+    super.y = this._visualY + this._rotationPivotY * sy - this._pivotY;
   }
 
   _updateRotationPivot() {
@@ -429,6 +431,7 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
 
   setScale(factor) {
     this.scale.set(factor);
+    this._updatePosition();
     return this;
   }
 
@@ -910,8 +913,10 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
   }
 
   _updatePosition() {
-    super.x = this._visualX + this._rotationPivotX - this._pivotX;
-    super.y = this._visualY + this._rotationPivotY - this._pivotY;
+    const sx = this.scale?.x ?? 1;
+    const sy = this.scale?.y ?? 1;
+    super.x = this._visualX + this._rotationPivotX * sx - this._pivotX;
+    super.y = this._visualY + this._rotationPivotY * sy - this._pivotY;
   }
 
   _updateRotationPivot() {
@@ -990,6 +995,7 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
 
   setScale(factor) {
     this.scale.set(factor);
+    this._updatePosition();
   }
 
   setAlpha(alpha) {
@@ -1342,8 +1348,10 @@ PixiJSEdu.Circle = class Circle extends PIXI.Container {
   }
 
   _updatePosition() {
-    super.x = this._visualX + this._rotationPivotX - this._pivotX;
-    super.y = this._visualY + this._rotationPivotY - this._pivotY;
+    const sx = this.scale?.x ?? 1;
+    const sy = this.scale?.y ?? 1;
+    super.x = this._visualX + this._rotationPivotX * sx - this._pivotX;
+    super.y = this._visualY + this._rotationPivotY * sy - this._pivotY;
   }
 
   _updateRotationPivot() {
@@ -1420,6 +1428,7 @@ PixiJSEdu.Circle = class Circle extends PIXI.Container {
 
   setScale(factor) {
     this.scale.set(factor);
+    this._updatePosition();
   }
 
   setAlpha(value) {
@@ -1802,8 +1811,10 @@ PixiJSEdu.Polygon = class Polygon extends PIXI.Container {
   }
 
   _updatePosition() {
-    super.x = this._visualX + this._rotationPivotX - this._pivotX;
-    super.y = this._visualY + this._rotationPivotY - this._pivotY;
+    const sx = this.scale?.x ?? 1;
+    const sy = this.scale?.y ?? 1;
+    super.x = this._visualX + this._rotationPivotX * sx - this._pivotX;
+    super.y = this._visualY + this._rotationPivotY * sy - this._pivotY;
   }
   _updateRotationPivot() {
     this.pivot.set(this._rotationPivotX, this._rotationPivotY);
@@ -1866,6 +1877,7 @@ PixiJSEdu.Polygon = class Polygon extends PIXI.Container {
   }
   setScale(factor) {
     this.scale.set(factor);
+    this._updatePosition();
   }
   setAlpha(value) {
     this._alpha = Math.max(0, Math.min(1, value));
@@ -7286,8 +7298,10 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
 
   _updatePosition() {
     if (this.gruppe) {
-      this.gruppe.x = this._visualX + this._pivotX - this._transformationPivotX;
-      this.gruppe.y = this._visualY + this._pivotY - this._transformationPivotY;
+      const sx = this._scale.x;
+      const sy = this._scale.y;
+      this.gruppe.x = this._visualX + this._pivotX * sx - this._transformationPivotX;
+      this.gruppe.y = this._visualY + this._pivotY * sy - this._transformationPivotY;
     }
   }
 
@@ -7336,14 +7350,13 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
   }
 
   setRotationPoint(offsetX = 0, offsetY = 0) {
-    const oldPivotX = this._pivotX;
-    const oldPivotY = this._pivotY;
     this._pivotX = offsetX;
     this._pivotY = offsetY;
     if (this.gruppe) {
-      this.gruppe.pivot.set(offsetX, offsetY);
-      this.gruppe.x += offsetX - oldPivotX;
-      this.gruppe.y += offsetY - oldPivotY;
+      const sx = this._scale.x;
+      const sy = this._scale.y;
+      this.gruppe.pivot.set(offsetX * sx, offsetY * sy);
+      this._updatePosition();
     }
     return this;
   }
@@ -8055,6 +8068,10 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
       this._scale.x = scaleX;
       this._scale.y = scaleY;
       this._scheduleRedraw();
+      if (this.gruppe) {
+        this.gruppe.pivot.set(this._pivotX * scaleX, this._pivotY * scaleY);
+      }
+      this._updatePosition();
     };
 
     if (this._isLoading) {
@@ -8077,16 +8094,17 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
   setTransform(x, y, scaleX, scaleY, rotation) {
     this._visualX = x;
     this._visualY = y;
-    this._updatePosition();
+    this._scale.x = scaleX;
+    this._scale.y = scaleY;
+    this._rotationDegrees = rotation;
 
     if (this.gruppe) {
+      this.gruppe.pivot.set(this._pivotX * scaleX, this._pivotY * scaleY);
       this.gruppe.scale.set(scaleX, scaleY);
       this.gruppe.rotation = rotation * (Math.PI / 180);
     }
 
-    this._scale.x = scaleX;
-    this._scale.y = scaleY;
-    this._rotationDegrees = rotation;
+    this._updatePosition();
   }
 };
 
