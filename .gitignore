@@ -19,6 +19,9 @@ Thumbs.db
 # Local content not for repository
 codes/
 
+# Release notes
+Release-note.txt
+
 # Logs
 *.log
 npm-debug.log*

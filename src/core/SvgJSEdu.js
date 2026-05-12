@@ -2003,6 +2003,461 @@ SvgJSEdu.Circle = class Circle extends SvgJSElement {
 };
 
 // ============================================================================
+// Ellipse
+// ============================================================================
+
+SvgJSEdu.Ellipse = class Ellipse extends SvgJSElement {
+  static serializationMap = {
+    description: { de: "Ellipse", en: "Ellipse" },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example:
+      "let myEllipse = new Ellipse(80, 50, 0xff0000, 0x000000, 2);",
+    constructor: {
+      radiusX: {
+        name: "radiusX",
+        info: {
+          en: "Horizontal radius of the ellipse",
+          de: "Horizontaler Radius der Ellipse",
+        },
+      },
+      radiusY: {
+        name: "radiusY",
+        info: {
+          en: "Vertical radius of the ellipse",
+          de: "Vertikaler Radius der Ellipse",
+        },
+      },
+      fillColor: {
+        name: "fillColor",
+        info: {
+          en: "Fill color in hexadecimal format",
+          de: "Füllfarbe im Hexadezimalformat",
+        },
+      },
+      lineColor: {
+        name: "lineColor",
+        info: {
+          en: "Line color in hexadecimal format",
+          de: "Linienfarbe im Hexadezimalformat",
+        },
+      },
+      lineThickness: {
+        name: "lineThickness",
+        info: { en: "Line thickness in pixels", de: "Linienstärke in Pixeln" },
+      },
+    },
+    setter: {
+      x: {
+        name: "x",
+        info: {
+          en: "Horizontal position of the element",
+          de: "Horizontale Position des Elements",
+        },
+        example: "x = 100",
+      },
+      y: {
+        name: "y",
+        info: {
+          en: "Vertical position of the element",
+          de: "Vertikale Position des Elements",
+        },
+        example: "y = 200",
+      },
+      rotation: {
+        name: "rotation",
+        info: {
+          en: "Rotation of the element in degrees",
+          de: "Drehung des Elements in Grad",
+        },
+        example: "rotation = 45",
+      },
+      visible: {
+        name: "visible",
+        info: {
+          en: "Defines whether the object is visible or invisible",
+          de: "Legt fest, ob das Objekt sichtbar oder unsichtbar ist",
+        },
+        example: "visible = true",
+      },
+    },
+    methods: {
+      setFillColor: {
+        example: "setFillColor(0xff0000)",
+        info: {
+          en: "Sets the fill color of the ellipse",
+          de: "Setzt die Füllfarbe der Ellipse",
+        },
+      },
+      setLineColor: {
+        example: "setLineColor(0x000000)",
+        info: {
+          en: "Sets the line color of the ellipse",
+          de: "Setzt die Linienfarbe der Ellipse",
+        },
+      },
+      setBorder: {
+        example: "setBorder(0xff0000, 2)",
+        info: {
+          en: "Sets a border with color and thickness",
+          de: "Setzt einen Rahmen mit Farbe und Dicke",
+        },
+      },
+      setRadiusX: {
+        example: "setRadiusX(100)",
+        info: {
+          en: "Sets the horizontal radius of the ellipse",
+          de: "Setzt den horizontalen Radius der Ellipse",
+        },
+      },
+      setRadiusY: {
+        example: "setRadiusY(60)",
+        info: {
+          en: "Sets the vertical radius of the ellipse",
+          de: "Setzt den vertikalen Radius der Ellipse",
+        },
+      },
+      setTransformationPoint: {
+        example: "setTransformationPoint(0, 0)",
+        info: {
+          en: "Defines the transformation point for position of the element",
+          de: "Definiert den Transformationspunkt für die Position des Elements",
+        },
+      },
+      setRotationPoint: {
+        example: "setRotationPoint(0, 0)",
+        info: {
+          en: "Sets the rotation pivot relative to the element's origin (0, 0)",
+          de: "Setzt den Rotationspunkt relativ zum Ursprung (0, 0) des Elements",
+        },
+      },
+      setGradient: {
+        example:
+          'setGradient("radial", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])',
+        info: {
+          en: "Creates a gradient",
+          de: "Erstellt einen Farbverlauf",
+        },
+      },
+      setScale: {
+        example: "setScale(0.75)",
+        info: {
+          en: "Scales the ellipse proportionally",
+          de: "Skaliert die Ellipse proportional",
+        },
+      },
+      setAlpha: {
+        example: "setAlpha(0.5)",
+        info: {
+          en: "Sets the transparency of the entire ellipse (0 = invisible, 1 = fully visible)",
+          de: "Setzt die Transparenz der gesamten Ellipse (0 = unsichtbar, 1 = vollständig sichtbar)",
+        },
+      },
+      onClick: {
+        example:
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+        info: {
+          en: "Defines a function to execute when the element is clicked.",
+          de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
+        },
+      },
+      onMouseDown: {
+        example:
+          'onMouseDown(handleMouseDown); \n\nfunction handleMouseDown() { console.log("Mouse button pressed"); }',
+        info: {
+          en: "Defines a function to execute when the mouse button is pressed down on the element.",
+          de: "Legt fest, welche Funktion beim Drücken der Maustaste auf dem Element ausgeführt wird.",
+        },
+      },
+      onMouseUp: {
+        example:
+          'onMouseUp(handleMouseUp); \n\nfunction handleMouseUp() { console.log("Mouse button released"); }',
+        info: {
+          en: "Defines a function to execute when the mouse button is released on the element.",
+          de: "Legt fest, welche Funktion beim Loslassen der Maustaste auf dem Element ausgeführt wird.",
+        },
+      },
+      onMouseOver: {
+        example:
+          'onMouseOver(handleMouseOver); \n\nfunction handleMouseOver() { console.log("Mouse entered element"); }',
+        info: {
+          en: "Defines a function to execute when the mouse cursor enters the element.",
+          de: "Legt fest, welche Funktion beim Überfahren des Elements mit der Maus ausgeführt wird.",
+        },
+      },
+      onMouseOut: {
+        example:
+          'onMouseOut(handleMouseOut); \n\nfunction handleMouseOut() { console.log("Mouse left element"); }',
+        info: {
+          en: "Defines a function to execute when the mouse cursor leaves the element.",
+          de: "Legt fest, welche Funktion beim Verlassen des Elements mit der Maus ausgeführt wird.",
+        },
+      },
+      setDragging: {
+        example: "setDragging(0, 0, 1280, 720)",
+        info: {
+          en: "Enables dragging within the specified rectangular bounds",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+        },
+      },
+      onDragStart: {
+        example:
+          'onDragStart(handleDragStart); \n\nfunction handleDragStart() { console.log("Started dragging element"); }',
+        info: {
+          en: "Sets a callback function that is executed when dragging starts",
+          de: "Setzt eine Callback-Funktion, die beim Start des Ziehens ausgeführt wird",
+        },
+      },
+      onDrag: {
+        example:
+          'onDrag(handleDrag); \n\nfunction handleDrag() { console.log("Element is being dragged"); }',
+        info: {
+          en: "Sets a callback function that is executed while the element is being dragged",
+          de: "Setzt eine Callback-Funktion, die während des Ziehens des Elements ausgeführt wird",
+        },
+      },
+      onDragEnd: {
+        example:
+          'onDragEnd(handleDragEnd); \n\nfunction handleDragEnd() { console.log("Stopped dragging element"); }',
+        info: {
+          en: "Sets a callback function that is executed when dragging ends",
+          de: "Setzt eine Callback-Funktion, die beim Ende des Ziehens ausgeführt wird",
+        },
+      },
+    },
+  };
+
+  constructor(
+    radiusX = 80,
+    radiusY = 50,
+    fillColor = null,
+    lineColor = null,
+    lineThickness = 0,
+  ) {
+    super();
+    this._radiusX = radiusX;
+    this._radiusY = radiusY;
+    this._fillColor = fillColor;
+    this._lineColor = lineColor;
+    this._lineThickness = lineThickness;
+    this._gradientType = null;
+    this._gradientStops = null;
+    this._shapeElement = null;
+    this._gradientDef = null;
+
+    this._draw();
+    BoardSVG[INSTANCE_KEY].addChild(this);
+  }
+
+  _draw() {
+    if (this._shapeElement) this._shapeElement.remove();
+    if (this._gradientDef) {
+      this._gradientDef.remove();
+      this._gradientDef = null;
+    }
+
+    this._shapeElement = this._group.ellipse(
+      this._radiusX * 2,
+      this._radiusY * 2,
+    );
+    this._shapeElement.cx(0).cy(0);
+
+    if (this._gradientStops) {
+      this._applyGradient();
+    } else if (this._fillColor !== null && this._fillColor !== undefined) {
+      this._shapeElement.fill(colorToHex(this._fillColor));
+    } else {
+      this._shapeElement.fill("none");
+    }
+
+    if (this._lineColor !== null && this._lineThickness > 0) {
+      this._shapeElement.stroke({
+        color: colorToHex(this._lineColor),
+        width: this._lineThickness,
+      });
+    } else {
+      this._shapeElement.stroke("none");
+    }
+  }
+
+  _applyGradient() {
+    if (!this._gradientStops || !this._shapeElement) return;
+
+    if (this._gradientDef) {
+      this._gradientDef.remove();
+      this._gradientDef = null;
+    }
+
+    if (this._gradientType === "radial") {
+      this._gradientDef = svgRoot.gradient("radial", (add) => {
+        this._gradientStops.forEach((stop) => {
+          add.stop(stop.offset, stop.color);
+        });
+      });
+      this._gradientDef.attr({
+        cx: "50%",
+        cy: "50%",
+        r: "50%",
+        fx: "50%",
+        fy: "50%",
+      });
+    } else {
+      this._gradientDef = svgRoot.gradient("linear", (add) => {
+        this._gradientStops.forEach((stop) => {
+          add.stop(stop.offset, stop.color);
+        });
+      });
+      this._gradientDef.from(0, 0.5).to(1, 0.5);
+    }
+
+    this._shapeElement.fill(this._gradientDef);
+  }
+
+  // ---------- Fill & Stroke ----------
+
+  setFillColor(color) {
+    this._fillColor = color;
+    this._gradientStops = null;
+    this._gradientType = null;
+    if (this._gradientDef) {
+      this._gradientDef.remove();
+      this._gradientDef = null;
+    }
+    if (this._shapeElement) {
+      if (color !== null && color !== undefined) {
+        this._shapeElement.fill(colorToHex(color));
+      } else {
+        this._shapeElement.fill("none");
+      }
+    }
+    return this;
+  }
+
+  setLineColor(color) {
+    this._lineColor = color;
+    if (this._shapeElement) {
+      if (color !== null && this._lineThickness > 0) {
+        this._shapeElement.stroke({
+          color: colorToHex(color),
+          width: this._lineThickness,
+        });
+      } else {
+        this._shapeElement.stroke("none");
+      }
+    }
+    return this;
+  }
+
+  setLineThickness(thickness) {
+    this._lineThickness = thickness;
+    if (this._shapeElement) {
+      if (thickness > 0 && this._lineColor !== null) {
+        this._shapeElement.stroke({
+          color: colorToHex(this._lineColor),
+          width: thickness,
+        });
+      } else {
+        this._shapeElement.stroke("none");
+      }
+    }
+    return this;
+  }
+
+  // ---------- Border ----------
+
+  setBorder(borderColor, borderLine) {
+    this._lineColor = borderColor;
+    this._lineThickness = borderLine;
+    if (this._shapeElement) {
+      if (borderColor !== null && borderLine > 0) {
+        this._shapeElement.stroke({
+          color: colorToHex(borderColor),
+          width: borderLine,
+        });
+      } else {
+        this._shapeElement.stroke("none");
+      }
+    }
+    return this;
+  }
+
+  // ---------- Radius ----------
+
+  setRadiusX(rx) {
+    this._radiusX = rx;
+    if (this._shapeElement) {
+      this._shapeElement.rx(rx);
+    }
+    return this;
+  }
+
+  getRadiusX() {
+    return this._radiusX;
+  }
+
+  setRadiusY(ry) {
+    this._radiusY = ry;
+    if (this._shapeElement) {
+      this._shapeElement.ry(ry);
+    }
+    return this;
+  }
+
+  getRadiusY() {
+    return this._radiusY;
+  }
+
+  // ---------- Gradient ----------
+
+  setGradient(
+    type = "radial",
+    colorStops = [
+      { offset: 0, color: "#fff" },
+      { offset: 1, color: "#000" },
+    ],
+  ) {
+    this._gradientType = type;
+    this._gradientStops = colorStops;
+    this._draw();
+    return this;
+  }
+
+  // ---------- Serialization ----------
+
+  getSerializableMethods() {
+    const methods = {};
+    if (this._gradientStops && this._gradientType) {
+      methods.setGradient =
+        'setGradient("' +
+        this._gradientType +
+        '", ' +
+        JSON.stringify(this._gradientStops) +
+        ")";
+    }
+    if (this._alpha !== 1) {
+      methods.setAlpha = "setAlpha(" + this._alpha + ")";
+    }
+    return methods;
+  }
+
+  // ---------- Destroy ----------
+
+  destroy() {
+    if (this._gradientDef) {
+      this._gradientDef.remove();
+      this._gradientDef = null;
+    }
+    if (this._shapeElement) {
+      this._shapeElement.remove();
+      this._shapeElement = null;
+    }
+    super.destroy();
+  }
+};
+
+// ============================================================================
 // Polygon
 // ============================================================================
 
