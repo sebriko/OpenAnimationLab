@@ -620,6 +620,13 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
           de: "Setzt die Transparenz des Elements (0 = unsichtbar, 1 = vollständig sichtbar)",
         },
       },
+      setCornerRadius: {
+        example: "setCornerRadius(10)",
+        info: {
+          en: "Sets the corner radius for rounded rectangles",
+          de: "Setzt den Eckenradius für abgerundete Rechtecke",
+        },
+      },
       setRoundedCorners: {
         example: "setRoundedCorners(10);",
         info: {
@@ -1002,6 +1009,12 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
     this.alpha = Math.max(0, Math.min(1, alpha));
   }
 
+  setCornerRadius(r) {
+    this._cornerRadius = r;
+    this._draw();
+    return this;
+  }
+
   setRoundedCorners(
     radius,
     topLeft = true,
@@ -1027,6 +1040,46 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
   setHeight(height) {
     this._height = height;
     this._draw();
+  }
+
+  getSerializableMethods() {
+    const methods = {};
+    if (this._gradientStops && this._gradientType) {
+      methods.setGradient =
+        'setGradient("' +
+        this._gradientType +
+        '", ' +
+        JSON.stringify(this._gradientStops) +
+        ")";
+    }
+    if (this._alpha !== 1) {
+      methods.setAlpha = "setAlpha(" + this._alpha + ")";
+    }
+    if (this._cornerRadius !== 0) {
+      const allCorners =
+        this._roundedCorners.topLeft &&
+        this._roundedCorners.topRight &&
+        this._roundedCorners.bottomRight &&
+        this._roundedCorners.bottomLeft;
+
+      if (allCorners) {
+        methods.setCornerRadius = "setCornerRadius(" + this._cornerRadius + ")";
+      } else {
+        methods.setRoundedCorners =
+          "setRoundedCorners(" +
+          this._cornerRadius +
+          ", " +
+          this._roundedCorners.topLeft +
+          ", " +
+          this._roundedCorners.topRight +
+          ", " +
+          this._roundedCorners.bottomRight +
+          ", " +
+          this._roundedCorners.bottomLeft +
+          ")";
+      }
+    }
+    return methods;
   }
 
   destroy() {

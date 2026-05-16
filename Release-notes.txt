@@ -25,3 +25,4 @@
 3.3.3 (2026-04-26) Bugfix: Verlaufsfüllung von Rechtecken
 3.3.4 (2026-04-28) Klasse SimplePNG zu SvgJSEdu.js hinzugefügt
 3.3.5 (2026-05-01) Bugfix: Rotationen bei einer Objekten fehlerhaft
+3.4.0 (2026-05-12) Ellipse-Klasse hinzugefügt
