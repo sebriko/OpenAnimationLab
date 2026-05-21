@@ -50,7 +50,7 @@ function performSearch() {
     editorSearchState.currentMark = null;
   }
 
-  if (!query) {
+  if (!query || query.length < 3) {
     editorSearchState.query = null;
     editorSearchState.currentPos = 0;
     editorSearchState.count = 0;
