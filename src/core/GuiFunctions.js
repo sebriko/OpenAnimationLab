@@ -1258,6 +1258,7 @@ function downloadCanvas(canvas, filename) {
 
 // Globale Variable für den Vorschau-Vollbildmodus Status
 let isPreviewFullscreen = false;
+let fullscreenScrollPosition = null;
 
 // Funktion für den Vorschau-Vollbildmodus
 function togglePreviewFullscreen() {
@@ -1269,6 +1270,11 @@ function togglePreviewFullscreen() {
 
   if (!isPreviewFullscreen) {
     // Vollbildmodus aktivieren
+
+    // Editor-Scrollposition vor Vollbild speichern
+    if (typeof editor !== "undefined" && editor && editor.getScrollInfo) {
+      fullscreenScrollPosition = editor.getScrollInfo();
+    }
 
     // Aktuelle Splitter-Position vor Vollbild speichern
     if (window.editorPreviewSplitter) {
@@ -1373,6 +1379,18 @@ function togglePreviewFullscreen() {
     setTimeout(() => {
       if (window.editorPreviewSplitter) {
         window.editorPreviewSplitter.restorePosition();
+      }
+      // Editor nach display:none neu berechnen lassen und Scrollposition wiederherstellen
+      if (typeof editor !== "undefined" && editor) {
+        if (editor.refresh) {
+          editor.refresh();
+        }
+        setTimeout(() => {
+          if (fullscreenScrollPosition && editor.scrollTo) {
+            editor.scrollTo(fullscreenScrollPosition.left, fullscreenScrollPosition.top);
+            fullscreenScrollPosition = null;
+          }
+        }, 50);
       }
     }, 10);
   }

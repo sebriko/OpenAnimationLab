@@ -26,3 +26,4 @@
 3.3.4 (2026-04-28) Klasse SimplePNG zu SvgJSEdu.js hinzugefügt
 3.3.5 (2026-05-01) Bugfix: Rotationen bei einer Objekten fehlerhaft
 3.4.0 (2026-05-12) Ellipse-Klasse hinzugefügt
+3.4.1 (2026-05-21) Suche im Editor erst ab 3 Zeichen aktiv
