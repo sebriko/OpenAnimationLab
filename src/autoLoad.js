@@ -12,7 +12,8 @@ if (fileToLoad) {
           fetch(`./codes/${fileToLoad}`)
             .then((response) => response.text())
             .then((code) => {
-              loadTemplateCode(fileToLoad, code);
+              const activeTabName = document.querySelector(".tab.active")?.childNodes[0]?.nodeValue?.trim() || "Tab 1";
+              loadTemplateCode(activeTabName, code);
 
               // Resize canvas after code is loaded into the editor
               setTimeout(() => {

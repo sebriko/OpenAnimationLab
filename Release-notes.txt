@@ -27,3 +27,7 @@
 3.3.5 (2026-05-01) Bugfix: Rotationen bei einer Objekten fehlerhaft
 3.4.0 (2026-05-12) Ellipse-Klasse hinzugefügt
 3.4.1 (2026-05-21) Suche im Editor erst ab 3 Zeichen aktiv
+3.4.2 (2026-05-28) Scrollposition jetzt nach verlassen des Vollbild-Modus wiederhergestellt
+3.4.3 (2026-06-12) Bugfix: Tab zeigte Vorlagenmenü statt geladenen Code beim Zurückwechseln nach Aufruf mit URL-Parameter
+
+
