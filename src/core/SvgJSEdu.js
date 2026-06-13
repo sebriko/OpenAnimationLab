@@ -418,12 +418,9 @@ class SvgJSElement {
 
   _setupDrag() {
     if (!this._group) return;
-    this._group.css("cursor", "grab");
-
     this._boundDragStart = (e) => {
       e.preventDefault();
       this._isDragging = true;
-      this._group.css("cursor", "grabbing");
 
       const pt = this._getPointerPos(e);
       this._dragData = {
@@ -464,7 +461,6 @@ class SvgJSElement {
 
       this._boundDragEnd = () => {
         this._isDragging = false;
-        this._group.css("cursor", "grab");
         svgEl.removeEventListener("mousemove", this._boundDragMove);
         svgEl.removeEventListener("mouseup", this._boundDragEnd);
         svgEl.removeEventListener("touchmove", this._boundDragMove);
