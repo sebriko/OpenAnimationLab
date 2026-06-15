@@ -30,5 +30,6 @@
 3.4.2 (2026-05-28) Scrollposition jetzt nach verlassen des Vollbild-Modus wiederhergestellt
 3.4.3 (2026-06-12) Bugfix: Tab zeigte Vorlagenmenü statt geladenen Code beim Zurückwechseln nach Aufruf mit URL-Parameter
 3.4.4 (2026-06-13) Mauszeiger ändert sich nicht mehr beim Hovern über draggable Elemente
+3.4.5 (2026-06-15) Bugfix: Absturz in _draw()-Methoden wenn SVG-Root noch nicht initialisiert ist
 
 

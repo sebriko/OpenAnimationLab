@@ -1212,6 +1212,7 @@ SvgJSEdu.Rectangle = class Rectangle extends SvgJSElement {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._shapeElement) {
       this._shapeElement.remove();
     }
@@ -1807,6 +1808,7 @@ SvgJSEdu.Circle = class Circle extends SvgJSElement {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._shapeElement) this._shapeElement.remove();
     if (this._gradientDef) {
       this._gradientDef.remove();
@@ -2248,6 +2250,7 @@ SvgJSEdu.Ellipse = class Ellipse extends SvgJSElement {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._shapeElement) this._shapeElement.remove();
     if (this._gradientDef) {
       this._gradientDef.remove();
@@ -2648,6 +2651,7 @@ SvgJSEdu.Polygon = class Polygon extends SvgJSElement {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._shapeElement) this._shapeElement.remove();
     if (this._points.length < 2) return;
 
@@ -3277,6 +3281,7 @@ SvgJSEdu.Polygon = class Polygon {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._polygonElement) {
       this._polygonElement.remove();
       this._polygonElement = null;
@@ -3976,6 +3981,7 @@ SvgJSEdu.LinePath = class LinePath extends PathBase {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._pathElement) this._pathElement.remove();
     if (this._fillElement) this._fillElement.remove();
     this._fillElement = null;
@@ -4427,6 +4433,7 @@ SvgJSEdu.BezierPath = class BezierPath extends PathBase {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._pathElement) this._pathElement.remove();
     if (this._fillElement) this._fillElement.remove();
     this._fillElement = null;
@@ -4852,6 +4859,7 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._pathElement) this._pathElement.remove();
     if (this._fillElement) this._fillElement.remove();
     this._fillElement = null;
@@ -5284,6 +5292,7 @@ SvgJSEdu.Arrow = class Arrow extends SvgJSElement {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._lineElement) this._lineElement.remove();
     if (this._headElement) this._headElement.remove();
 
@@ -5676,6 +5685,7 @@ SvgJSEdu.Parallelogram = class Parallelogram extends SvgJSElement {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._shapeElement) this._shapeElement.remove();
 
     const p1 = { x: this._originX, y: this._originY };
@@ -7096,6 +7106,7 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._arcElement) this._arcElement.remove();
     if (this._textElement) {
       this._textElement.remove();
@@ -7407,6 +7418,7 @@ SvgJSEdu.Line = class Line extends SvgJSElement {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._lineElement) this._lineElement.remove();
 
     this._lineElement = this._group
@@ -7665,6 +7677,7 @@ SvgJSEdu.Ruler = class Ruler extends SvgJSElement {
   }
 
   _draw() {
+    if (!this._group) return;
     if (this._ticksGroup) this._ticksGroup.remove();
     this._ticksGroup = this._group.group();
 
@@ -8048,6 +8061,7 @@ SvgJSEdu.CoordinateSystem = class CoordinateSystem extends SvgJSElement {
   }
 
   _draw() {
+    if (!this._group) return;
     for (const key of ["top", "bottom", "left", "right"]) {
       if (this._arrows[key]) {
         this._arrows[key].destroy();
