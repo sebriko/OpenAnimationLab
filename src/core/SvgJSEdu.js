@@ -8392,70 +8392,102 @@ SvgJSEdu.SimpleSVG = class SimpleSVG extends SvgJSElement {
     };
   }
 
-  _loadSVG() {
-    if (!this._originalSvgString) return;
+_loadSVG() {
+  if (!this._originalSvgString) return;
 
-    try {
-      // Ensure xmlns is present: without the SVG namespace, DOMParser
-      // treats elements as generic XML and the browser won't render them.
-      let svgString = this._originalSvgString;
-      if (!svgString.includes("xmlns")) {
-        svgString = svgString.replace(
-          "<svg",
-          '<svg xmlns="http://www.w3.org/2000/svg"',
-        );
-      }
+  try {
+    let svgString = this._originalSvgString;
 
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(svgString, "image/svg+xml");
-      const svgEl = doc.documentElement;
+    // --- 1) Prolog bereinigen -------------------------------------------
+    // Ein DOMParser im XML-Modus verlangt, dass VOR <?xml ...?> nichts
+    // steht (kein Whitespace, Umbruch oder BOM), sonst:
+    // "XML declaration allowed only at the start of the document".
+    // Für Inline-SVG ist der Prolog irrelevant und wird entfernt.
+    svgString = svgString
+      .replace(/^\uFEFF/, "")               // Byte-Order-Mark
+      .replace(/^\s+/, "")                  // führende Leerzeichen/Umbrüche
+      .replace(/^<\?xml[^>]*\?>\s*/i, "")   // XML-Deklaration
+      .replace(/^<!DOCTYPE[^>]*>\s*/i, ""); // optionales DOCTYPE
 
-      if (
-        svgEl.tagName === "parsererror" ||
-        svgEl.querySelector("parsererror")
-      ) {
-        console.error("Fehler beim Parsen des SVG-Strings");
-        return;
-      }
-
-      this._originalDimensions = this._extractOriginalDimensions(svgEl);
-      const dims = this._originalDimensions;
-
-      if (this._svgNestedGroup) {
-        this._svgNestedGroup.remove();
-        this._svgNestedGroup = null;
-      }
-
-      const ns = "http://www.w3.org/2000/svg";
-      const nestedSvg = document.createElementNS(ns, "svg");
-
-      if (svgEl.hasAttribute("viewBox")) {
-        nestedSvg.setAttribute("viewBox", svgEl.getAttribute("viewBox"));
-      } else {
-        nestedSvg.setAttribute("viewBox", `0 0 ${dims.width} ${dims.height}`);
-      }
-
-      nestedSvg.setAttribute("width", dims.width);
-      nestedSvg.setAttribute("height", dims.height);
-      nestedSvg.setAttribute("x", "0");
-      nestedSvg.setAttribute("y", "0");
-      nestedSvg.setAttribute("overflow", "visible");
-
-      while (svgEl.firstChild) {
-        nestedSvg.appendChild(svgEl.firstChild);
-      }
-
-      this._group.node.appendChild(nestedSvg);
-
-      this._svgNestedGroup = SVG(nestedSvg);
-
-      if (this._scaleX !== 1 || this._scaleY !== 1) {
-        this._applyScale();
-      }
-    } catch (error) {
-      console.error("Fehler beim Laden des SVG:", error);
+    // --- 2) Namespace-Präfixe absichern ---------------------------------
+    // Optimierer (SVGO / Illustrator "Web-optimiert") entfernen oft
+    // xmlns:xlink, lassen aber xlink:href stehen -> "unbound prefix".
+    // Wir schreiben xlink:href auf das moderne href um ...
+    svgString = svgString.replace(/\bxlink:href\b/g, "href");
+    // ... und deklarieren xlink notfalls nach, falls noch ein anderes
+    // xlink:-Attribut (z. B. xlink:title) übrig ist.
+    if (/\bxlink:/.test(svgString) && !/xmlns:xlink/.test(svgString)) {
+      svgString = svgString.replace(
+        /<svg\b/,
+        '<svg xmlns:xlink="http://www.w3.org/1999/xlink"',
+      );
     }
+
+    // --- 3) Default-Namespace absichern ---------------------------------
+    // Ohne SVG-Namespace behandelt der DOMParser die Elemente als
+    // generisches XML und der Browser rendert nichts.
+    if (!/xmlns\s*=/.test(svgString)) {
+      svgString = svgString.replace(
+        /<svg\b/,
+        '<svg xmlns="http://www.w3.org/2000/svg"',
+      );
+    }
+
+    // --- 4) Parsen ------------------------------------------------------
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgString, "image/svg+xml");
+    const svgEl = doc.documentElement;
+
+    if (
+      svgEl.tagName === "parsererror" ||
+      svgEl.querySelector("parsererror")
+    ) {
+      // textContent liefert die konkrete Parser-Meldung -> bessere Diagnose.
+      console.error(
+        "Fehler beim Parsen des SVG-Strings:",
+        svgEl.textContent,
+      );
+      return;
+    }
+
+    this._originalDimensions = this._extractOriginalDimensions(svgEl);
+    const dims = this._originalDimensions;
+
+    if (this._svgNestedGroup) {
+      this._svgNestedGroup.remove();
+      this._svgNestedGroup = null;
+    }
+
+    const ns = "http://www.w3.org/2000/svg";
+    const nestedSvg = document.createElementNS(ns, "svg");
+
+    if (svgEl.hasAttribute("viewBox")) {
+      nestedSvg.setAttribute("viewBox", svgEl.getAttribute("viewBox"));
+    } else {
+      nestedSvg.setAttribute("viewBox", `0 0 ${dims.width} ${dims.height}`);
+    }
+
+    nestedSvg.setAttribute("width", dims.width);
+    nestedSvg.setAttribute("height", dims.height);
+    nestedSvg.setAttribute("x", "0");
+    nestedSvg.setAttribute("y", "0");
+    nestedSvg.setAttribute("overflow", "visible");
+
+    while (svgEl.firstChild) {
+      nestedSvg.appendChild(svgEl.firstChild);
+    }
+
+    this._group.node.appendChild(nestedSvg);
+
+    this._svgNestedGroup = SVG(nestedSvg);
+
+    if (this._scaleX !== 1 || this._scaleY !== 1) {
+      this._applyScale();
+    }
+  } catch (error) {
+    console.error("Fehler beim Laden des SVG:", error);
   }
+}
 
   set maintainStrokeWidth(value) {
     this._maintainStrokeWidth = value;

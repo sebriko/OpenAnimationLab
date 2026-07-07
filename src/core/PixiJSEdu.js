@@ -7720,7 +7720,9 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
 
   constructor(svgString) {
     super();
-    this._originalSvgString = this._normalizeSVGNumbers(svgString);
+    this._originalSvgString = this._normalizeSVGNumbers(
+      this._sanitizeSVG(svgString),
+    );
     this._maintainStrokeWidth = false;
     this._visualX = 0;
     this._visualY = 0;
@@ -8148,6 +8150,41 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
     }
 
     super.destroy(options);
+  }
+
+  // Bereinigt den SVG-String, damit er gültiges XML ist, bevor er als
+  // Data-URL in ein Image geladen wird. Ungültiges XML führt sonst still
+  // zu img.onerror ("Fehler beim Laden des SVG-Bildes").
+  //
+  // Behandelt zwei häufige Fehlerquellen:
+  //  1) BOM / führender Whitespace / <?xml ...?>-Prolog / DOCTYPE vor <svg>
+  //     -> "XML declaration allowed only at the start of the document".
+  //  2) Optimierer (SVGO / Illustrator "Web-optimiert") entfernen oft
+  //     xmlns:xlink, lassen aber xlink:href stehen -> "unbound prefix".
+  _sanitizeSVG(svgString) {
+    if (!svgString) return svgString;
+
+    let s = svgString;
+
+    // 1) Prolog/BOM/Whitespace entfernen.
+    s = s
+      .replace(/^\uFEFF/, "") // Byte-Order-Mark
+      .replace(/^\s+/, "") // führende Leerzeichen/Umbrüche
+      .replace(/^<\?xml[^>]*\?>\s*/i, "") // XML-Deklaration
+      .replace(/^<!DOCTYPE[^>]*>\s*/i, ""); // optionales DOCTYPE
+
+    // 2) xlink:href auf modernes href umschreiben ...
+    s = s.replace(/\bxlink:href\b/g, "href");
+    // ... und xlink notfalls nachdeklarieren, falls noch ein anderes
+    // xlink:-Attribut (z. B. xlink:title) übrig ist.
+    if (/\bxlink:/.test(s) && !/xmlns:xlink/.test(s)) {
+      s = s.replace(
+        /<svg\b/,
+        '<svg xmlns:xlink="http://www.w3.org/1999/xlink"',
+      );
+    }
+
+    return s;
   }
 
   _normalizeSVGNumbers(svgString) {
