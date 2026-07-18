@@ -302,9 +302,25 @@ function inferDataTypeFromName(paramName) {
     return "color";
   }
 
+  // String-Erkennung VOR Number-Erkennung, damit Parameternamen wie "text"
+  // oder "textAlign" nicht fälschlich als Zahl erkannt werden (z.B. weil
+  // "text" den Buchstaben "x" enthält).
   if (
-    paramName.includes("x") ||
-    paramName.includes("y") ||
+    paramName.includes("text") ||
+    paramName.includes("font") ||
+    paramName.includes("name") ||
+    paramName.includes("url")
+  ) {
+    return "string";
+  }
+
+  // Koordinatenparameter: Nur echte Koordinatennamen matchen, nicht jedes
+  // Wort das zufällig "x" oder "y" enthält. Erkannt werden z.B.:
+  //   "x", "y", "x1", "y2", "startX", "endY", "cx", "dy"
+  // Nicht erkannt (korrekt): "text", "textAlign", "proxy", "display"
+  if (
+    /^[xy]\d*$/.test(paramName) ||
+    /[XY]\d*$/.test(paramName) ||
     paramName.includes("rotation") ||
     paramName.includes("base") ||
     paramName.includes("height") ||
@@ -316,15 +332,6 @@ function inferDataTypeFromName(paramName) {
     paramName.includes("scale")
   ) {
     return "number";
-  }
-
-  if (
-    paramName.includes("text") ||
-    paramName.includes("font") ||
-    paramName.includes("name") ||
-    paramName.includes("url")
-  ) {
-    return "string";
   }
 
   return "string";
