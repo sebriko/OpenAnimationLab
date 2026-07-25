@@ -84,6 +84,106 @@ PixiJSEdu.BoardGUI = class BoardGUI extends PIXI.Container {
   };
 };
 
+// Base class for all PixiJS shape elements with shared position, rotation, scale, and event logic
+class PixiJSElement extends PIXI.Container {
+  constructor() {
+    super();
+    this._visualX = 0;
+    this._visualY = 0;
+    this._pivotX = 0;
+    this._pivotY = 0;
+    this._rotationPivotX = 0;
+    this._rotationPivotY = 0;
+    this._rotationDegrees = 0;
+    this._alpha = 1;
+    this._clickHandler = null;
+    this._mouseDownHandler = null;
+    this._mouseUpHandler = null;
+    this._mouseOverHandler = null;
+    this._mouseOutHandler = null;
+  }
+
+  _updatePosition() {
+    const sx = this.scale?.x ?? 1;
+    const sy = this.scale?.y ?? 1;
+    super.x = this._visualX + this._rotationPivotX * sx - this._pivotX;
+    super.y = this._visualY + this._rotationPivotY * sy - this._pivotY;
+  }
+
+  _updateRotationPivot() {
+    this.pivot.set(this._rotationPivotX, this._rotationPivotY);
+    this._updatePosition();
+  }
+
+  set x(value) {
+    this._visualX = value;
+    this._updatePosition();
+  }
+  get x() {
+    return this._visualX;
+  }
+  set y(value) {
+    this._visualY = value;
+    this._updatePosition();
+  }
+  get y() {
+    return this._visualY;
+  }
+
+  set rotation(degrees) {
+    this._rotationDegrees = degrees;
+    super.rotation = degrees * (Math.PI / 180);
+  }
+  get rotation() {
+    return this._rotationDegrees || 0;
+  }
+
+  set visible(value) {
+    super.visible = Boolean(value);
+  }
+  get visible() {
+    return super.visible;
+  }
+
+  setTransformationPoint(offsetX = 0, offsetY = 0) {
+    this._pivotX = offsetX;
+    this._pivotY = offsetY;
+    this._updatePosition();
+    return this;
+  }
+
+  setRotationPoint(offsetX = 0, offsetY = 0) {
+    this._rotationPivotX = offsetX;
+    this._rotationPivotY = offsetY;
+    this._updateRotationPivot();
+    return this;
+  }
+
+  setScale(factor) {
+    this.scale.set(factor);
+    this._updatePosition();
+  }
+
+  setAlpha(alpha) {
+    this._alpha = Math.max(0, Math.min(1, alpha));
+    this.alpha = this._alpha;
+  }
+
+  setBorder(borderColor, borderLine) {
+    this._borderLine = borderLine;
+    this._borderColor = borderColor;
+    this._draw();
+  }
+
+  _unregisterEventHandlers() {
+    if (this._clickHandler) this.off("pointerdown", this._clickHandler);
+    if (this._mouseDownHandler) this.off("pointerdown", this._mouseDownHandler);
+    if (this._mouseUpHandler) this.off("pointerup", this._mouseUpHandler);
+    if (this._mouseOverHandler) this.off("pointerover", this._mouseOverHandler);
+    if (this._mouseOutHandler) this.off("pointerout", this._mouseOutHandler);
+  }
+}
+
 PixiJSEdu.Group = class Group extends PIXI.Container {
   static serializationMap = {
     description: {
@@ -508,7 +608,7 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
   }
 };
 
-PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
+PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
   static serializationMap = {
     description: {
       de: "Rechteckiges grafisches Element",
@@ -727,13 +827,6 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
     this._width = width;
     this._height = height;
     this._color = color;
-    this._visualX = 0;
-    this._visualY = 0;
-    this._pivotX = 0;
-    this._pivotY = 0;
-    this._rotationPivotX = 0;
-    this._rotationPivotY = 0;
-    this._rotationDegrees = 0;
     this._cornerRadius = 0;
     this._roundedCorners = {
       topLeft: true,
@@ -741,12 +834,6 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
       bottomRight: true,
       bottomLeft: true,
     };
-
-    this._clickHandler = null;
-    this._mouseDownHandler = null;
-    this._mouseUpHandler = null;
-    this._mouseOverHandler = null;
-    this._mouseOutHandler = null;
 
     this.rectGraphics = new PIXI.Graphics();
     this.gradientSprite = null;
@@ -919,73 +1006,6 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
     ctx.closePath();
   }
 
-  _updatePosition() {
-    const sx = this.scale?.x ?? 1;
-    const sy = this.scale?.y ?? 1;
-    super.x = this._visualX + this._rotationPivotX * sx - this._pivotX;
-    super.y = this._visualY + this._rotationPivotY * sy - this._pivotY;
-  }
-
-  _updateRotationPivot() {
-    this.pivot.set(this._rotationPivotX, this._rotationPivotY);
-    this._updatePosition();
-  }
-
-  set x(value) {
-    this._visualX = value;
-    this._updatePosition();
-  }
-
-  get x() {
-    return this._visualX;
-  }
-
-  set y(value) {
-    this._visualY = value;
-    this._updatePosition();
-  }
-
-  get y() {
-    return this._visualY;
-  }
-
-  set rotation(degrees) {
-    this._rotationDegrees = degrees;
-    super.rotation = degrees * (Math.PI / 180);
-  }
-
-  get rotation() {
-    return this._rotationDegrees || 0;
-  }
-
-  set visible(value) {
-    super.visible = Boolean(value);
-  }
-
-  get visible() {
-    return super.visible;
-  }
-
-  setBorder(borderColor, borderLine) {
-    this._borderLine = borderLine;
-    this._borderColor = borderColor;
-    this._draw();
-  }
-
-  setTransformationPoint(offsetX = 0, offsetY = 0) {
-    this._pivotX = offsetX;
-    this._pivotY = offsetY;
-    this._updatePosition();
-    return this;
-  }
-
-  setRotationPoint(offsetX = 0, offsetY = 0) {
-    this._rotationPivotX = offsetX;
-    this._rotationPivotY = offsetY;
-    this._updateRotationPivot();
-    return this;
-  }
-
   setGradient(
     type = "linear",
     colorStops = [
@@ -998,15 +1018,6 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
     this._gradientStops = colorStops;
     this._gradientAngle = angle;
     this._draw();
-  }
-
-  setScale(factor) {
-    this.scale.set(factor);
-    this._updatePosition();
-  }
-
-  setAlpha(alpha) {
-    this.alpha = Math.max(0, Math.min(1, alpha));
   }
 
   setCornerRadius(r) {
@@ -1083,21 +1094,7 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
   }
 
   destroy() {
-    if (this._clickHandler) {
-      this.off("pointerdown", this._clickHandler);
-    }
-    if (this._mouseDownHandler) {
-      this.off("pointerdown", this._mouseDownHandler);
-    }
-    if (this._mouseUpHandler) {
-      this.off("pointerup", this._mouseUpHandler);
-    }
-    if (this._mouseOverHandler) {
-      this.off("pointerover", this._mouseOverHandler);
-    }
-    if (this._mouseOutHandler) {
-      this.off("pointerout", this._mouseOutHandler);
-    }
+    this._unregisterEventHandlers();
     if (this.gradientSprite) {
       this.gradientSprite.destroy();
     }
@@ -1106,7 +1103,7 @@ PixiJSEdu.Rectangle = class Rectangle extends PIXI.Container {
   }
 };
 
-PixiJSEdu.Circle = class Circle extends PIXI.Container {
+PixiJSEdu.Circle = class Circle extends PixiJSElement {
   static serializationMap = {
     description: {
       de: "Kreisförmiges grafisches Element",
@@ -1296,20 +1293,6 @@ PixiJSEdu.Circle = class Circle extends PIXI.Container {
     super();
     this._radius = radius;
     this._color = color;
-    this._visualX = 0;
-    this._visualY = 0;
-    this._pivotX = 0;
-    this._pivotY = 0;
-    this._rotationPivotX = 0;
-    this._rotationPivotY = 0;
-    this._rotationDegrees = 0;
-    this._alpha = 1;
-
-    this._clickHandler = null;
-    this._mouseDownHandler = null;
-    this._mouseUpHandler = null;
-    this._mouseOverHandler = null;
-    this._mouseOutHandler = null;
 
     this.circleGraphics = new PIXI.Graphics();
     this.gradientSprite = null;
@@ -1400,73 +1383,6 @@ PixiJSEdu.Circle = class Circle extends PIXI.Container {
     }
   }
 
-  _updatePosition() {
-    const sx = this.scale?.x ?? 1;
-    const sy = this.scale?.y ?? 1;
-    super.x = this._visualX + this._rotationPivotX * sx - this._pivotX;
-    super.y = this._visualY + this._rotationPivotY * sy - this._pivotY;
-  }
-
-  _updateRotationPivot() {
-    this.pivot.set(this._rotationPivotX, this._rotationPivotY);
-    this._updatePosition();
-  }
-
-  set x(value) {
-    this._visualX = value;
-    this._updatePosition();
-  }
-
-  get x() {
-    return this._visualX;
-  }
-
-  set y(value) {
-    this._visualY = value;
-    this._updatePosition();
-  }
-
-  get y() {
-    return this._visualY;
-  }
-
-  set rotation(degrees) {
-    this._rotationDegrees = degrees;
-    super.rotation = degrees * (Math.PI / 180);
-  }
-
-  get rotation() {
-    return this._rotationDegrees || 0;
-  }
-
-  set visible(value) {
-    super.visible = Boolean(value);
-  }
-
-  get visible() {
-    return super.visible;
-  }
-
-  setBorder(borderColor, borderLine) {
-    this._borderLine = borderLine;
-    this._borderColor = borderColor;
-    this._draw();
-  }
-
-  setTransformationPoint(offsetX = 0, offsetY = 0) {
-    this._pivotX = offsetX;
-    this._pivotY = offsetY;
-    this._updatePosition();
-    return this;
-  }
-
-  setRotationPoint(offsetX = 0, offsetY = 0) {
-    this._rotationPivotX = offsetX;
-    this._rotationPivotY = offsetY;
-    this._updateRotationPivot();
-    return this;
-  }
-
   setGradient(
     type = "radial",
     colorStops = [
@@ -1477,16 +1393,6 @@ PixiJSEdu.Circle = class Circle extends PIXI.Container {
     this._gradientType = type;
     this._gradientStops = colorStops;
     this._draw();
-  }
-
-  setScale(factor) {
-    this.scale.set(factor);
-    this._updatePosition();
-  }
-
-  setAlpha(value) {
-    this._alpha = Math.max(0, Math.min(1, value));
-    this.alpha = this._alpha;
   }
 
   setRadius(radius) {
@@ -1511,21 +1417,7 @@ PixiJSEdu.Circle = class Circle extends PIXI.Container {
   }
 
   destroy() {
-    if (this._clickHandler) {
-      this.off("pointerdown", this._clickHandler);
-    }
-    if (this._mouseDownHandler) {
-      this.off("pointerdown", this._mouseDownHandler);
-    }
-    if (this._mouseUpHandler) {
-      this.off("pointerup", this._mouseUpHandler);
-    }
-    if (this._mouseOverHandler) {
-      this.off("pointerover", this._mouseOverHandler);
-    }
-    if (this._mouseOutHandler) {
-      this.off("pointerout", this._mouseOutHandler);
-    }
+    this._unregisterEventHandlers();
     if (this.gradientSprite) {
       this.gradientSprite.destroy();
     }
@@ -1534,7 +1426,7 @@ PixiJSEdu.Circle = class Circle extends PIXI.Container {
   }
 };
 
-PixiJSEdu.Ellipse = class Ellipse extends PIXI.Container {
+PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
   static serializationMap = {
     description: {
       de: "Ellipsenförmiges grafisches Element",
@@ -1739,20 +1631,6 @@ PixiJSEdu.Ellipse = class Ellipse extends PIXI.Container {
     this._radiusX = radiusX;
     this._radiusY = radiusY;
     this._color = color;
-    this._visualX = 0;
-    this._visualY = 0;
-    this._pivotX = 0;
-    this._pivotY = 0;
-    this._rotationPivotX = 0;
-    this._rotationPivotY = 0;
-    this._rotationDegrees = 0;
-    this._alpha = 1;
-
-    this._clickHandler = null;
-    this._mouseDownHandler = null;
-    this._mouseUpHandler = null;
-    this._mouseOverHandler = null;
-    this._mouseOutHandler = null;
 
     this.ellipseGraphics = new PIXI.Graphics();
     this.gradientSprite = null;
@@ -1853,73 +1731,6 @@ PixiJSEdu.Ellipse = class Ellipse extends PIXI.Container {
     }
   }
 
-  _updatePosition() {
-    const sx = this.scale?.x ?? 1;
-    const sy = this.scale?.y ?? 1;
-    super.x = this._visualX + this._rotationPivotX * sx - this._pivotX;
-    super.y = this._visualY + this._rotationPivotY * sy - this._pivotY;
-  }
-
-  _updateRotationPivot() {
-    this.pivot.set(this._rotationPivotX, this._rotationPivotY);
-    this._updatePosition();
-  }
-
-  set x(value) {
-    this._visualX = value;
-    this._updatePosition();
-  }
-
-  get x() {
-    return this._visualX;
-  }
-
-  set y(value) {
-    this._visualY = value;
-    this._updatePosition();
-  }
-
-  get y() {
-    return this._visualY;
-  }
-
-  set rotation(degrees) {
-    this._rotationDegrees = degrees;
-    super.rotation = degrees * (Math.PI / 180);
-  }
-
-  get rotation() {
-    return this._rotationDegrees || 0;
-  }
-
-  set visible(value) {
-    super.visible = Boolean(value);
-  }
-
-  get visible() {
-    return super.visible;
-  }
-
-  setBorder(borderColor, borderLine) {
-    this._borderLine = borderLine;
-    this._borderColor = borderColor;
-    this._draw();
-  }
-
-  setTransformationPoint(offsetX = 0, offsetY = 0) {
-    this._pivotX = offsetX;
-    this._pivotY = offsetY;
-    this._updatePosition();
-    return this;
-  }
-
-  setRotationPoint(offsetX = 0, offsetY = 0) {
-    this._rotationPivotX = offsetX;
-    this._rotationPivotY = offsetY;
-    this._updateRotationPivot();
-    return this;
-  }
-
   setGradient(
     type = "radial",
     colorStops = [
@@ -1930,16 +1741,6 @@ PixiJSEdu.Ellipse = class Ellipse extends PIXI.Container {
     this._gradientType = type;
     this._gradientStops = colorStops;
     this._draw();
-  }
-
-  setScale(factor) {
-    this.scale.set(factor);
-    this._updatePosition();
-  }
-
-  setAlpha(value) {
-    this._alpha = Math.max(0, Math.min(1, value));
-    this.alpha = this._alpha;
   }
 
   setRadiusX(radiusX) {
@@ -1969,21 +1770,7 @@ PixiJSEdu.Ellipse = class Ellipse extends PIXI.Container {
   }
 
   destroy() {
-    if (this._clickHandler) {
-      this.off("pointerdown", this._clickHandler);
-    }
-    if (this._mouseDownHandler) {
-      this.off("pointerdown", this._mouseDownHandler);
-    }
-    if (this._mouseUpHandler) {
-      this.off("pointerup", this._mouseUpHandler);
-    }
-    if (this._mouseOverHandler) {
-      this.off("pointerover", this._mouseOverHandler);
-    }
-    if (this._mouseOutHandler) {
-      this.off("pointerout", this._mouseOutHandler);
-    }
+    this._unregisterEventHandlers();
     if (this.gradientSprite) {
       this.gradientSprite.destroy();
     }
@@ -1992,7 +1779,7 @@ PixiJSEdu.Ellipse = class Ellipse extends PIXI.Container {
   }
 };
 
-PixiJSEdu.Polygon = class Polygon extends PIXI.Container {
+PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
   static serializationMap = {
     description: {
       de: "Vieleckiges grafisches Element",
@@ -2189,21 +1976,7 @@ PixiJSEdu.Polygon = class Polygon extends PIXI.Container {
     this._sides = Math.max(3, Math.floor(sides));
     this._radius = radius;
     this._color = color;
-    this._visualX = 0;
-    this._visualY = 0;
-    this._pivotX = 0;
-    this._pivotY = 0;
-    this._rotationPivotX = 0;
-    this._rotationPivotY = 0;
-    this._rotationDegrees = 0;
-    this._alpha = 1;
     this._startAngle = -90;
-
-    this._clickHandler = null;
-    this._mouseDownHandler = null;
-    this._mouseUpHandler = null;
-    this._mouseOverHandler = null;
-    this._mouseOutHandler = null;
 
     this.polygonGraphics = new PIXI.Graphics();
     this.gradientSprite = null;
@@ -2321,60 +2094,6 @@ PixiJSEdu.Polygon = class Polygon extends PIXI.Container {
     }
   }
 
-  _updatePosition() {
-    const sx = this.scale?.x ?? 1;
-    const sy = this.scale?.y ?? 1;
-    super.x = this._visualX + this._rotationPivotX * sx - this._pivotX;
-    super.y = this._visualY + this._rotationPivotY * sy - this._pivotY;
-  }
-  _updateRotationPivot() {
-    this.pivot.set(this._rotationPivotX, this._rotationPivotY);
-    this._updatePosition();
-  }
-  set x(value) {
-    this._visualX = value;
-    this._updatePosition();
-  }
-  get x() {
-    return this._visualX;
-  }
-  set y(value) {
-    this._visualY = value;
-    this._updatePosition();
-  }
-  get y() {
-    return this._visualY;
-  }
-  set rotation(degrees) {
-    this._rotationDegrees = degrees;
-    super.rotation = degrees * (Math.PI / 180);
-  }
-  get rotation() {
-    return this._rotationDegrees || 0;
-  }
-  set visible(value) {
-    super.visible = Boolean(value);
-  }
-  get visible() {
-    return super.visible;
-  }
-  setBorder(borderColor, borderLine) {
-    this._borderLine = borderLine;
-    this._borderColor = borderColor;
-    this._draw();
-  }
-  setTransformationPoint(offsetX = 0, offsetY = 0) {
-    this._pivotX = offsetX;
-    this._pivotY = offsetY;
-    this._updatePosition();
-    return this;
-  }
-  setRotationPoint(offsetX = 0, offsetY = 0) {
-    this._rotationPivotX = offsetX;
-    this._rotationPivotY = offsetY;
-    this._updateRotationPivot();
-    return this;
-  }
   setGradient(
     type = "radial",
     colorStops = [
@@ -2385,14 +2104,6 @@ PixiJSEdu.Polygon = class Polygon extends PIXI.Container {
     this._gradientType = type;
     this._gradientStops = colorStops;
     this._draw();
-  }
-  setScale(factor) {
-    this.scale.set(factor);
-    this._updatePosition();
-  }
-  setAlpha(value) {
-    this._alpha = Math.max(0, Math.min(1, value));
-    this.alpha = this._alpha;
   }
   setStartAngle(degrees) {
     this._startAngle = degrees;
@@ -2419,21 +2130,7 @@ PixiJSEdu.Polygon = class Polygon extends PIXI.Container {
   }
 
   destroy() {
-    if (this._clickHandler) {
-      this.off("pointerdown", this._clickHandler);
-    }
-    if (this._mouseDownHandler) {
-      this.off("pointerdown", this._mouseDownHandler);
-    }
-    if (this._mouseUpHandler) {
-      this.off("pointerup", this._mouseUpHandler);
-    }
-    if (this._mouseOverHandler) {
-      this.off("pointerover", this._mouseOverHandler);
-    }
-    if (this._mouseOutHandler) {
-      this.off("pointerout", this._mouseOutHandler);
-    }
+    this._unregisterEventHandlers();
     if (this.gradientSprite) {
       this.gradientSprite.destroy();
     }

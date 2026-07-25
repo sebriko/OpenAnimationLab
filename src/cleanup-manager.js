@@ -242,8 +242,6 @@ class CleanupManager {
       totalRemoved: this.removedItems.length,
     };
   }
-
-  showCleanupReport() {}
 }
 
 window.cleanupManager = new CleanupManager();

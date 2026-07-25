@@ -192,17 +192,8 @@ class ColorPicker {
   }
 
   rgbToHex(r, g, b) {
-    return (
-      "0x" +
-      this.componentToHex(r) +
-      this.componentToHex(g) +
-      this.componentToHex(b)
-    );
-  }
-
-  componentToHex(c) {
-    const hex = Math.max(0, Math.min(255, c)).toString(16).toUpperCase();
-    return hex.length === 1 ? "0" + hex : hex;
+    const clamp = c => Math.max(0, Math.min(255, c)).toString(16).toUpperCase().padStart(2, "0");
+    return "0x" + clamp(r) + clamp(g) + clamp(b);
   }
 
   rgbToHsl(r, g, b) {

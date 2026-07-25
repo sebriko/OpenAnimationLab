@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const savedTheme =
     localStorage.getItem("theme") ||
     (window.CookieConsent && window.CookieConsent.isAccepted()
-      ? getCookieLocal("theme")
+      ? window.CookieConsent.getCookie("theme")
       : null);
 
   if (savedTheme && savedTheme !== currentTheme) {
@@ -30,16 +30,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  function getCookieLocal(name) {
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(";");
-    for (let i = 0; i < ca.length; i++) {
-      let c = ca[i].trim();
-      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-    }
-    return null;
-  }
-
   function switchTheme(theme) {
     const themeStylesheet = document.getElementById("theme-stylesheet");
     themeStylesheet.href = "src/" + theme + "-theme.css";
@@ -52,7 +42,9 @@ document.addEventListener("DOMContentLoaded", function () {
           editor.setOption("theme", "neat");
         }
       }
-    } catch (error) {}
+    } catch (error) {
+      // Editor may not be ready during theme switch
+    }
 
     document.body.setAttribute("data-theme", theme);
     currentTheme = theme;

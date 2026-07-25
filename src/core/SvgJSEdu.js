@@ -42,12 +42,6 @@ function degToRad(degrees) {
   return degrees * (Math.PI / 180);
 }
 
-/**
- * Konvertiert Bogenmaß zu Grad
- */
-function radToDeg(radians) {
-  return radians * (180 / Math.PI);
-}
 
 // ============================================================================
 // Board – Singleton managing the SVG root container
@@ -555,6 +549,76 @@ class SvgJSElement {
   removeFromParent() {
     if (this._group && this._group.parent()) {
       this._group.remove();
+    }
+    return this;
+  }
+
+  // ---------- Fill & Stroke (shared by shape subclasses) ----------
+
+  _removeGradientDef() {
+    if (this._gradientDef) {
+      this._gradientDef.remove();
+      this._gradientDef = null;
+    }
+  }
+
+  setFillColor(color) {
+    this._fillColor = color;
+    this._gradientStops = null;
+    this._gradientType = null;
+    this._removeGradientDef();
+    if (this._shapeElement) {
+      if (color !== null && color !== undefined) {
+        this._shapeElement.fill(colorToHex(color));
+      } else {
+        this._shapeElement.fill("none");
+      }
+    }
+    return this;
+  }
+
+  setLineColor(color) {
+    this._lineColor = color;
+    if (this._shapeElement) {
+      if (color !== null && this._lineThickness > 0) {
+        this._shapeElement.stroke({
+          color: colorToHex(color),
+          width: this._lineThickness,
+        });
+      } else {
+        this._shapeElement.stroke("none");
+      }
+    }
+    return this;
+  }
+
+  setLineThickness(thickness) {
+    this._lineThickness = thickness;
+    if (this._shapeElement) {
+      if (thickness > 0 && this._lineColor !== null) {
+        this._shapeElement.stroke({
+          color: colorToHex(this._lineColor),
+          width: thickness,
+        });
+      } else {
+        this._shapeElement.stroke("none");
+      }
+    }
+    return this;
+  }
+
+  setBorder(borderColor, borderLine) {
+    this._lineColor = borderColor;
+    this._lineThickness = borderLine;
+    if (this._shapeElement) {
+      if (borderColor !== null && borderLine > 0) {
+        this._shapeElement.stroke({
+          color: colorToHex(borderColor),
+          width: borderLine,
+        });
+      } else {
+        this._shapeElement.stroke("none");
+      }
     }
     return this;
   }
@@ -1216,10 +1280,7 @@ SvgJSEdu.Rectangle = class Rectangle extends SvgJSElement {
     if (this._shapeElement) {
       this._shapeElement.remove();
     }
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
 
     const needsSelectiveCorners =
       this._cornerRadius > 0 &&
@@ -1312,10 +1373,7 @@ SvgJSEdu.Rectangle = class Rectangle extends SvgJSElement {
   _applyGradient() {
     if (!this._gradientStops || !this._shapeElement) return;
 
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
 
     if (this._gradientType === "radial") {
       this._gradientDef = svgRoot.gradient("radial", (add) => {
@@ -1364,74 +1422,6 @@ SvgJSEdu.Rectangle = class Rectangle extends SvgJSElement {
     }
 
     this._shapeElement.fill(this._gradientDef);
-  }
-
-  // ---------- Fill & Stroke ----------
-
-  setFillColor(color) {
-    this._fillColor = color;
-    this._gradientStops = null;
-    this._gradientType = null;
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
-    if (this._shapeElement) {
-      if (color !== null && color !== undefined) {
-        this._shapeElement.fill(colorToHex(color));
-      } else {
-        this._shapeElement.fill("none");
-      }
-    }
-    return this;
-  }
-
-  setLineColor(color) {
-    this._lineColor = color;
-    if (this._shapeElement) {
-      if (color !== null && this._lineThickness > 0) {
-        this._shapeElement.stroke({
-          color: colorToHex(color),
-          width: this._lineThickness,
-        });
-      } else {
-        this._shapeElement.stroke("none");
-      }
-    }
-    return this;
-  }
-
-  setLineThickness(thickness) {
-    this._lineThickness = thickness;
-    if (this._shapeElement) {
-      if (thickness > 0 && this._lineColor !== null) {
-        this._shapeElement.stroke({
-          color: colorToHex(this._lineColor),
-          width: thickness,
-        });
-      } else {
-        this._shapeElement.stroke("none");
-      }
-    }
-    return this;
-  }
-
-  // ---------- Border ----------
-
-  setBorder(borderColor, borderLine) {
-    this._lineColor = borderColor;
-    this._lineThickness = borderLine;
-    if (this._shapeElement) {
-      if (borderColor !== null && borderLine > 0) {
-        this._shapeElement.stroke({
-          color: colorToHex(borderColor),
-          width: borderLine,
-        });
-      } else {
-        this._shapeElement.stroke("none");
-      }
-    }
-    return this;
   }
 
   // ---------- Dimensionen ----------
@@ -1566,10 +1556,7 @@ SvgJSEdu.Rectangle = class Rectangle extends SvgJSElement {
   // ---------- Destroy ----------
 
   destroy() {
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
     if (this._shapeElement) {
       this._shapeElement.remove();
       this._shapeElement = null;
@@ -1810,10 +1797,7 @@ SvgJSEdu.Circle = class Circle extends SvgJSElement {
   _draw() {
     if (!this._group) return;
     if (this._shapeElement) this._shapeElement.remove();
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
 
     // Position is controlled via the group transform; cx/cy stay at origin
     this._shapeElement = this._group.circle(this._radius * 2);
@@ -1840,10 +1824,7 @@ SvgJSEdu.Circle = class Circle extends SvgJSElement {
   _applyGradient() {
     if (!this._gradientStops || !this._shapeElement) return;
 
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
 
     if (this._gradientType === "radial") {
       this._gradientDef = svgRoot.gradient("radial", (add) => {
@@ -1868,74 +1849,6 @@ SvgJSEdu.Circle = class Circle extends SvgJSElement {
     }
 
     this._shapeElement.fill(this._gradientDef);
-  }
-
-  // ---------- Fill & Stroke ----------
-
-  setFillColor(color) {
-    this._fillColor = color;
-    this._gradientStops = null;
-    this._gradientType = null;
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
-    if (this._shapeElement) {
-      if (color !== null && color !== undefined) {
-        this._shapeElement.fill(colorToHex(color));
-      } else {
-        this._shapeElement.fill("none");
-      }
-    }
-    return this;
-  }
-
-  setLineColor(color) {
-    this._lineColor = color;
-    if (this._shapeElement) {
-      if (color !== null && this._lineThickness > 0) {
-        this._shapeElement.stroke({
-          color: colorToHex(color),
-          width: this._lineThickness,
-        });
-      } else {
-        this._shapeElement.stroke("none");
-      }
-    }
-    return this;
-  }
-
-  setLineThickness(thickness) {
-    this._lineThickness = thickness;
-    if (this._shapeElement) {
-      if (thickness > 0 && this._lineColor !== null) {
-        this._shapeElement.stroke({
-          color: colorToHex(this._lineColor),
-          width: thickness,
-        });
-      } else {
-        this._shapeElement.stroke("none");
-      }
-    }
-    return this;
-  }
-
-  // ---------- Border ----------
-
-  setBorder(borderColor, borderLine) {
-    this._lineColor = borderColor;
-    this._lineThickness = borderLine;
-    if (this._shapeElement) {
-      if (borderColor !== null && borderLine > 0) {
-        this._shapeElement.stroke({
-          color: colorToHex(borderColor),
-          width: borderLine,
-        });
-      } else {
-        this._shapeElement.stroke("none");
-      }
-    }
-    return this;
   }
 
   // ---------- Radius ----------
@@ -1988,10 +1901,7 @@ SvgJSEdu.Circle = class Circle extends SvgJSElement {
   // ---------- Destroy ----------
 
   destroy() {
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
     if (this._shapeElement) {
       this._shapeElement.remove();
       this._shapeElement = null;
@@ -2252,10 +2162,7 @@ SvgJSEdu.Ellipse = class Ellipse extends SvgJSElement {
   _draw() {
     if (!this._group) return;
     if (this._shapeElement) this._shapeElement.remove();
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
 
     this._shapeElement = this._group.ellipse(
       this._radiusX * 2,
@@ -2284,10 +2191,7 @@ SvgJSEdu.Ellipse = class Ellipse extends SvgJSElement {
   _applyGradient() {
     if (!this._gradientStops || !this._shapeElement) return;
 
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
 
     if (this._gradientType === "radial") {
       this._gradientDef = svgRoot.gradient("radial", (add) => {
@@ -2312,74 +2216,6 @@ SvgJSEdu.Ellipse = class Ellipse extends SvgJSElement {
     }
 
     this._shapeElement.fill(this._gradientDef);
-  }
-
-  // ---------- Fill & Stroke ----------
-
-  setFillColor(color) {
-    this._fillColor = color;
-    this._gradientStops = null;
-    this._gradientType = null;
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
-    if (this._shapeElement) {
-      if (color !== null && color !== undefined) {
-        this._shapeElement.fill(colorToHex(color));
-      } else {
-        this._shapeElement.fill("none");
-      }
-    }
-    return this;
-  }
-
-  setLineColor(color) {
-    this._lineColor = color;
-    if (this._shapeElement) {
-      if (color !== null && this._lineThickness > 0) {
-        this._shapeElement.stroke({
-          color: colorToHex(color),
-          width: this._lineThickness,
-        });
-      } else {
-        this._shapeElement.stroke("none");
-      }
-    }
-    return this;
-  }
-
-  setLineThickness(thickness) {
-    this._lineThickness = thickness;
-    if (this._shapeElement) {
-      if (thickness > 0 && this._lineColor !== null) {
-        this._shapeElement.stroke({
-          color: colorToHex(this._lineColor),
-          width: thickness,
-        });
-      } else {
-        this._shapeElement.stroke("none");
-      }
-    }
-    return this;
-  }
-
-  // ---------- Border ----------
-
-  setBorder(borderColor, borderLine) {
-    this._lineColor = borderColor;
-    this._lineThickness = borderLine;
-    if (this._shapeElement) {
-      if (borderColor !== null && borderLine > 0) {
-        this._shapeElement.stroke({
-          color: colorToHex(borderColor),
-          width: borderLine,
-        });
-      } else {
-        this._shapeElement.stroke("none");
-      }
-    }
-    return this;
   }
 
   // ---------- Radius ----------
@@ -2444,280 +2280,12 @@ SvgJSEdu.Ellipse = class Ellipse extends SvgJSElement {
   // ---------- Destroy ----------
 
   destroy() {
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
     if (this._shapeElement) {
       this._shapeElement.remove();
       this._shapeElement = null;
     }
     super.destroy();
-  }
-};
-
-// ============================================================================
-// Polygon
-// ============================================================================
-
-SvgJSEdu.Polygon = class Polygon extends SvgJSElement {
-  static serializationMap = {
-    description: { de: "Polygon aus Punkten", en: "Polygon from points" },
-    weblink: {
-      de: "https://www.educational-animation.org",
-      en: "https://www.educational-animation.org",
-    },
-    example:
-      "let myPolygon = new Polygon([[0,0],[100,0],[50,80]], 0xff0000, 0x000000, 2);",
-    constructor: {
-      points: {
-        name: "points",
-        info: {
-          en: "Array of [x,y] coordinate pairs",
-          de: "Array von [x,y]-Koordinatenpaaren",
-        },
-      },
-      fillColor: {
-        name: "fillColor",
-        info: {
-          en: "Fill color in hexadecimal format",
-          de: "Füllfarbe im Hexadezimalformat",
-        },
-      },
-      lineColor: {
-        name: "lineColor",
-        info: {
-          en: "Line color in hexadecimal format",
-          de: "Linienfarbe im Hexadezimalformat",
-        },
-      },
-      lineThickness: {
-        name: "lineThickness",
-        info: { en: "Line thickness in pixels", de: "Linienstärke in Pixeln" },
-      },
-    },
-    setter: {
-      x: {
-        name: "x",
-        info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
-        },
-        example: "x = 100",
-      },
-      y: {
-        name: "y",
-        info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
-        },
-        example: "y = 200",
-      },
-      rotation: {
-        name: "rotation",
-        info: {
-          en: "Rotation of the element in degrees",
-          de: "Drehung des Elements in Grad",
-        },
-        example: "rotation = 45",
-      },
-      visible: {
-        name: "visible",
-        info: {
-          en: "Defines whether the object is visible or invisible",
-          de: "Legt fest, ob das Objekt sichtbar oder unsichtbar ist",
-        },
-        example: "visible = true",
-      },
-    },
-    methods: {
-      setFillColor: {
-        example: "setFillColor(0xff0000)",
-        info: {
-          en: "Sets the fill color of the polygon",
-          de: "Setzt die Füllfarbe des Polygons",
-        },
-      },
-      setLineColor: {
-        example: "setLineColor(0x000000)",
-        info: {
-          en: "Sets the line color of the polygon",
-          de: "Setzt die Linienfarbe des Polygons",
-        },
-      },
-      setLineThickness: {
-        example: "setLineThickness(2)",
-        info: {
-          en: "Sets the line thickness",
-          de: "Setzt die Linienstärke",
-        },
-      },
-      setPoints: {
-        example: "setPoints([[0,0],[100,0],[50,80]])",
-        info: {
-          en: "Replaces the polygon points",
-          de: "Ersetzt die Polygonpunkte",
-        },
-      },
-      onClick: {
-        example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
-        info: {
-          en: "Defines a function to execute when the element is clicked.",
-          de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
-        },
-      },
-      onMouseDown: {
-        example:
-          'onMouseDown(handleMouseDown); \n\nfunction handleMouseDown() { console.log("Mouse button pressed"); }',
-        info: {
-          en: "Defines a function to execute when the mouse button is pressed down on the element.",
-          de: "Legt fest, welche Funktion beim Drücken der Maustaste auf dem Element ausgeführt wird.",
-        },
-      },
-      onMouseUp: {
-        example:
-          'onMouseUp(handleMouseUp); \n\nfunction handleMouseUp() { console.log("Mouse button released"); }',
-        info: {
-          en: "Defines a function to execute when the mouse button is released on the element.",
-          de: "Legt fest, welche Funktion beim Loslassen der Maustaste auf dem Element ausgeführt wird.",
-        },
-      },
-      onMouseOver: {
-        example:
-          'onMouseOver(handleMouseOver); \n\nfunction handleMouseOver() { console.log("Mouse entered element"); }',
-        info: {
-          en: "Defines a function to execute when the mouse cursor enters the element.",
-          de: "Legt fest, welche Funktion beim Überfahren des Elements mit der Maus ausgeführt wird.",
-        },
-      },
-      onMouseOut: {
-        example:
-          'onMouseOut(handleMouseOut); \n\nfunction handleMouseOut() { console.log("Mouse left element"); }',
-        info: {
-          en: "Defines a function to execute when the mouse cursor leaves the element.",
-          de: "Legt fest, welche Funktion beim Verlassen des Elements mit der Maus ausgeführt wird.",
-        },
-      },
-      setDragging: {
-        example: "setDragging(0, 0, 1280, 720)",
-        info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
-        },
-      },
-      onDragStart: {
-        example:
-          'onDragStart(handleDragStart); \n\nfunction handleDragStart() { console.log("Started dragging element"); }',
-        info: {
-          en: "Sets a callback function that is executed when dragging starts",
-          de: "Setzt eine Callback-Funktion, die beim Start des Ziehens ausgeführt wird",
-        },
-      },
-      onDrag: {
-        example:
-          'onDrag(handleDrag); \n\nfunction handleDrag() { console.log("Element is being dragged"); }',
-        info: {
-          en: "Sets a callback function that is executed while the element is being dragged",
-          de: "Setzt eine Callback-Funktion, die während des Ziehens des Elements ausgeführt wird",
-        },
-      },
-      onDragEnd: {
-        example:
-          'onDragEnd(handleDragEnd); \n\nfunction handleDragEnd() { console.log("Stopped dragging element"); }',
-        info: {
-          en: "Sets a callback function that is executed when dragging ends",
-          de: "Setzt eine Callback-Funktion, die beim Ende des Ziehens ausgeführt wird",
-        },
-      },
-    },
-  };
-
-  constructor(
-    points = [],
-    fillColor = null,
-    lineColor = 0x000000,
-    lineThickness = 1,
-  ) {
-    super();
-    this._points = points;
-    this._fillColor = fillColor;
-    this._lineColor = lineColor;
-    this._lineThickness = lineThickness;
-    this._shapeElement = null;
-
-    this._draw();
-    BoardSVG[INSTANCE_KEY].addChild(this);
-  }
-
-  _draw() {
-    if (!this._group) return;
-    if (this._shapeElement) this._shapeElement.remove();
-    if (this._points.length < 2) return;
-
-    const flat = this._points.flat();
-    this._shapeElement = this._group.polygon(flat);
-
-    if (this._fillColor !== null && this._fillColor !== undefined) {
-      this._shapeElement.fill(colorToHex(this._fillColor));
-    } else {
-      this._shapeElement.fill("none");
-    }
-
-    this._shapeElement.stroke({
-      color: colorToHex(this._lineColor),
-      width: this._lineThickness,
-    });
-  }
-
-  setFillColor(color) {
-    this._fillColor = color;
-    if (this._shapeElement) {
-      if (color !== null && color !== undefined) {
-        this._shapeElement.fill(colorToHex(color));
-      } else {
-        this._shapeElement.fill("none");
-      }
-    }
-    return this;
-  }
-
-  setLineColor(color) {
-    this._lineColor = color;
-    if (this._shapeElement)
-      this._shapeElement.stroke({
-        color: colorToHex(color),
-        width: this._lineThickness,
-      });
-    return this;
-  }
-
-  setLineThickness(thickness) {
-    this._lineThickness = thickness;
-    if (this._shapeElement)
-      this._shapeElement.stroke({
-        color: colorToHex(this._lineColor),
-        width: thickness,
-      });
-    return this;
-  }
-
-  setPoints(points) {
-    this._points = [...points];
-    this._draw();
-    return this;
-  }
-
-  updatePoint(index, x, y) {
-    if (index >= 0 && index < this._points.length) {
-      this._points[index] = [x, y];
-      this._draw();
-    }
-    return this;
-  }
-
-  getPoints() {
-    return [...this._points];
   }
 };
 
@@ -3287,10 +2855,7 @@ SvgJSEdu.Polygon = class Polygon {
       this._polygonElement = null;
     }
 
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
 
     const points = this._calculatePolygonPoints();
     const pointsFlat = points.map((p) => p.join(",")).join(" ");
@@ -3320,10 +2885,7 @@ SvgJSEdu.Polygon = class Polygon {
   _applyGradient() {
     if (!this._gradientStops || !this._polygonElement) return;
 
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
 
     if (this._gradientType === "radial") {
       this._gradientDef = svgRoot.gradient("radial", (add) => {
@@ -3702,10 +3264,7 @@ SvgJSEdu.Polygon = class Polygon {
     this._dragCallback = null;
     this._dragEndCallback = null;
 
-    if (this._gradientDef) {
-      this._gradientDef.remove();
-      this._gradientDef = null;
-    }
+    this._removeGradientDef();
 
     if (this._group) {
       this._group.remove();

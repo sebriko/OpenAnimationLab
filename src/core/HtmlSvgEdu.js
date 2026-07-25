@@ -136,6 +136,130 @@ HtmlSvgEdu.Component = class Component {
       this._element.parentNode.removeChild(this._element);
     }
   }
+  _hexToCSS(hexColor) {
+    if (typeof hexColor === "string") {
+      if (
+        hexColor.startsWith("#") ||
+        hexColor.startsWith("rgb") ||
+        /^[a-z]+$/i.test(hexColor)
+      ) {
+        return hexColor;
+      }
+      return "#" + hexColor;
+    }
+    if (typeof hexColor === "number") {
+      return "#" + hexColor.toString(16).padStart(6, "0");
+    }
+    return "#000000";
+  }
+  _parseHtmlTags(text) {
+    const parts = [];
+    let currentPos = 0;
+    const tagRegex = /<(sub|sup)>(.*?)<\/\1>/gi;
+    let match;
+    while ((match = tagRegex.exec(text)) !== null) {
+      if (match.index > currentPos) {
+        const beforeText = text.substring(currentPos, match.index);
+        if (beforeText) {
+          parts.push({ type: "normal", text: beforeText });
+        }
+      }
+      parts.push({
+        type: match[1].toLowerCase(),
+        text: match[2],
+      });
+      currentPos = match.index + match[0].length;
+    }
+    if (currentPos < text.length) {
+      const remainingText = text.substring(currentPos);
+      if (remainingText) {
+        parts.push({ type: "normal", text: remainingText });
+      }
+    }
+    if (parts.length === 0) {
+      parts.push({ type: "normal", text: text });
+    }
+    return parts;
+  }
+  _calculateTextDimensions() {
+    const lines = this._label.split("\\n");
+    let maxLineWidth = 0;
+    let totalHeight = 0;
+    lines.forEach((line) => {
+      const parsedLine = this._parseHtmlTags(line);
+      let lineWidth = 0;
+      let lineHeight = this._fontSize;
+      parsedLine.forEach((part) => {
+        let charWidth, partHeight;
+        if (part.type === "sub" || part.type === "sup") {
+          const subSupSize = this._fontSize * 0.85;
+          charWidth = part.text.length * (subSupSize * 0.6);
+          partHeight = subSupSize;
+        } else {
+          charWidth = part.text.length * (this._fontSize * 0.6);
+          partHeight = this._fontSize;
+        }
+        lineWidth += charWidth;
+        lineHeight = Math.max(lineHeight, partHeight);
+      });
+      maxLineWidth = Math.max(maxLineWidth, lineWidth);
+      totalHeight += lineHeight;
+    });
+    if (lines.length > 1) {
+      totalHeight += (lines.length - 1) * (this._fontSize * 0.2);
+    }
+    return {
+      width: maxLineWidth,
+      height: totalHeight,
+      lineCount: lines.length,
+      lines: lines,
+    };
+  }
+  // Browser-specific sub/sup baseline adjustments for SVG text
+  _getSubSupStyles() {
+    const ua = navigator.userAgent.toLowerCase();
+    const isFirefox = ua.indexOf("firefox") > -1;
+    const isChrome = ua.indexOf("chrome") > -1 && ua.indexOf("edg") === -1;
+    const isEdge = ua.indexOf("edg") > -1;
+    const isSafari =
+      ua.indexOf("safari") > -1 && !isChrome && !isEdge;
+    if (isFirefox) {
+      return {
+        subStyle: "baseline-shift: sub;",
+        supStyle: "baseline-shift: super;",
+        subDy: this._fontSize * 0.2 + 3,
+        supDy: -this._fontSize * 0.3,
+        subResetDy: -(this._fontSize * 0.2 + 3),
+        supResetDy: this._fontSize * 0.3,
+      };
+    } else if (isChrome || isEdge) {
+      return {
+        subStyle: "baseline-shift: -25%;",
+        supStyle: "baseline-shift: 40%;",
+        subDy: this._fontSize * 0.1,
+        supDy: -this._fontSize * 0.15,
+        subResetDy: -(this._fontSize * 0.1),
+        supResetDy: this._fontSize * 0.15,
+      };
+    } else if (isSafari) {
+      return {
+        subStyle: "baseline-shift: -20%;",
+        supStyle: "baseline-shift: 35%;",
+        subDy: this._fontSize * 0.15,
+        supDy: -this._fontSize * 0.2,
+        subResetDy: -(this._fontSize * 0.15),
+        supResetDy: this._fontSize * 0.2,
+      };
+    }
+    return {
+      subStyle: "baseline-shift: sub;",
+      supStyle: "baseline-shift: super;",
+      subDy: this._fontSize * 0.2,
+      supDy: -this._fontSize * 0.25,
+      subResetDy: -(this._fontSize * 0.2),
+      supResetDy: this._fontSize * 0.25,
+    };
+  }
 };
 HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
   static serializationMap = {
@@ -437,16 +561,6 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
     this._focused = false;
     this._cssTextColor = this._hexToCSS(textColor);
 
-    this._isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-    this._isChrome =
-      navigator.userAgent.toLowerCase().indexOf("chrome") > -1 &&
-      navigator.userAgent.toLowerCase().indexOf("edg") === -1;
-    this._isEdge = navigator.userAgent.toLowerCase().indexOf("edg") > -1;
-    this._isSafari =
-      navigator.userAgent.toLowerCase().indexOf("safari") > -1 &&
-      !this._isChrome &&
-      !this._isEdge;
-
     this._container = this._createElement("div");
     this._container.className = "pixi-html-ui pixi-svg-checkbox-container";
     this._svgElement = document.createElementNS(
@@ -460,73 +574,6 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
     this._container.appendChild(this._svgElement);
     this._element = this._container;
     this._setupEvents();
-  }
-  _hexToCSS(hexColor) {
-    const hex = hexColor.toString(16).padStart(6, "0");
-    return "#" + hex;
-  }
-  _parseHtmlTags(text) {
-    const parts = [];
-    let currentPos = 0;
-    const tagRegex = /<(sub|sup)>(.*?)<\/\1>/gi;
-    let match;
-    while ((match = tagRegex.exec(text)) !== null) {
-      if (match.index > currentPos) {
-        const beforeText = text.substring(currentPos, match.index);
-        if (beforeText) {
-          parts.push({ type: "normal", text: beforeText });
-        }
-      }
-      parts.push({
-        type: match[1].toLowerCase(),
-        text: match[2],
-      });
-      currentPos = match.index + match[0].length;
-    }
-    if (currentPos < text.length) {
-      const remainingText = text.substring(currentPos);
-      if (remainingText) {
-        parts.push({ type: "normal", text: remainingText });
-      }
-    }
-    if (parts.length === 0) {
-      parts.push({ type: "normal", text: text });
-    }
-    return parts;
-  }
-  _calculateTextDimensions() {
-    const lines = this._label.split("\\n");
-    let maxLineWidth = 0;
-    let totalHeight = 0;
-    lines.forEach((line) => {
-      const parsedLine = this._parseHtmlTags(line);
-      let lineWidth = 0;
-      let lineHeight = this._fontSize;
-      parsedLine.forEach((part) => {
-        let charWidth, partHeight;
-        if (part.type === "sub" || part.type === "sup") {
-          const subSupSize = this._fontSize * 0.85;
-          charWidth = part.text.length * (subSupSize * 0.6);
-          partHeight = subSupSize;
-        } else {
-          charWidth = part.text.length * (this._fontSize * 0.6);
-          partHeight = this._fontSize;
-        }
-        lineWidth += charWidth;
-        lineHeight = Math.max(lineHeight, partHeight);
-      });
-      maxLineWidth = Math.max(maxLineWidth, lineWidth);
-      totalHeight += lineHeight;
-    });
-    if (lines.length > 1) {
-      totalHeight += (lines.length - 1) * (this._fontSize * 0.2);
-    }
-    return {
-      width: maxLineWidth,
-      height: totalHeight,
-      lineCount: lines.length,
-      lines: lines,
-    };
   }
   _calculateSvgSize() {
     const adaptiveSize = Math.max(this._size, this._fontSize * 0.8);
@@ -556,46 +603,6 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
     this._adaptiveSize = adaptiveSize;
     this._strokeOffset = strokeOffset;
     this._textDimensions = textDimensions;
-  }
-
-  _getSubSupStyles() {
-    if (this._isFirefox) {
-      return {
-        subStyle: "baseline-shift: sub;",
-        supStyle: "baseline-shift: super;",
-        subDy: this._fontSize * 0.2 + 3,
-        supDy: -this._fontSize * 0.3,
-        subResetDy: -(this._fontSize * 0.2 + 3),
-        supResetDy: this._fontSize * 0.3,
-      };
-    } else if (this._isChrome || this._isEdge) {
-      return {
-        subStyle: "baseline-shift: -25%;",
-        supStyle: "baseline-shift: 40%;",
-        subDy: this._fontSize * 0.1,
-        supDy: -this._fontSize * 0.15,
-        subResetDy: -(this._fontSize * 0.1),
-        supResetDy: this._fontSize * 0.15,
-      };
-    } else if (this._isSafari) {
-      return {
-        subStyle: "baseline-shift: -20%;",
-        supStyle: "baseline-shift: 35%;",
-        subDy: this._fontSize * 0.15,
-        supDy: -this._fontSize * 0.2,
-        subResetDy: -(this._fontSize * 0.15),
-        supResetDy: this._fontSize * 0.2,
-      };
-    } else {
-      return {
-        subStyle: "baseline-shift: sub;",
-        supStyle: "baseline-shift: super;",
-        subDy: this._fontSize * 0.2,
-        supDy: -this._fontSize * 0.25,
-        subResetDy: -(this._fontSize * 0.2),
-        supResetDy: this._fontSize * 0.25,
-      };
-    }
   }
 
   _addStyles() {
@@ -792,7 +799,6 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
       this._checkboxGroup.appendChild(textElement);
     });
   }
-  _createMultilineLabel(checkboxSize, yOffset, totalHeight) {}
   _setupEvents() {
     this._checkboxGroup.addEventListener("click", (e) => {
       this.checked = !this._checked;
@@ -997,16 +1003,6 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
     this._cssTextColor = this._hexToCSS(textColor);
     this._clickCallback = null;
 
-    this._isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-    this._isChrome =
-      navigator.userAgent.toLowerCase().indexOf("chrome") > -1 &&
-      navigator.userAgent.toLowerCase().indexOf("edg") === -1;
-    this._isEdge = navigator.userAgent.toLowerCase().indexOf("edg") > -1;
-    this._isSafari =
-      navigator.userAgent.toLowerCase().indexOf("safari") > -1 &&
-      !this._isChrome &&
-      !this._isEdge;
-
     this._registerInGroup();
     this._container = this._createElement("div");
     this._container.className = "pixi-html-ui pixi-svg-radiobutton-container";
@@ -1059,86 +1055,6 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
       }
     }
   }
-  _hexToCSS(hexColor) {
-    if (typeof hexColor === "string") {
-      if (
-        hexColor.startsWith("#") ||
-        hexColor.startsWith("rgb") ||
-        /^[a-z]+$/i.test(hexColor)
-      ) {
-        return hexColor;
-      }
-      return "#" + hexColor;
-    }
-    if (typeof hexColor === "number") {
-      const hex = hexColor.toString(16).padStart(6, "0");
-      return "#" + hex;
-    }
-    return "#000000";
-  }
-  _parseHtmlTags(text) {
-    const parts = [];
-    let currentPos = 0;
-    const tagRegex = /<(sub|sup)>(.*?)<\/\1>/gi;
-    let match;
-    while ((match = tagRegex.exec(text)) !== null) {
-      if (match.index > currentPos) {
-        const beforeText = text.substring(currentPos, match.index);
-        if (beforeText) {
-          parts.push({ type: "normal", text: beforeText });
-        }
-      }
-      parts.push({
-        type: match[1].toLowerCase(),
-        text: match[2],
-      });
-      currentPos = match.index + match[0].length;
-    }
-    if (currentPos < text.length) {
-      const remainingText = text.substring(currentPos);
-      if (remainingText) {
-        parts.push({ type: "normal", text: remainingText });
-      }
-    }
-    if (parts.length === 0) {
-      parts.push({ type: "normal", text: text });
-    }
-    return parts;
-  }
-  _calculateTextDimensions() {
-    const lines = this._label.split("\\n");
-    let maxLineWidth = 0;
-    let totalHeight = 0;
-    lines.forEach((line) => {
-      const parsedLine = this._parseHtmlTags(line);
-      let lineWidth = 0;
-      let lineHeight = this._fontSize;
-      parsedLine.forEach((part) => {
-        let charWidth, partHeight;
-        if (part.type === "sub" || part.type === "sup") {
-          const subSupSize = this._fontSize * 0.85;
-          charWidth = part.text.length * (subSupSize * 0.6);
-          partHeight = subSupSize;
-        } else {
-          charWidth = part.text.length * (this._fontSize * 0.6);
-          partHeight = this._fontSize;
-        }
-        lineWidth += charWidth;
-        lineHeight = Math.max(lineHeight, partHeight);
-      });
-      maxLineWidth = Math.max(maxLineWidth, lineWidth);
-      totalHeight += lineHeight;
-    });
-    if (lines.length > 1) {
-      totalHeight += (lines.length - 1) * (this._fontSize * 0.2);
-    }
-    return {
-      width: maxLineWidth,
-      height: totalHeight,
-      lineCount: lines.length,
-      lines: lines,
-    };
-  }
   _calculateSvgSize() {
     const adaptiveSize = Math.max(this._size, this._fontSize * 0.8);
     const strokeWidth = 2;
@@ -1167,46 +1083,6 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
     this._adaptiveSize = adaptiveSize;
     this._strokeOffset = strokeOffset;
     this._textDimensions = textDimensions;
-  }
-
-  _getSubSupStyles() {
-    if (this._isFirefox) {
-      return {
-        subStyle: "baseline-shift: sub;",
-        supStyle: "baseline-shift: super;",
-        subDy: this._fontSize * 0.2 + 3,
-        supDy: -this._fontSize * 0.3,
-        subResetDy: -(this._fontSize * 0.2 + 3),
-        supResetDy: this._fontSize * 0.3,
-      };
-    } else if (this._isChrome || this._isEdge) {
-      return {
-        subStyle: "baseline-shift: -25%;",
-        supStyle: "baseline-shift: 40%;",
-        subDy: this._fontSize * 0.1,
-        supDy: -this._fontSize * 0.15,
-        subResetDy: -(this._fontSize * 0.1),
-        supResetDy: this._fontSize * 0.15,
-      };
-    } else if (this._isSafari) {
-      return {
-        subStyle: "baseline-shift: -20%;",
-        supStyle: "baseline-shift: 35%;",
-        subDy: this._fontSize * 0.15,
-        supDy: -this._fontSize * 0.2,
-        subResetDy: -(this._fontSize * 0.15),
-        supResetDy: this._fontSize * 0.2,
-      };
-    } else {
-      return {
-        subStyle: "baseline-shift: sub;",
-        supStyle: "baseline-shift: super;",
-        subDy: this._fontSize * 0.2,
-        supDy: -this._fontSize * 0.25,
-        subResetDy: -(this._fontSize * 0.2),
-        supResetDy: this._fontSize * 0.25,
-      };
-    }
   }
 
   _addStyles() {
@@ -3802,10 +3678,6 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     this._container.appendChild(this._svgElement);
     this._element = this._container;
   }
-  _hexToCSS(hexColor) {
-    const hex = hexColor.toString(16).padStart(6, "0");
-    return "#" + hex;
-  }
   _applyAlignmentTransform() {
     switch (this._textAlign) {
       case "center":
@@ -3818,35 +3690,6 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
         this._container.style.transform = "";
         break;
     }
-  }
-  _parseHtmlTags(text) {
-    const parts = [];
-    let currentPos = 0;
-    const tagRegex = /<(sub|sup)>(.*?)<\/\1>/gi;
-    let match;
-    while ((match = tagRegex.exec(text)) !== null) {
-      if (match.index > currentPos) {
-        const beforeText = text.substring(currentPos, match.index);
-        if (beforeText) {
-          parts.push({ type: "normal", text: beforeText });
-        }
-      }
-      parts.push({
-        type: match[1].toLowerCase(),
-        text: match[2],
-      });
-      currentPos = match.index + match[0].length;
-    }
-    if (currentPos < text.length) {
-      const remainingText = text.substring(currentPos);
-      if (remainingText) {
-        parts.push({ type: "normal", text: remainingText });
-      }
-    }
-    if (parts.length === 0) {
-      parts.push({ type: "normal", text: text });
-    }
-    return parts;
   }
   _calculateTextDimensions() {
     const lines = this._text.split("\\n");
@@ -4325,10 +4168,6 @@ HtmlSvgEdu.Preloader = class Preloader extends HtmlSvgEdu.Component {
     this._element = this._container;
     this.show();
   }
-  _hexToCSS(hexColor) {
-    const hex = hexColor.toString(16).padStart(6, "0");
-    return "#" + hex;
-  }
   _addStyles() {
     if (document.getElementById(this._instanceId + "-styles")) return;
     const styleElement = document.createElement("style");
@@ -4663,10 +4502,6 @@ HtmlSvgEdu.ParameterTable = class ParameterTable extends HtmlSvgEdu.Component {
     this._createTable();
     this._element = this._container;
     this._populateTable();
-  }
-  _hexToCSS(hexColor) {
-    const hex = hexColor.toString(16).padStart(6, "0");
-    return "#" + hex;
   }
   _addStyles() {
     if (document.getElementById("parameter-table-styles")) return;
