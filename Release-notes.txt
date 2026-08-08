@@ -35,5 +35,6 @@
 3.4.7 (2026-07-18) Bugfix: Formularfelder für Text-Parameter (z.B. "text", "textAlign") wurden fälschlich als Zahlen-Drehfelder angezeigt
 3.5.0 (2026-07-25) Refactoring: Gemeinsame Methoden in Basisklassen extrahiert (PixiJSElement, SvgJSElement, Component), toten Code und Redundanzen entfernt
 3.6.0 (2026-08-08) Methoden getX(t) und getY(t) für Bézier-Klassen implementiert
+3.6.1 (2026-08-08) Methode setFillColor() für PixiJSEdu.Circle implementiert
 
 

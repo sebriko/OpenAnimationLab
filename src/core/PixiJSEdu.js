@@ -1165,6 +1165,13 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
       },
     },
     methods: {
+      setFillColor: {
+        example: "setFillColor(0xff0000)",
+        info: {
+          en: "Sets the fill color of the circle",
+          de: "Setzt die Füllfarbe des Kreises",
+        },
+      },
       setBorder: {
         example: "setBorder(0xff0000, 2)",
         info: {
@@ -1393,6 +1400,14 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
     this._gradientType = type;
     this._gradientStops = colorStops;
     this._draw();
+  }
+
+  setFillColor(color) {
+    this._color = color;
+    this._gradientStops = null;
+    this._gradientType = null;
+    this._draw();
+    return this;
   }
 
   setRadius(radius) {
