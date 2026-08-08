@@ -1,6 +1,6 @@
 /**
  * PixiJSEdu - Educational Animation Library
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Sebastian Rikowski
  * License: MIT
  *
@@ -2850,6 +2850,22 @@ PixiJSEdu.BezierPath = class BezierPath extends PIXI.Container {
         },
         example: "shiftX(50)",
       },
+      getY: {
+        name: "getY",
+        info: {
+          en: "Returns the y-coordinate for a given x-coordinate on the curve",
+          de: "Gibt die y-Koordinate für eine gegebene x-Koordinate auf der Kurve zurück",
+        },
+        example: "getY(100)",
+      },
+      getX: {
+        name: "getX",
+        info: {
+          en: "Returns the x-coordinate for a given y-coordinate on the curve",
+          de: "Gibt die x-Koordinate für eine gegebene y-Koordinate auf der Kurve zurück",
+        },
+        example: "getX(150)",
+      },
       onClick: {
         example:
           'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
@@ -3128,6 +3144,94 @@ PixiJSEdu.BezierPath = class BezierPath extends PIXI.Container {
       }
     }
     return null;
+  }
+  getX(y) {
+    if (this.points.length < 2) return null;
+    const results = [];
+    for (let i = 0; i < this.points.length - 1; i++) {
+      const [x0, y0, cx0, cy0] = this.points[i];
+      const [x3, y3, cx3, cy3] = this.points[i + 1];
+      const minY = Math.min(y0, y3, cy0, cy3);
+      const maxY = Math.max(y0, y3, cy0, cy3);
+      if (y >= minY && y <= maxY) {
+        const startPoints = [0, 0.25, 0.5, 0.75, 1];
+        const foundTValues = new Set();
+        for (const startT of startPoints) {
+          let t = startT;
+          const tolerance = 0.0001;
+          let iterations = 0;
+          const maxIterations = 50;
+          while (iterations < maxIterations) {
+            const t2 = t * t;
+            const t3 = t2 * t;
+            const mt = 1 - t;
+            const mt2 = mt * mt;
+            const mt3 = mt2 * mt;
+            const currentY =
+              mt3 * y0 + 3 * mt2 * t * cy0 + 3 * mt * t2 * cy3 + t3 * y3;
+            const error = Math.abs(currentY - y);
+            if (error < tolerance) {
+              let isNew = true;
+              for (const existingT of foundTValues) {
+                if (Math.abs(existingT - t) < 0.01) {
+                  isNew = false;
+                  break;
+                }
+              }
+              if (isNew && t >= 0 && t <= 1) {
+                foundTValues.add(t);
+                const x =
+                  mt3 * x0 + 3 * mt2 * t * cx0 + 3 * mt * t2 * cx3 + t3 * x3;
+                results.push(x);
+              }
+              break;
+            }
+            const dydt =
+              -3 * mt2 * y0 +
+              3 * mt2 * cy0 -
+              6 * mt * t * cy0 +
+              6 * mt * t * cy3 -
+              3 * t2 * cy3 +
+              3 * t2 * y3;
+            if (Math.abs(dydt) < 0.0001) {
+              let lower = 0,
+                upper = 1;
+              let binaryT = 0.5;
+              for (let j = 0; j < 20; j++) {
+                const bt2 = binaryT * binaryT;
+                const bt3 = bt2 * binaryT;
+                const bmt = 1 - binaryT;
+                const bmt2 = bmt * bmt;
+                const bmt3 = bmt2 * bmt;
+                const binaryY =
+                  bmt3 * y0 + 3 * bmt2 * binaryT * cy0 + 3 * bmt * bt2 * cy3 + bt3 * y3;
+                if (binaryY < y) {
+                  lower = binaryT;
+                } else {
+                  upper = binaryT;
+                }
+                binaryT = (lower + upper) / 2;
+              }
+              t = binaryT;
+            } else {
+              t = t - (currentY - y) / dydt;
+              t = Math.max(0, Math.min(1, t));
+            }
+            iterations++;
+          }
+        }
+      }
+    }
+    if (results.length === 0) return null;
+    if (results.length === 1) return results[0];
+    results.sort((a, b) => a - b);
+    const uniqueResults = [];
+    for (let i = 0; i < results.length; i++) {
+      if (i === 0 || Math.abs(results[i] - results[i - 1]) > 1) {
+        uniqueResults.push(results[i]);
+      }
+    }
+    return uniqueResults.length === 1 ? uniqueResults[0] : uniqueResults;
   }
   markAt(x, color = null, radius = null) {
     this.markedX = x;
