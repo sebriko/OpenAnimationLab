@@ -36,5 +36,6 @@
 3.5.0 (2026-07-25) Refactoring: Gemeinsame Methoden in Basisklassen extrahiert (PixiJSElement, SvgJSElement, Component), toten Code und Redundanzen entfernt
 3.6.0 (2026-08-08) Methoden getX(t) und getY(t) für Bézier-Klassen implementiert
 3.6.1 (2026-08-08) Methode setFillColor() für PixiJSEdu.Circle implementiert
+3.6.2 (2026-08-11) AngleLabel: Methoden setLabelDistance() und setArrowheads() hinzugefügt (Vorbereitung für technische Zeichnungen)
 
 

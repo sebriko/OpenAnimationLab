@@ -6656,6 +6656,20 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
           de: "Setzt die Transparenz des gesamten Winkelbogens (0.0 bis 1.0)",
         },
       },
+      setLabelDistance: {
+        example: "setLabelDistance(25)",
+        info: {
+          en: "Sets the distance of the label text from the center point",
+          de: "Setzt die Entfernung der Beschriftung zum Mittelpunkt",
+        },
+      },
+      setArrowheads: {
+        example: "setArrowheads(true, 12)",
+        info: {
+          en: "Shows or hides arrowheads at the ends of the arc. Optionally sets the arrowhead size (default 8)",
+          de: "Zeigt oder verbirgt Pfeilspitzen an den Enden des Bogens. Optional kann die Größe angegeben werden (Standard 8)",
+        },
+      },
       setLongArc: {
         example: "setLongArc(true)",
         info: {
@@ -6711,9 +6725,14 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
     this._lineThickness = lineThickness;
     this._lineColor = lineColor;
     this._longArc = false;
+    this._labelDistance = null;
+    this._showArrowheads = false;
+    this._arrowheadSize = 8;
 
     this._arcElement = null;
     this._textElement = null;
+    this._arrowhead1Element = null;
+    this._arrowhead2Element = null;
 
     this._draw();
 
@@ -6805,8 +6824,85 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
       this._arcElement = null;
     }
 
+    this._drawArrowheads();
     this._createTextElement();
     this._updateTextPosition();
+  }
+
+  _drawArrowheads() {
+    if (this._arrowhead1Element) {
+      this._arrowhead1Element.remove();
+      this._arrowhead1Element = null;
+    }
+    if (this._arrowhead2Element) {
+      this._arrowhead2Element.remove();
+      this._arrowhead2Element = null;
+    }
+
+    if (!this._showArrowheads || !this._group) return;
+
+    const { startAngle, endAngle } = this._calculateAngles();
+    const r = this._radius;
+    const cx = this._centerX;
+    const cy = this._centerY;
+    const s = this._arrowheadSize;
+    const halfWidth = s * 0.3;
+    const color = colorToHex(this._lineColor);
+    const angularOffset = s / r;
+
+    // Arrowhead at start: tip at startAngle, direction from a point further along the arc
+    const tipX1 = cx + r * Math.cos(startAngle);
+    const tipY1 = cy + r * Math.sin(startAngle);
+    const refAngle1 = startAngle + angularOffset;
+    const refX1 = cx + r * Math.cos(refAngle1);
+    const refY1 = cy + r * Math.sin(refAngle1);
+    const dirX1 = tipX1 - refX1;
+    const dirY1 = tipY1 - refY1;
+    const len1 = Math.sqrt(dirX1 * dirX1 + dirY1 * dirY1) || 1;
+    const ndX1 = dirX1 / len1;
+    const ndY1 = dirY1 / len1;
+    const npX1 = -ndY1;
+    const npY1 = ndX1;
+
+    const baseX1 = tipX1 - ndX1 * s;
+    const baseY1 = tipY1 - ndY1 * s;
+    const wingA1X = baseX1 + npX1 * halfWidth;
+    const wingA1Y = baseY1 + npY1 * halfWidth;
+    const wingB1X = baseX1 - npX1 * halfWidth;
+    const wingB1Y = baseY1 - npY1 * halfWidth;
+
+    this._arrowhead1Element = this._group
+      .polygon(`${tipX1},${tipY1} ${wingA1X},${wingA1Y} ${wingB1X},${wingB1Y}`)
+      .fill(color)
+      .stroke("none")
+      .attr("opacity", this._alpha);
+
+    // Arrowhead at end: tip at endAngle, direction from a point further along the arc (inward)
+    const tipX2 = cx + r * Math.cos(endAngle);
+    const tipY2 = cy + r * Math.sin(endAngle);
+    const refAngle2 = endAngle - angularOffset;
+    const refX2 = cx + r * Math.cos(refAngle2);
+    const refY2 = cy + r * Math.sin(refAngle2);
+    const dirX2 = tipX2 - refX2;
+    const dirY2 = tipY2 - refY2;
+    const len2 = Math.sqrt(dirX2 * dirX2 + dirY2 * dirY2) || 1;
+    const ndX2 = dirX2 / len2;
+    const ndY2 = dirY2 / len2;
+    const npX2 = -ndY2;
+    const npY2 = ndX2;
+
+    const baseX2 = tipX2 - ndX2 * s;
+    const baseY2 = tipY2 - ndY2 * s;
+    const wingA2X = baseX2 + npX2 * halfWidth;
+    const wingA2Y = baseY2 + npY2 * halfWidth;
+    const wingB2X = baseX2 - npX2 * halfWidth;
+    const wingB2Y = baseY2 - npY2 * halfWidth;
+
+    this._arrowhead2Element = this._group
+      .polygon(`${tipX2},${tipY2} ${wingA2X},${wingA2Y} ${wingB2X},${wingB2Y}`)
+      .fill(color)
+      .stroke("none")
+      .attr("opacity", this._alpha);
   }
 
   _createTextElement() {
@@ -6841,15 +6937,19 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
     while (midAngle > 2 * Math.PI) midAngle -= 2 * Math.PI;
     while (midAngle < 0) midAngle += 2 * Math.PI;
 
-    let radiusFactor = 0.7;
-    if (this._text === "•" && this._isRightAngle()) {
-      radiusFactor = 0.55;
+    let textDist;
+    if (this._labelDistance !== null) {
+      textDist = this._labelDistance;
+    } else {
+      let radiusFactor = 0.7;
+      if (this._text === "•" && this._isRightAngle()) {
+        radiusFactor = 0.55;
+      }
+      textDist = this._radius * radiusFactor;
     }
 
-    const textX =
-      this._centerX + Math.cos(midAngle) * (this._radius * radiusFactor);
-    const textY =
-      this._centerY + Math.sin(midAngle) * (this._radius * radiusFactor);
+    const textX = this._centerX + Math.cos(midAngle) * textDist;
+    const textY = this._centerY + Math.sin(midAngle) * textDist;
 
     this._textElement.attr("x", textX);
     this._textElement.attr("y", textY);
@@ -6922,6 +7022,23 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
     this._alpha = Math.max(0, Math.min(1, alpha));
     if (this._arcElement) this._arcElement.attr("opacity", this._alpha);
     if (this._textElement) this._textElement.attr("opacity", this._alpha);
+    if (this._arrowhead1Element) this._arrowhead1Element.attr("opacity", this._alpha);
+    if (this._arrowhead2Element) this._arrowhead2Element.attr("opacity", this._alpha);
+    return this;
+  }
+
+  setLabelDistance(distance) {
+    this._labelDistance = distance;
+    this._updateTextPosition();
+    return this;
+  }
+
+  setArrowheads(visible, size) {
+    this._showArrowheads = !!visible;
+    if (size !== undefined) {
+      this._arrowheadSize = size;
+    }
+    this._drawArrowheads();
     return this;
   }
 
@@ -6941,6 +7058,14 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
     if (this._textElement) {
       this._textElement.remove();
       this._textElement = null;
+    }
+    if (this._arrowhead1Element) {
+      this._arrowhead1Element.remove();
+      this._arrowhead1Element = null;
+    }
+    if (this._arrowhead2Element) {
+      this._arrowhead2Element.remove();
+      this._arrowhead2Element = null;
     }
     super.destroy();
   }

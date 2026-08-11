@@ -6229,6 +6229,20 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
           de: "Setzt die Transparenz des gesamten Winkelbogens (0.0 bis 1.0)",
         },
       },
+      setLabelDistance: {
+        example: "setLabelDistance(25)",
+        info: {
+          en: "Sets the distance of the label text from the center point",
+          de: "Setzt die Entfernung der Beschriftung zum Mittelpunkt",
+        },
+      },
+      setArrowheads: {
+        example: "setArrowheads(true, 12)",
+        info: {
+          en: "Shows or hides arrowheads at the ends of the arc. Optionally sets the arrowhead size (default 8)",
+          de: "Zeigt oder verbirgt Pfeilspitzen an den Enden des Bogens. Optional kann die Größe angegeben werden (Standard 8)",
+        },
+      },
       setLongArc: {
         example: "setLongArc(true)",
         info: {
@@ -6285,8 +6299,13 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
     this._visible = true;
     this._alpha = 1.0;
     this._longArc = false;
+    this._labelDistance = null;
+    this._showArrowheads = false;
+    this._arrowheadSize = 8;
     this.arcGraphics = new PIXI.Graphics();
+    this.arrowGraphics = new PIXI.Graphics();
     this.addChild(this.arcGraphics);
+    this.addChild(this.arrowGraphics);
     this.textObject = new PIXI.Text(this._text, {
       fontFamily: this._fontFamily,
       fontSize: this._fontSize,
@@ -6359,20 +6378,83 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
 
     this.arcGraphics.alpha = this._alpha;
 
+    this._drawArrowheads(startAngle, endAngle);
+
     let midAngle = startAngle + angleDiff / 2;
     while (midAngle > 2 * Math.PI) midAngle -= 2 * Math.PI;
     while (midAngle < 0) midAngle += 2 * Math.PI;
-    let radiusFactor = 0.7;
-    if (this._text === "•" && this._isRightAngle()) {
-      radiusFactor = 0.55;
+    let textDist;
+    if (this._labelDistance !== null) {
+      textDist = this._labelDistance;
+    } else {
+      let radiusFactor = 0.7;
+      if (this._text === "•" && this._isRightAngle()) {
+        radiusFactor = 0.55;
+      }
+      textDist = this._radius * radiusFactor;
     }
-    const textX =
-      this._centerX + Math.cos(midAngle) * (this._radius * radiusFactor);
-    const textY =
-      this._centerY + Math.sin(midAngle) * (this._radius * radiusFactor);
+    const textX = this._centerX + Math.cos(midAngle) * textDist;
+    const textY = this._centerY + Math.sin(midAngle) * textDist;
     this.textObject.x = textX;
     this.textObject.y = textY;
     this.textObject.alpha = this._alpha;
+  }
+  _drawArrowheads(startAngle, endAngle) {
+    this.arrowGraphics.clear();
+    if (!this._showArrowheads) return;
+
+    const r = this._radius;
+    const cx = this._centerX;
+    const cy = this._centerY;
+    const s = this._arrowheadSize;
+    const halfWidth = s * 0.3;
+    const angularOffset = s / r;
+
+    this.arrowGraphics.beginFill(this._lineColor, this._alpha);
+
+    // Arrowhead at start: tip at startAngle, direction from a point further along the arc
+    const tipX1 = cx + r * Math.cos(startAngle);
+    const tipY1 = cy + r * Math.sin(startAngle);
+    const refAngle1 = startAngle + angularOffset;
+    const refX1 = cx + r * Math.cos(refAngle1);
+    const refY1 = cy + r * Math.sin(refAngle1);
+    const dirX1 = tipX1 - refX1;
+    const dirY1 = tipY1 - refY1;
+    const len1 = Math.sqrt(dirX1 * dirX1 + dirY1 * dirY1) || 1;
+    const ndX1 = dirX1 / len1;
+    const ndY1 = dirY1 / len1;
+    const npX1 = -ndY1;
+    const npY1 = ndX1;
+
+    const baseX1 = tipX1 - ndX1 * s;
+    const baseY1 = tipY1 - ndY1 * s;
+    this.arrowGraphics.moveTo(tipX1, tipY1);
+    this.arrowGraphics.lineTo(baseX1 + npX1 * halfWidth, baseY1 + npY1 * halfWidth);
+    this.arrowGraphics.lineTo(baseX1 - npX1 * halfWidth, baseY1 - npY1 * halfWidth);
+    this.arrowGraphics.closePath();
+
+    // Arrowhead at end: tip at endAngle, direction from a point further along the arc (inward)
+    const tipX2 = cx + r * Math.cos(endAngle);
+    const tipY2 = cy + r * Math.sin(endAngle);
+    const refAngle2 = endAngle - angularOffset;
+    const refX2 = cx + r * Math.cos(refAngle2);
+    const refY2 = cy + r * Math.sin(refAngle2);
+    const dirX2 = tipX2 - refX2;
+    const dirY2 = tipY2 - refY2;
+    const len2 = Math.sqrt(dirX2 * dirX2 + dirY2 * dirY2) || 1;
+    const ndX2 = dirX2 / len2;
+    const ndY2 = dirY2 / len2;
+    const npX2 = -ndY2;
+    const npY2 = ndX2;
+
+    const baseX2 = tipX2 - ndX2 * s;
+    const baseY2 = tipY2 - ndY2 * s;
+    this.arrowGraphics.moveTo(tipX2, tipY2);
+    this.arrowGraphics.lineTo(baseX2 + npX2 * halfWidth, baseY2 + npY2 * halfWidth);
+    this.arrowGraphics.lineTo(baseX2 - npX2 * halfWidth, baseY2 - npY2 * halfWidth);
+    this.arrowGraphics.closePath();
+
+    this.arrowGraphics.endFill();
   }
   setText(text) {
     this._text = text;
@@ -6425,6 +6507,19 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
   }
   setAlpha(alpha) {
     this._alpha = Math.max(0, Math.min(1, alpha));
+    this._draw();
+    return this;
+  }
+  setLabelDistance(distance) {
+    this._labelDistance = distance;
+    this._draw();
+    return this;
+  }
+  setArrowheads(visible, size) {
+    this._showArrowheads = !!visible;
+    if (size !== undefined) {
+      this._arrowheadSize = size;
+    }
     this._draw();
     return this;
   }
