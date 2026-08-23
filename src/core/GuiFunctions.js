@@ -136,7 +136,7 @@ async function publishCode() {
 
 /* Overlay zum Verstecken des schwarzen Rechtecks */
 #loading-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
