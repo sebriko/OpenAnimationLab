@@ -8,6 +8,8 @@ let editorSearchState = {
   currentMark: null,
   allMatches: [],
   replaceMode: false,
+  _changeDebounceTimer: null,
+  _isReplacingInternally: false,
 };
 
 function searchOverlay(query, caseInsensitive) {
@@ -153,7 +155,9 @@ function replaceCurrent() {
   if (currentIndex >= 0 && currentIndex < editorSearchState.allMatches.length) {
     const match = editorSearchState.allMatches[currentIndex];
 
+    editorSearchState._isReplacingInternally = true;
     editor.replaceRange(replaceText, match.from, match.to);
+    editorSearchState._isReplacingInternally = false;
 
     // Re-run search after replacement so match list stays in sync.
     setTimeout(() => {
@@ -192,12 +196,14 @@ function replaceAll() {
   }
 
   // Replace back-to-front so earlier match positions remain valid.
+  editorSearchState._isReplacingInternally = true;
   editor.operation(() => {
     for (let i = editorSearchState.allMatches.length - 1; i >= 0; i--) {
       const match = editorSearchState.allMatches[i];
       editor.replaceRange(replaceText, match.from, match.to);
     }
   });
+  editorSearchState._isReplacingInternally = false;
 
   setTimeout(() => {
     performSearch();
@@ -581,6 +587,29 @@ function setupSearchForm() {
       },
     });
   }
+
+  // Re-run search whenever editor content changes while search is open.
+  editor.on("change", function () {
+    if (editorSearchState._isReplacingInternally) return;
+    if (
+      !editorSearchState.query ||
+      document.getElementById("search-form").style.display !== "block"
+    ) {
+      return;
+    }
+    clearTimeout(editorSearchState._changeDebounceTimer);
+    editorSearchState._changeDebounceTimer = setTimeout(function () {
+      const prevPos = editorSearchState.currentPos;
+      performSearch();
+      // Try to stay near the previous position after re-search.
+      if (editorSearchState.count > 0 && prevPos > 0) {
+        const newPos = Math.min(prevPos, editorSearchState.count);
+        editorSearchState.currentPos = newPos;
+        highlightCurrentMatch(newPos - 1);
+        updateSearchResults(newPos, editorSearchState.count);
+      }
+    }, 150);
+  });
 
   document.getElementById("search-form").style.display = "none";
 }
