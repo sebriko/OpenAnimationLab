@@ -6250,6 +6250,13 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
           de: "Legt fest, ob der längere Bogen (true) oder kürzere Bogen (false) gezeichnet wird",
         },
       },
+      setExternalLabel: {
+        example: "setExternalLabel(true, 15)",
+        info: {
+          en: "Enables external labeling for small angles. Two small arcs extend beyond the angle arms and the label is placed outside. Optionally sets the arc span in degrees (default 15)",
+          de: "Aktiviert die externe Beschriftung für kleine Winkel. Zwei kleine Bögen ragen über die Schenkel hinaus und die Beschriftung wird außen platziert. Optional kann die Bogenspanne in Grad angegeben werden (Standard 15)",
+        },
+      },
       onClick: {
         example:
           'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
@@ -6302,6 +6309,8 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
     this._labelDistance = null;
     this._showArrowheads = false;
     this._arrowheadSize = 8;
+    this._externalLabel = false;
+    this._externalArcSpan = 15;
     this.arcGraphics = new PIXI.Graphics();
     this.arrowGraphics = new PIXI.Graphics();
     this.addChild(this.arcGraphics);
@@ -6365,14 +6374,29 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
         this._alpha,
       );
       this.arcGraphics.beginFill(0x000000, 0);
-      this.arcGraphics.arc(
-        this._centerX,
-        this._centerY,
-        this._radius,
-        startAngle,
-        endAngle,
-        false,
-      );
+      if (this._externalLabel) {
+        const spanRad = this._externalArcSpan * Math.PI / 180;
+        this.arcGraphics.arc(
+          this._centerX, this._centerY, this._radius,
+          startAngle - spanRad, startAngle, false,
+        );
+        const arc2X = this._centerX + this._radius * Math.cos(endAngle);
+        const arc2Y = this._centerY + this._radius * Math.sin(endAngle);
+        this.arcGraphics.moveTo(arc2X, arc2Y);
+        this.arcGraphics.arc(
+          this._centerX, this._centerY, this._radius,
+          endAngle, endAngle + spanRad, false,
+        );
+      } else {
+        this.arcGraphics.arc(
+          this._centerX,
+          this._centerY,
+          this._radius,
+          startAngle,
+          endAngle,
+          false,
+        );
+      }
       this.arcGraphics.endFill();
     }
 
@@ -6380,21 +6404,31 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
 
     this._drawArrowheads(startAngle, endAngle);
 
-    let midAngle = startAngle + angleDiff / 2;
-    while (midAngle > 2 * Math.PI) midAngle -= 2 * Math.PI;
-    while (midAngle < 0) midAngle += 2 * Math.PI;
-    let textDist;
-    if (this._labelDistance !== null) {
-      textDist = this._labelDistance;
-    } else {
-      let radiusFactor = 0.7;
-      if (this._text === "•" && this._isRightAngle()) {
-        radiusFactor = 0.55;
+    let textAngle, textDist;
+    if (this._externalLabel) {
+      const spanRad = this._externalArcSpan * Math.PI / 180;
+      textAngle = endAngle + spanRad / 2;
+      if (this._labelDistance !== null) {
+        textDist = this._labelDistance;
+      } else {
+        textDist = this._radius + this._fontSize * 0.6;
       }
-      textDist = this._radius * radiusFactor;
+    } else {
+      textAngle = startAngle + angleDiff / 2;
+      while (textAngle > 2 * Math.PI) textAngle -= 2 * Math.PI;
+      while (textAngle < 0) textAngle += 2 * Math.PI;
+      if (this._labelDistance !== null) {
+        textDist = this._labelDistance;
+      } else {
+        let radiusFactor = 0.7;
+        if (this._text === "•" && this._isRightAngle()) {
+          radiusFactor = 0.55;
+        }
+        textDist = this._radius * radiusFactor;
+      }
     }
-    const textX = this._centerX + Math.cos(midAngle) * textDist;
-    const textY = this._centerY + Math.sin(midAngle) * textDist;
+    const textX = this._centerX + Math.cos(textAngle) * textDist;
+    const textY = this._centerY + Math.sin(textAngle) * textDist;
     this.textObject.x = textX;
     this.textObject.y = textY;
     this.textObject.alpha = this._alpha;
@@ -6412,10 +6446,10 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
 
     this.arrowGraphics.beginFill(this._lineColor, this._alpha);
 
-    // Arrowhead at start: tip at startAngle, direction from a point further along the arc
+    // Arrowhead at start
     const tipX1 = cx + r * Math.cos(startAngle);
     const tipY1 = cy + r * Math.sin(startAngle);
-    const refAngle1 = startAngle + angularOffset;
+    const refAngle1 = startAngle + (this._externalLabel ? -angularOffset : angularOffset);
     const refX1 = cx + r * Math.cos(refAngle1);
     const refY1 = cy + r * Math.sin(refAngle1);
     const dirX1 = tipX1 - refX1;
@@ -6433,10 +6467,10 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
     this.arrowGraphics.lineTo(baseX1 - npX1 * halfWidth, baseY1 - npY1 * halfWidth);
     this.arrowGraphics.closePath();
 
-    // Arrowhead at end: tip at endAngle, direction from a point further along the arc (inward)
+    // Arrowhead at end
     const tipX2 = cx + r * Math.cos(endAngle);
     const tipY2 = cy + r * Math.sin(endAngle);
-    const refAngle2 = endAngle - angularOffset;
+    const refAngle2 = endAngle + (this._externalLabel ? angularOffset : -angularOffset);
     const refX2 = cx + r * Math.cos(refAngle2);
     const refY2 = cy + r * Math.sin(refAngle2);
     const dirX2 = tipX2 - refX2;
@@ -6525,6 +6559,14 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
   }
   setLongArc(useLongArc) {
     this._longArc = !!useLongArc;
+    this._draw();
+    return this;
+  }
+  setExternalLabel(enabled, arcSpan) {
+    this._externalLabel = !!enabled;
+    if (arcSpan !== undefined) {
+      this._externalArcSpan = arcSpan;
+    }
     this._draw();
     return this;
   }

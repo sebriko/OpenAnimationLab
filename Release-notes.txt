@@ -40,5 +40,6 @@
 3.6.3 (2026-08-23) Bugfix: Textelemente beim ersten Aufruf exportierter Animationen kurz am Rand sichtbar (Loading-Overlay deckte Canvas-Container nicht ab)
 3.6.4 (2026-08-30) Bugfix: Suche im Editor aktualisiert sich jetzt automatisch bei Änderungen am Code (Treffer, Zähler und Navigation bleiben synchron)
 3.7.0 (2026-08-31) Particles-Klasse hinzugefügt: Hochperformanter Renderer für große Partikelmengen (PixiJSEdu und SvgJSEdu)
+3.8.0 (2026-08-31) AngleLabel: Methode setExternalLabel() hinzugefügt – Externe Beschriftung für kleine Winkel nach technischem Zeichnungsstandard (PixiJSEdu und SvgJSEdu)
 
 

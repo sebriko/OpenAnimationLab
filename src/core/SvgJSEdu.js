@@ -6677,6 +6677,13 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
           de: "Legt fest, ob der längere Bogen (true) oder kürzere Bogen (false) gezeichnet wird",
         },
       },
+      setExternalLabel: {
+        example: "setExternalLabel(true, 15)",
+        info: {
+          en: "Enables external labeling for small angles. Two small arcs extend beyond the angle arms and the label is placed outside. Optionally sets the arc span in degrees (default 15)",
+          de: "Aktiviert die externe Beschriftung für kleine Winkel. Zwei kleine Bögen ragen über die Schenkel hinaus und die Beschriftung wird außen platziert. Optional kann die Bogenspanne in Grad angegeben werden (Standard 15)",
+        },
+      },
       onClick: {
         example:
           'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
@@ -6728,6 +6735,8 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
     this._labelDistance = null;
     this._showArrowheads = false;
     this._arrowheadSize = 8;
+    this._externalLabel = false;
+    this._externalArcSpan = 15;
 
     this._arcElement = null;
     this._textElement = null;
@@ -6803,14 +6812,27 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
       const cx = this._centerX;
       const cy = this._centerY;
 
-      const x1 = cx + r * Math.cos(startAngle);
-      const y1 = cy + r * Math.sin(startAngle);
-      const x2 = cx + r * Math.cos(endAngle);
-      const y2 = cy + r * Math.sin(endAngle);
-      const largeArc = angleDiff > Math.PI ? 1 : 0;
-      const sweep = 1;
-
-      const d = `M ${x1},${y1} A ${r},${r} 0 ${largeArc} ${sweep} ${x2},${y2}`;
+      let d;
+      if (this._externalLabel) {
+        const spanRad = this._externalArcSpan * Math.PI / 180;
+        const ext1StartX = cx + r * Math.cos(startAngle - spanRad);
+        const ext1StartY = cy + r * Math.sin(startAngle - spanRad);
+        const ext1EndX = cx + r * Math.cos(startAngle);
+        const ext1EndY = cy + r * Math.sin(startAngle);
+        const ext2StartX = cx + r * Math.cos(endAngle);
+        const ext2StartY = cy + r * Math.sin(endAngle);
+        const ext2EndX = cx + r * Math.cos(endAngle + spanRad);
+        const ext2EndY = cy + r * Math.sin(endAngle + spanRad);
+        d = `M ${ext1StartX},${ext1StartY} A ${r},${r} 0 0 1 ${ext1EndX},${ext1EndY} M ${ext2StartX},${ext2StartY} A ${r},${r} 0 0 1 ${ext2EndX},${ext2EndY}`;
+      } else {
+        const x1 = cx + r * Math.cos(startAngle);
+        const y1 = cy + r * Math.sin(startAngle);
+        const x2 = cx + r * Math.cos(endAngle);
+        const y2 = cy + r * Math.sin(endAngle);
+        const largeArc = angleDiff > Math.PI ? 1 : 0;
+        const sweep = 1;
+        d = `M ${x1},${y1} A ${r},${r} 0 ${largeArc} ${sweep} ${x2},${y2}`;
+      }
 
       this._arcElement = this._group
         .path(d)
@@ -6850,10 +6872,10 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
     const color = colorToHex(this._lineColor);
     const angularOffset = s / r;
 
-    // Arrowhead at start: tip at startAngle, direction from a point further along the arc
+    // Arrowhead at start
     const tipX1 = cx + r * Math.cos(startAngle);
     const tipY1 = cy + r * Math.sin(startAngle);
-    const refAngle1 = startAngle + angularOffset;
+    const refAngle1 = startAngle + (this._externalLabel ? -angularOffset : angularOffset);
     const refX1 = cx + r * Math.cos(refAngle1);
     const refY1 = cy + r * Math.sin(refAngle1);
     const dirX1 = tipX1 - refX1;
@@ -6877,10 +6899,10 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
       .stroke("none")
       .attr("opacity", this._alpha);
 
-    // Arrowhead at end: tip at endAngle, direction from a point further along the arc (inward)
+    // Arrowhead at end
     const tipX2 = cx + r * Math.cos(endAngle);
     const tipY2 = cy + r * Math.sin(endAngle);
-    const refAngle2 = endAngle - angularOffset;
+    const refAngle2 = endAngle + (this._externalLabel ? angularOffset : -angularOffset);
     const refX2 = cx + r * Math.cos(refAngle2);
     const refY2 = cy + r * Math.sin(refAngle2);
     const dirX2 = tipX2 - refX2;
@@ -6931,25 +6953,34 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
   _updateTextPosition() {
     if (!this._textElement) return;
 
-    const { startAngle, angleDiff } = this._calculateAngles();
+    const { startAngle, endAngle, angleDiff } = this._calculateAngles();
 
-    let midAngle = startAngle + angleDiff / 2;
-    while (midAngle > 2 * Math.PI) midAngle -= 2 * Math.PI;
-    while (midAngle < 0) midAngle += 2 * Math.PI;
-
-    let textDist;
-    if (this._labelDistance !== null) {
-      textDist = this._labelDistance;
-    } else {
-      let radiusFactor = 0.7;
-      if (this._text === "•" && this._isRightAngle()) {
-        radiusFactor = 0.55;
+    let textAngle, textDist;
+    if (this._externalLabel) {
+      const spanRad = this._externalArcSpan * Math.PI / 180;
+      textAngle = endAngle + spanRad / 2;
+      if (this._labelDistance !== null) {
+        textDist = this._labelDistance;
+      } else {
+        textDist = this._radius + this._fontSize * 0.6;
       }
-      textDist = this._radius * radiusFactor;
+    } else {
+      textAngle = startAngle + angleDiff / 2;
+      while (textAngle > 2 * Math.PI) textAngle -= 2 * Math.PI;
+      while (textAngle < 0) textAngle += 2 * Math.PI;
+      if (this._labelDistance !== null) {
+        textDist = this._labelDistance;
+      } else {
+        let radiusFactor = 0.7;
+        if (this._text === "•" && this._isRightAngle()) {
+          radiusFactor = 0.55;
+        }
+        textDist = this._radius * radiusFactor;
+      }
     }
 
-    const textX = this._centerX + Math.cos(midAngle) * textDist;
-    const textY = this._centerY + Math.sin(midAngle) * textDist;
+    const textX = this._centerX + Math.cos(textAngle) * textDist;
+    const textY = this._centerY + Math.sin(textAngle) * textDist;
 
     this._textElement.attr("x", textX);
     this._textElement.attr("y", textY);
@@ -7044,6 +7075,15 @@ SvgJSEdu.AngleLabel = class AngleLabel extends SvgJSElement {
 
   setLongArc(useLongArc) {
     this._longArc = !!useLongArc;
+    this._draw();
+    return this;
+  }
+
+  setExternalLabel(enabled, arcSpan) {
+    this._externalLabel = !!enabled;
+    if (arcSpan !== undefined) {
+      this._externalArcSpan = arcSpan;
+    }
     this._draw();
     return this;
   }
