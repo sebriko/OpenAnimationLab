@@ -9762,6 +9762,358 @@ class SpatialHash {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { ParticleSystem, Particle, SpatialHash };
 }
+// ==========================================================================
+// Particles – High-performance renderer for large numbers of particles
+//
+// Unlike Circle or ParticleSystem, this class stores every particle as a
+// lightweight PIXI.Sprite that shares a single pre-rendered texture.
+// All sprites are batched into one draw call by the PixiJS renderer,
+// giving an order-of-magnitude speed-up over individual Circle objects.
+//
+// Typical usage:
+//   let p = new Particles(2000, 2);          // 2000 circles, radius 2
+//   p.setPosition(i, x, y);                  // place particle i
+//   p.setColor(i, 0xff0000);                 // colour via tint
+//   p.setAlpha(i, 0.7);                      // per-particle opacity
+//
+// In the animation loop only the properties that actually changed need
+// to be touched – no texture rebuilds, no Graphics redraws.
+// ==========================================================================
+PixiJSEdu.Particles = class Particles extends PIXI.Container {
+  static serializationMap = {
+    description: {
+      de: "Hochperformantes Partikelsystem für viele gleichartige Partikel",
+      en: "High-performance particle system for many uniform particles",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example: "let myParticles = new Particles(1000, 3, 0xffffff);",
+    constructor: {
+      count: {
+        name: "count",
+        info: {
+          en: "Number of particles to pre-allocate",
+          de: "Anzahl der vorab zu erzeugenden Partikel",
+        },
+      },
+      radius: {
+        name: "radius",
+        info: {
+          en: "Radius of each particle in pixels",
+          de: "Radius jedes Partikels in Pixeln",
+        },
+      },
+      color: {
+        name: "color",
+        info: {
+          en: "Default color for all particles (hex, e.g. 0xff0000). Default: 0xffffff",
+          de: "Standardfarbe aller Partikel (hex, z.B. 0xff0000). Standard: 0xffffff",
+        },
+      },
+    },
+    setter: {},
+    methods: {
+      setPosition: {
+        example: "setPosition(0, 100, 200)",
+        info: {
+          en: "Sets the position of particle at the given index",
+          de: "Setzt die Position des Partikels am angegebenen Index",
+        },
+      },
+      setX: {
+        example: "setX(0, 100)",
+        info: {
+          en: "Sets the x-coordinate of particle at the given index",
+          de: "Setzt die x-Koordinate des Partikels am angegebenen Index",
+        },
+      },
+      setY: {
+        example: "setY(0, 200)",
+        info: {
+          en: "Sets the y-Koordinate of particle at the given index",
+          de: "Setzt die y-Koordinate des Partikels am angegebenen Index",
+        },
+      },
+      getX: {
+        example: "getX(0)",
+        info: {
+          en: "Returns the x-coordinate of particle at the given index",
+          de: "Gibt die x-Koordinate des Partikels am angegebenen Index zurück",
+        },
+      },
+      getY: {
+        example: "getY(0)",
+        info: {
+          en: "Returns the y-coordinate of particle at the given index",
+          de: "Gibt die y-Koordinate des Partikels am angegebenen Index zurück",
+        },
+      },
+      setColor: {
+        example: "setColor(0, 0xff0000)",
+        info: {
+          en: "Sets the color of particle at the given index",
+          de: "Setzt die Farbe des Partikels am angegebenen Index",
+        },
+      },
+      setAlpha: {
+        example: "setAlpha(0, 0.5)",
+        info: {
+          en: "Sets the opacity of particle at the given index (0 = invisible, 1 = fully visible)",
+          de: "Setzt die Transparenz des Partikels am angegebenen Index (0 = unsichtbar, 1 = vollständig sichtbar)",
+        },
+      },
+      getAlpha: {
+        example: "getAlpha(0)",
+        info: {
+          en: "Returns the opacity of particle at the given index",
+          de: "Gibt die Transparenz des Partikels am angegebenen Index zurück",
+        },
+      },
+      setScale: {
+        example: "setScale(0, 2.0)",
+        info: {
+          en: "Sets the scale factor of particle at the given index (1.0 = original size)",
+          de: "Setzt den Skalierungsfaktor des Partikels am angegebenen Index (1.0 = Originalgröße)",
+        },
+      },
+      setRadius: {
+        example: "setRadius(0, 5)",
+        info: {
+          en: "Sets an individual radius for the particle (adjusts scale relative to the base radius)",
+          de: "Setzt einen individuellen Radius für das Partikel (passt die Skalierung relativ zum Basisradius an)",
+        },
+      },
+      setVisible: {
+        example: "setVisible(0, false)",
+        info: {
+          en: "Shows or hides particle at the given index",
+          de: "Zeigt oder versteckt das Partikel am angegebenen Index",
+        },
+      },
+      getSprite: {
+        example: "getSprite(0)",
+        info: {
+          en: "Returns the internal PIXI.Sprite for direct access (maximum performance in tight loops)",
+          de: "Gibt das interne PIXI.Sprite für direkten Zugriff zurück (maximale Performance in engen Schleifen)",
+        },
+      },
+      addParticle: {
+        example: "addParticle(100, 200, 0xff0000)",
+        info: {
+          en: "Adds a new particle and returns its index",
+          de: "Fügt ein neues Partikel hinzu und gibt seinen Index zurück",
+        },
+      },
+      setAllColors: {
+        example: "setAllColors(0x00ff00)",
+        info: {
+          en: "Sets the same color for all particles",
+          de: "Setzt dieselbe Farbe für alle Partikel",
+        },
+      },
+      setAllAlphas: {
+        example: "setAllAlphas(0.5)",
+        info: {
+          en: "Sets the same opacity for all particles",
+          de: "Setzt dieselbe Transparenz für alle Partikel",
+        },
+      },
+      setAllVisible: {
+        example: "setAllVisible(true)",
+        info: {
+          en: "Shows or hides all particles at once",
+          de: "Zeigt oder versteckt alle Partikel auf einmal",
+        },
+      },
+    },
+  };
+
+  constructor(count, radius, color) {
+    super();
+    this._count = count;
+    this._radius = radius;
+    this._defaultColor = color !== undefined ? color : 0xffffff;
+    this._sprites = new Array(count);
+    this._texture = null;
+
+    // Disable all interaction – particles are pure visuals
+    this.eventMode = "none";
+    this.interactiveChildren = false;
+
+    // The renderer may not be ready yet (Board.init() is async), so we
+    // start with PIXI.Texture.WHITE and swap to the real circle texture
+    // as soon as the renderer becomes available.
+    for (let i = 0; i < count; i++) {
+      const s = new PIXI.Sprite(PIXI.Texture.WHITE);
+      s.anchor.set(0.5);
+      s.tint = this._defaultColor;
+      s.eventMode = "none";
+      this._sprites[i] = s;
+      this.addChild(s);
+    }
+
+    this._scheduleTextureInit();
+
+    app.stage.addChild(this);
+    Board[INSTANCE_KEY].addChild(this);
+  }
+
+  get count() {
+    return this._count;
+  }
+
+  get radius() {
+    return this._radius;
+  }
+
+  // ------------------------------------------------------------------
+  // Per-particle accessors (hot path – no validation for speed)
+  // ------------------------------------------------------------------
+
+  setPosition(index, x, y) {
+    const s = this._sprites[index];
+    s.x = x;
+    s.y = y;
+  }
+
+  setX(index, x) {
+    this._sprites[index].x = x;
+  }
+
+  setY(index, y) {
+    this._sprites[index].y = y;
+  }
+
+  getX(index) {
+    return this._sprites[index].x;
+  }
+
+  getY(index) {
+    return this._sprites[index].y;
+  }
+
+  setColor(index, color) {
+    this._sprites[index].tint = color;
+  }
+
+  setAlpha(index, alpha) {
+    this._sprites[index].alpha = alpha;
+  }
+
+  getAlpha(index) {
+    return this._sprites[index].alpha;
+  }
+
+  setScale(index, scale) {
+    this._sprites[index].scale.set(scale);
+  }
+
+  setRadius(index, r) {
+    this._sprites[index].scale.set(r / this._radius);
+  }
+
+  setVisible(index, visible) {
+    this._sprites[index].visible = visible;
+  }
+
+  getSprite(index) {
+    return this._sprites[index];
+  }
+
+  // ------------------------------------------------------------------
+  // Dynamic particle creation
+  // ------------------------------------------------------------------
+
+  addParticle(x, y, color) {
+    const s = new PIXI.Sprite(this._texture || PIXI.Texture.WHITE);
+    s.anchor.set(0.5);
+    s.tint = color !== undefined ? color : this._defaultColor;
+    s.eventMode = "none";
+    s.x = x || 0;
+    s.y = y || 0;
+    this._sprites.push(s);
+    this.addChild(s);
+    this._count++;
+    return this._count - 1;
+  }
+
+  // ------------------------------------------------------------------
+  // Bulk operations
+  // ------------------------------------------------------------------
+
+  setAllColors(color) {
+    for (let i = 0; i < this._count; i++) {
+      this._sprites[i].tint = color;
+    }
+  }
+
+  setAllAlphas(alpha) {
+    for (let i = 0; i < this._count; i++) {
+      this._sprites[i].alpha = alpha;
+    }
+  }
+
+  setAllVisible(visible) {
+    for (let i = 0; i < this._count; i++) {
+      this._sprites[i].visible = visible;
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Internal helpers
+  // ------------------------------------------------------------------
+
+  _scheduleTextureInit() {
+    // Try immediately – works when renderer is already initialised
+    if (this._tryCreateTexture()) return;
+    // Otherwise poll via ticker until the renderer is ready
+    this._initTickerBound = () => {
+      if (this._tryCreateTexture()) {
+        app.ticker.remove(this._initTickerBound);
+        this._initTickerBound = null;
+      }
+    };
+    if (typeof app !== "undefined" && app.ticker) {
+      app.ticker.add(this._initTickerBound);
+    }
+  }
+
+  _tryCreateTexture() {
+    if (this._texture) return true;
+    if (typeof app === "undefined" || !app.renderer) return false;
+    this._texture = this._createTexture(this._radius);
+    // Swap placeholder textures on all existing sprites
+    for (let i = 0; i < this._count; i++) {
+      this._sprites[i].texture = this._texture;
+    }
+    return true;
+  }
+
+  _createTexture(radius) {
+    const g = new PIXI.Graphics();
+    g.beginFill(0xffffff);
+    g.drawCircle(0, 0, radius);
+    g.endFill();
+    const texture = app.renderer.generateTexture(g);
+    g.destroy();
+    return texture;
+  }
+
+  destroy() {
+    if (this._initTickerBound && typeof app !== "undefined" && app.ticker) {
+      app.ticker.remove(this._initTickerBound);
+      this._initTickerBound = null;
+    }
+    if (this._texture) {
+      this._texture.destroy(true);
+      this._texture = null;
+    }
+    this._sprites = null;
+    super.destroy({ children: true });
+  }
+};
 PixiJSEdu.SimplePNG = class SimplePNG extends PIXI.Container {
   static serializationMap = {
     description: { de: "PNG-Bild als Objekt", en: "PNG image as object" },

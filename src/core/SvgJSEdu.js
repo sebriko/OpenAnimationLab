@@ -9362,6 +9362,350 @@ SvgJSEdu.ParticleSystem = class ParticleSystem extends SvgJSElement {
 };
 
 // ============================================================================
+// Particles – High-performance renderer for large numbers of particles
+//
+// SVG counterpart of PixiJSEdu.Particles. Each particle is a lightweight
+// <circle> element inside a single <g> group. No SvgJSElement overhead
+// (no event handling, no pivot calculation).
+//
+// API-compatible with the PixiJSEdu version so user code works on both
+// renderers without changes.
+// ============================================================================
+
+SvgJSEdu.Particles = class Particles {
+  static serializationMap = {
+    description: {
+      de: "Hochperformantes Partikelsystem für viele gleichartige Partikel",
+      en: "High-performance particle system for many uniform particles",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example: "let myParticles = new Particles(1000, 3, 0xffffff);",
+    constructor: {
+      count: {
+        name: "count",
+        info: {
+          en: "Number of particles to pre-allocate",
+          de: "Anzahl der vorab zu erzeugenden Partikel",
+        },
+      },
+      radius: {
+        name: "radius",
+        info: {
+          en: "Radius of each particle in pixels",
+          de: "Radius jedes Partikels in Pixeln",
+        },
+      },
+      color: {
+        name: "color",
+        info: {
+          en: "Default color for all particles (hex, e.g. 0xff0000). Default: 0xffffff",
+          de: "Standardfarbe aller Partikel (hex, z.B. 0xff0000). Standard: 0xffffff",
+        },
+      },
+    },
+    setter: {},
+    methods: {
+      setPosition: {
+        example: "setPosition(0, 100, 200)",
+        info: {
+          en: "Sets the position of particle at the given index",
+          de: "Setzt die Position des Partikels am angegebenen Index",
+        },
+      },
+      setX: {
+        example: "setX(0, 100)",
+        info: {
+          en: "Sets the x-coordinate of particle at the given index",
+          de: "Setzt die x-Koordinate des Partikels am angegebenen Index",
+        },
+      },
+      setY: {
+        example: "setY(0, 200)",
+        info: {
+          en: "Sets the y-coordinate of particle at the given index",
+          de: "Setzt die y-Koordinate des Partikels am angegebenen Index",
+        },
+      },
+      getX: {
+        example: "getX(0)",
+        info: {
+          en: "Returns the x-coordinate of particle at the given index",
+          de: "Gibt die x-Koordinate des Partikels am angegebenen Index zurück",
+        },
+      },
+      getY: {
+        example: "getY(0)",
+        info: {
+          en: "Returns the y-coordinate of particle at the given index",
+          de: "Gibt die y-Koordinate des Partikels am angegebenen Index zurück",
+        },
+      },
+      setColor: {
+        example: "setColor(0, 0xff0000)",
+        info: {
+          en: "Sets the color of particle at the given index",
+          de: "Setzt die Farbe des Partikels am angegebenen Index",
+        },
+      },
+      setAlpha: {
+        example: "setAlpha(0, 0.5)",
+        info: {
+          en: "Sets the opacity of particle at the given index (0 = invisible, 1 = fully visible)",
+          de: "Setzt die Transparenz des Partikels am angegebenen Index (0 = unsichtbar, 1 = vollständig sichtbar)",
+        },
+      },
+      getAlpha: {
+        example: "getAlpha(0)",
+        info: {
+          en: "Returns the opacity of particle at the given index",
+          de: "Gibt die Transparenz des Partikels am angegebenen Index zurück",
+        },
+      },
+      setScale: {
+        example: "setScale(0, 2.0)",
+        info: {
+          en: "Sets the scale factor of particle at the given index (1.0 = original size)",
+          de: "Setzt den Skalierungsfaktor des Partikels am angegebenen Index (1.0 = Originalgröße)",
+        },
+      },
+      setRadius: {
+        example: "setRadius(0, 5)",
+        info: {
+          en: "Sets an individual radius for the particle",
+          de: "Setzt einen individuellen Radius für das Partikel",
+        },
+      },
+      setVisible: {
+        example: "setVisible(0, false)",
+        info: {
+          en: "Shows or hides particle at the given index",
+          de: "Zeigt oder versteckt das Partikel am angegebenen Index",
+        },
+      },
+      getElement: {
+        example: "getElement(0)",
+        info: {
+          en: "Returns the internal SVG circle element for direct access",
+          de: "Gibt das interne SVG-Kreiselement für direkten Zugriff zurück",
+        },
+      },
+      addParticle: {
+        example: "addParticle(100, 200, 0xff0000)",
+        info: {
+          en: "Adds a new particle and returns its index",
+          de: "Fügt ein neues Partikel hinzu und gibt seinen Index zurück",
+        },
+      },
+      setAllColors: {
+        example: "setAllColors(0x00ff00)",
+        info: {
+          en: "Sets the same color for all particles",
+          de: "Setzt dieselbe Farbe für alle Partikel",
+        },
+      },
+      setAllAlphas: {
+        example: "setAllAlphas(0.5)",
+        info: {
+          en: "Sets the same opacity for all particles",
+          de: "Setzt dieselbe Transparenz für alle Partikel",
+        },
+      },
+      setAllVisible: {
+        example: "setAllVisible(true)",
+        info: {
+          en: "Shows or hides all particles at once",
+          de: "Zeigt oder versteckt alle Partikel auf einmal",
+        },
+      },
+    },
+  };
+
+  constructor(count, radius, color) {
+    this._count = count;
+    this._radius = radius;
+    this._defaultColor = color !== undefined ? color : 0xffffff;
+    this._group = svgRoot ? svgRoot.group() : null;
+    this._circles = new Array(count);
+    this._proxies = new Array(count);
+    this._alphas = new Float32Array(count);
+    for (let i = 0; i < count; i++) this._alphas[i] = 1;
+
+    if (this._group) {
+      // Disable pointer events on the entire group for performance
+      this._group.attr("pointer-events", "none");
+      const hex = colorToHex(this._defaultColor);
+      for (let i = 0; i < count; i++) {
+        this._circles[i] = this._group
+          .circle(radius * 2)
+          .cx(0)
+          .cy(0)
+          .fill(hex)
+          .attr("pointer-events", "none");
+      }
+    }
+
+    BoardSVG[INSTANCE_KEY].addChild(this);
+  }
+
+  get count() {
+    return this._count;
+  }
+
+  get radius() {
+    return this._radius;
+  }
+
+  // ------------------------------------------------------------------
+  // Per-particle accessors
+  // ------------------------------------------------------------------
+
+  setPosition(index, x, y) {
+    this._circles[index].cx(x).cy(y);
+  }
+
+  setX(index, x) {
+    this._circles[index].cx(x);
+  }
+
+  setY(index, y) {
+    this._circles[index].cy(y);
+  }
+
+  getX(index) {
+    return this._circles[index].cx();
+  }
+
+  getY(index) {
+    return this._circles[index].cy();
+  }
+
+  setColor(index, color) {
+    this._circles[index].fill(colorToHex(color));
+  }
+
+  setAlpha(index, alpha) {
+    this._alphas[index] = alpha;
+    this._circles[index].opacity(alpha);
+  }
+
+  getAlpha(index) {
+    return this._alphas[index];
+  }
+
+  setScale(index, scale) {
+    this._circles[index].radius(this._radius * scale);
+  }
+
+  setRadius(index, r) {
+    this._circles[index].radius(r);
+  }
+
+  setVisible(index, visible) {
+    if (visible) {
+      this._circles[index].show();
+    } else {
+      this._circles[index].hide();
+    }
+  }
+
+  getElement(index) {
+    return this._circles[index];
+  }
+
+  getSprite(index) {
+    if (!this._proxies[index]) {
+      const self = this;
+      const i = index;
+      this._proxies[i] = {
+        _x: 0,
+        _y: 0,
+        get x() { return this._x; },
+        set x(v) { this._x = v; self._circles[i].cx(v); },
+        get y() { return this._y; },
+        set y(v) { this._y = v; self._circles[i].cy(v); },
+        get alpha() { return self._alphas[i]; },
+        set alpha(v) { self._alphas[i] = v; self._circles[i].opacity(v); },
+        get visible() { return self._circles[i].visible(); },
+        set visible(v) { if (v) self._circles[i].show(); else self._circles[i].hide(); },
+        get tint() { return 0; },
+        set tint(c) { self._circles[i].fill(colorToHex(c)); },
+        scale: {
+          set: function(s) { self._circles[i].radius(self._radius * s); }
+        }
+      };
+    }
+    return this._proxies[index];
+  }
+
+  // ------------------------------------------------------------------
+  // Dynamic particle creation
+  // ------------------------------------------------------------------
+
+  addParticle(x, y, color) {
+    const hex = colorToHex(color !== undefined ? color : this._defaultColor);
+    const c = this._group
+      .circle(this._radius * 2)
+      .cx(x || 0)
+      .cy(y || 0)
+      .fill(hex)
+      .attr("pointer-events", "none");
+    this._circles.push(c);
+    this._proxies.push(null);
+    // Grow alpha tracking array
+    const newAlphas = new Float32Array(this._count + 1);
+    newAlphas.set(this._alphas);
+    newAlphas[this._count] = 1;
+    this._alphas = newAlphas;
+    this._count++;
+    return this._count - 1;
+  }
+
+  // ------------------------------------------------------------------
+  // Bulk operations
+  // ------------------------------------------------------------------
+
+  setAllColors(color) {
+    const hex = colorToHex(color);
+    for (let i = 0; i < this._count; i++) {
+      this._circles[i].fill(hex);
+    }
+  }
+
+  setAllAlphas(alpha) {
+    for (let i = 0; i < this._count; i++) {
+      this._alphas[i] = alpha;
+      this._circles[i].opacity(alpha);
+    }
+  }
+
+  setAllVisible(visible) {
+    for (let i = 0; i < this._count; i++) {
+      if (visible) {
+        this._circles[i].show();
+      } else {
+        this._circles[i].hide();
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Cleanup
+  // ------------------------------------------------------------------
+
+  destroy() {
+    if (this._group) {
+      this._group.remove();
+      this._group = null;
+    }
+    this._circles = null;
+    this._alphas = null;
+  }
+};
+
+// ============================================================================
 // Module-Export
 // ============================================================================
 
