@@ -589,6 +589,9 @@ function setupSearchForm() {
   }
 
   // Re-run search whenever editor content changes while search is open.
+  // Only updates the overlay highlights and match count silently –
+  // does NOT scroll to or select a match (that only happens via
+  // findNext/findPrev or an explicit new search).
   editor.on("change", function () {
     if (editorSearchState._isReplacingInternally) return;
     if (
@@ -599,15 +602,64 @@ function setupSearchForm() {
     }
     clearTimeout(editorSearchState._changeDebounceTimer);
     editorSearchState._changeDebounceTimer = setTimeout(function () {
-      const prevPos = editorSearchState.currentPos;
-      performSearch();
-      // Try to stay near the previous position after re-search.
-      if (editorSearchState.count > 0 && prevPos > 0) {
-        const newPos = Math.min(prevPos, editorSearchState.count);
-        editorSearchState.currentPos = newPos;
-        highlightCurrentMatch(newPos - 1);
-        updateSearchResults(newPos, editorSearchState.count);
+      const query = editorSearchState.query;
+      const caseSensitive = editorSearchState.options.caseSensitive;
+
+      // Remove old overlay and current-match mark.
+      if (editorSearchState.overlay) {
+        editor.removeOverlay(editorSearchState.overlay);
+        editorSearchState.overlay = null;
       }
+      if (editorSearchState.currentMark) {
+        editorSearchState.currentMark.clear();
+        editorSearchState.currentMark = null;
+      }
+
+      // Re-add the overlay so all matches are highlighted in yellow.
+      editorSearchState.overlay = searchOverlay(query, !caseSensitive);
+      editor.addOverlay(editorSearchState.overlay);
+
+      // Re-collect all match positions.
+      editorSearchState.allMatches = [];
+      let cursor = editor.getSearchCursor(query, null, {
+        caseFold: !caseSensitive,
+      });
+      while (cursor.findNext()) {
+        editorSearchState.allMatches.push({
+          from: cursor.from(),
+          to: cursor.to(),
+        });
+      }
+      editorSearchState.count = editorSearchState.allMatches.length;
+
+      // Clamp currentPos to the new count (match may have disappeared).
+      if (editorSearchState.count === 0) {
+        editorSearchState.currentPos = 0;
+      } else {
+        editorSearchState.currentPos = Math.min(
+          editorSearchState.currentPos,
+          editorSearchState.count,
+        );
+        if (editorSearchState.currentPos < 1) {
+          editorSearchState.currentPos = 1;
+        }
+        // Re-apply the orange "current match" mark without scrolling.
+        const idx = editorSearchState.currentPos - 1;
+        const match = editorSearchState.allMatches[idx];
+        if (match) {
+          editorSearchState.currentMark = editor.markText(
+            match.from,
+            match.to,
+            {
+              className: "cm-searching-current",
+              clearOnEnter: false,
+              clearWhenEmpty: false,
+            },
+          );
+        }
+      }
+
+      updateSearchResults(editorSearchState.currentPos, editorSearchState.count);
     }, 150);
   });
 

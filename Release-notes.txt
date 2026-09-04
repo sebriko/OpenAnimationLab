@@ -41,5 +41,4 @@
 3.6.4 (2026-08-30) Bugfix: Suche im Editor aktualisiert sich jetzt automatisch bei Änderungen am Code (Treffer, Zähler und Navigation bleiben synchron)
 3.7.0 (2026-08-31) Particles-Klasse hinzugefügt: Hochperformanter Renderer für große Partikelmengen (PixiJSEdu und SvgJSEdu)
 3.8.0 (2026-08-31) AngleLabel: Methode setExternalLabel() hinzugefügt – Externe Beschriftung für kleine Winkel nach technischem Zeichnungsstandard (PixiJSEdu und SvgJSEdu)
-
-
+3.8.1 (2026-09-04) Bugfix: Suche im Editor springt nicht mehr bei Textbearbeitungen zum Suchwort – Treffer-Hervorhebungen und Zähler werden weiterhin automatisch aktualisiert
