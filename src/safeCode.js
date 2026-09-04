@@ -42,6 +42,15 @@ function isSafe(code) {
 
     return checkNode(ast);
   } catch (err) {
+    // Report syntax errors with line number to the message system
+    if (typeof window.logEvalMessage === "function") {
+      const lineNumber = err.loc ? err.loc.line : null;
+      window.logEvalMessage(
+        err.message || "Syntaxfehler im Code",
+        "error",
+        lineNumber,
+      );
+    }
     return false;
   }
 }

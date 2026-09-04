@@ -26,6 +26,16 @@ window.logEvalMessage = function (message, type = "log", lineNumber = null) {
     systemMessages = systemMessages.slice(-MAX_MESSAGES);
   }
 
+  // For errors: add visual marker in the editor and auto-open the message window
+  if (type === "error") {
+    if (lineNumber && typeof addErrorMarker === "function") {
+      addErrorMarker(lineNumber - 1, message);
+    }
+    if (typeof window.openMessageWindow === "function") {
+      window.openMessageWindow();
+    }
+  }
+
   if (!messageDisplayScheduled) {
     messageDisplayScheduled = true;
     setTimeout(() => {
@@ -72,7 +82,7 @@ function updateMessageDisplay() {
                     <span class="message-time">${timestamp}</span>
                 </div>
                 <div class="message-text">${escapeHtml(msg.message)}</div>
-                ${msg.lineNumber ? `<div class="message-line">${lineText} ${msg.lineNumber}</div>` : ""}
+                ${msg.lineNumber ? `<div class="message-line" onclick="if(typeof editor!=='undefined'){editor.setCursor(${msg.lineNumber - 1},0);editor.focus();}" style="cursor:pointer;" title="Zur Zeile springen">${lineText} ${msg.lineNumber}</div>` : ""}
             </div>
         `;
   });

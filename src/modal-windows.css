@@ -236,12 +236,18 @@
   opacity: 0.6;
 }
 
-/* Line Number */
+/* Line Number (clickable – jumps to the error line in the editor) */
 .message-line {
-  color: var(--text-light);
-  opacity: 0.6;
+  color: #ff9a9a;
+  opacity: 0.8;
   font-size: 11px;
   margin-top: 4px;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+.message-line:hover {
+  opacity: 1;
+  color: #ffcccc;
 }
 
 .no-messages {

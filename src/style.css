@@ -1064,6 +1064,24 @@ form {
   margin-left: -13px !important;
 }
 
+/* Runtime error highlighting in the editor */
+.cm-runtime-error {
+  background-color: rgba(255, 60, 60, 0.25) !important;
+  border-bottom: 2px solid #ff3c3c;
+}
+
+.cm-runtime-error-widget {
+  background: #2a0a0a;
+  color: #ff6b6b;
+  border-left: 3px solid #ff3c3c;
+  padding: 4px 8px;
+  font-family: monospace;
+  font-size: 12px;
+  margin: 2px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .custom-gutter .my-button {
   cursor: pointer;
   color: white;

@@ -332,6 +332,130 @@ function clearErrorMarkers() {
   }
 }
 
+// Add a visual error marker to a specific line in the editor (0-based line index)
+function addErrorMarker(lineIndex, message) {
+  if (!editor || lineIndex < 0 || lineIndex >= editor.lineCount()) return;
+  if (!editor.runtimeErrorMarkers) editor.runtimeErrorMarkers = [];
+
+  // Highlight the entire line with a red background
+  const marker = editor.markText(
+    { line: lineIndex, ch: 0 },
+    { line: lineIndex, ch: editor.getLine(lineIndex).length },
+    { className: "cm-runtime-error" },
+  );
+
+  // Add an inline widget below the line showing the error message
+  const widgetNode = document.createElement("div");
+  widgetNode.className = "cm-runtime-error-widget";
+  widgetNode.textContent = "\u26A0 " + message;
+  const widget = editor.addLineWidget(lineIndex, widgetNode, {
+    coverGutter: false,
+    noHScroll: true,
+  });
+
+  editor.runtimeErrorMarkers.push({ widget, marker });
+}
+
+// Install global error handlers to catch async errors (animation callbacks,
+// event handlers, promises) that occur outside the synchronous eval try/catch.
+function installGlobalErrorHandlers() {
+  // Remove previous handlers if any
+  if (window.__userCodeErrorHandler) {
+    window.removeEventListener("error", window.__userCodeErrorHandler);
+  }
+  if (window.__userCodeRejectionHandler) {
+    window.removeEventListener(
+      "unhandledrejection",
+      window.__userCodeRejectionHandler,
+    );
+  }
+
+  window.__userCodeErrorHandler = function (event) {
+    const ctx = window.__codeErrorContext;
+    if (!ctx) return;
+
+    const err = event.error;
+    if (!err) {
+      // Some errors (e.g. network/resource) don't have an Error object
+      window.logEvalMessage(event.message || "Unbekannter Fehler", "error");
+      return;
+    }
+
+    const lineNumber = extractLineFromStack(
+      err,
+      ctx.wrapperLineCount || 0,
+      ctx.lineMap,
+    );
+    window.logEvalMessage(err.message || err.toString(), "error", lineNumber);
+
+    event.preventDefault();
+  };
+
+  window.__userCodeRejectionHandler = function (event) {
+    const ctx = window.__codeErrorContext;
+    if (!ctx) return;
+
+    const reason = event.reason;
+    let message = "Unbehandelter Promise-Fehler";
+    let lineNumber = null;
+
+    if (reason instanceof Error) {
+      message = reason.message || reason.toString();
+      lineNumber = extractLineFromStack(
+        reason,
+        ctx.wrapperLineCount || 0,
+        ctx.lineMap,
+      );
+    } else if (reason) {
+      message = String(reason);
+    }
+
+    window.logEvalMessage(message, "error", lineNumber);
+    event.preventDefault();
+  };
+
+  window.addEventListener("error", window.__userCodeErrorHandler);
+  window.addEventListener(
+    "unhandledrejection",
+    window.__userCodeRejectionHandler,
+  );
+}
+
+// Extract user-code line number from an error stack trace.
+// Works across Chrome/Edge, Firefox, and Safari.
+function extractLineFromStack(err, wrapperLineCount, lineMap) {
+  const stack = err.stack;
+  if (!stack) return null;
+
+  const stackLines = stack.split("\n");
+  for (let i = 0; i < stackLines.length; i++) {
+    const line = stackLines[i];
+
+    // Chrome/Edge: "at ... (eval at ..., <anonymous>:LINE:COL)"
+    let match = line.match(/<anonymous>:(\d+):(\d+)/);
+
+    // Firefox: "...> eval:LINE:COL" or "@debugger eval code:LINE:COL"
+    if (!match) match = line.match(/eval:(\d+):(\d+)/);
+
+    // Safari: "eval code@...:LINE:COL" or "eval@...:LINE:COL"
+    if (!match) match = line.match(/eval[^@]*@[^:]*:(\d+):(\d+)/);
+
+    if (match) {
+      const rawLine = parseInt(match[1]);
+      // Subtract the wrapper lines to get the line within the transformed user code
+      const transformedLine = rawLine - wrapperLineCount;
+      if (transformedLine < 0) continue;
+
+      // Map back through injectNames to get the original user code line (1-based)
+      if (lineMap && transformedLine < lineMap.length) {
+        return lineMap[transformedLine] + 1;
+      }
+      return transformedLine + 1;
+    }
+  }
+  return null;
+}
+
 // CLASS DETECTION & FORM HANDLING
 // Regular expressions for detecting class instantiations
 const ASSIGNMENT_REGEX =
@@ -533,6 +657,7 @@ function runCode() {
   rightActions.style.display = "flex";
 
   clearErrorMarkers();
+  installGlobalErrorHandlers();
 
   if (typeof window.clearMessageLog === "function") {
     window.clearMessageLog();
@@ -560,14 +685,17 @@ function runCode() {
 
   code = replacer(code);
 
-  // Inject instance names for debugging
+  // Inject instance names for debugging.
+  // Returns { code, lineMap } where lineMap[transformedLineIndex] = originalLineIndex (0-based).
   function injectNames(code) {
     const lines = code.split("\n");
     let result = [];
+    let lineMap = [];
 
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i];
       result.push(line);
+      lineMap.push(i);
 
       const declMatch = line.match(
         /^(?:const|let|var)\s+(\w+)\s*=\s*new\s+[\w.]+\s*\((.*)/,
@@ -578,6 +706,7 @@ function runCode() {
 
         if (rest.includes(")")) {
           result.push(`${varName}.instanceName = "${varName}";`);
+          lineMap.push(i);
         } else {
           let openParens = 1;
 
@@ -585,6 +714,7 @@ function runCode() {
             i++;
             const nextLine = lines[i];
             result.push(nextLine);
+            lineMap.push(i);
 
             for (let char of nextLine) {
               if (char === "(") openParens++;
@@ -593,6 +723,7 @@ function runCode() {
 
             if (openParens === 0) {
               result.push(`${varName}.instanceName = "${varName}";`);
+              lineMap.push(i);
               break;
             }
           }
@@ -600,7 +731,7 @@ function runCode() {
       }
     }
 
-    return result.join("\n");
+    return { code: result.join("\n"), lineMap };
   }
 
   setTimeout(() => {
@@ -614,38 +745,30 @@ function runCode() {
 
     try {
       if (isSafe(code)) {
-        let preparedCode = injectNames(code);
+        const injected = injectNames(code);
+        let userCode = injected.code;
+        const lineMap = injected.lineMap;
 
-        // Wrap console calls to redirect output to the message panel.
-        // Rate-limiting prevents a runaway loop from flooding the UI.
-        preparedCode = `
-                (function() {
-                    const __maxMsgs = 10;
-                    let __msgCount = 0;
-                    let __limitReached = false;
+        // Build the wrapper prefix (everything before user code).
+        // We count its lines dynamically so the line-number offset is always correct.
+        const wrapperPrefix = `(function() {
+var __maxMsgs = 10;
+var __msgCount = 0;
+var __limitReached = false;
+var console = {
+log: function() { var args = [].slice.call(arguments); if (__limitReached) return; __msgCount++; if (__msgCount > __maxMsgs) { __limitReached = true; window.logEvalMessage('Limit erreicht: Nur die letzten ' + __maxMsgs + ' console.log-Meldungen werden angezeigt. Weitere Aufrufe werden ignoriert.', 'info'); return; } window.logEvalMessage(args.join(' '), 'log'); },
+error: function() { var args = [].slice.call(arguments); window.logEvalMessage(args.join(' '), 'error'); },
+info: function() { var args = [].slice.call(arguments); window.logEvalMessage(args.join(' '), 'info'); }
+};
+${rendererAlias}
+`;
+        const wrapperSuffix = `\n})();`;
+        const wrapperLineCount = wrapperPrefix.split("\n").length - 1;
 
-                    const console = {
-                        log: function(...args) {
-                            if (__limitReached) return;
-                            __msgCount++;
-                            if (__msgCount > __maxMsgs) {
-                                __limitReached = true;
-                                window.logEvalMessage('Limit erreicht: Nur die letzten ' + __maxMsgs + ' console.log-Meldungen werden angezeigt. Weitere Aufrufe werden ignoriert.', 'info');
-                                return;
-                            }
-                            window.logEvalMessage(args.join(' '), 'log');
-                        },
-                        error: function(...args) {
-                            window.logEvalMessage(args.join(' '), 'error');
-                        },
-                        info: function(...args) {
-                            window.logEvalMessage(args.join(' '), 'info');
-                        }
-                    };
-                    ${rendererAlias}
-                    ${preparedCode}
-                })();
-        `;
+        let preparedCode = wrapperPrefix + userCode + wrapperSuffix;
+
+        // Store line mapping info globally so the async error handler can use it
+        window.__codeErrorContext = { wrapperLineCount, lineMap };
 
         // Destroy any existing Board singleton before re-running so resources
         // from the previous execution are fully released. INSTANCE_KEY is a
@@ -731,19 +854,12 @@ function runCode() {
       } else {
       }
     } catch (err) {
-      const stackLines = err.stack ? err.stack.split("\n") : [];
-      let lineNumber = null;
-
-      for (let i = 0; i < stackLines.length; i++) {
-        if (stackLines[i].includes("eval")) {
-          const match = stackLines[i].match(/eval:(\d+):\d+/);
-          if (match) {
-            lineNumber = parseInt(match[1]) - (rendererAlias ? 15 : 14);
-            break;
-          }
-        }
-      }
-
+      const ctx = window.__codeErrorContext || {};
+      const lineNumber = extractLineFromStack(
+        err,
+        ctx.wrapperLineCount || 0,
+        ctx.lineMap,
+      );
       window.logEvalMessage(err.message || err.toString(), "error", lineNumber);
     }
   }, 50);
