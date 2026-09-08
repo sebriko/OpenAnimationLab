@@ -68,7 +68,7 @@
     if (type !== "pixi" && type !== "svg") return;
     if (autoRerun === undefined) autoRerun = true;
 
-    var changed = _activeRenderer !== type;
+    const changed = _activeRenderer !== type;
     _activeRenderer = type;
 
     try {
@@ -80,9 +80,7 @@
     if (changed && autoRerun) {
       if (type === "svg" && typeof SVG === "undefined") {
         console.error(
-          "SVG.js is not loaded. Make sure " +
-            '<script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.5/svg.min.js"></script> ' +
-            "is included in index.html.",
+          'SVG.js is not loaded. Make sure <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.5/svg.min.js"></script> is included in index.html.',
         );
         if (typeof window.logEvalMessage === "function") {
           window.logEvalMessage(
@@ -95,9 +93,7 @@
 
       if (type === "svg" && typeof SvgJSEdu === "undefined") {
         console.error(
-          "SvgJSEdu.js is not loaded. Make sure " +
-            '<script src="./src/core/SvgJSEdu.js"></script> ' +
-            "is included in index.html.",
+          'SvgJSEdu.js is not loaded. Make sure <script src="./src/core/SvgJSEdu.js"></script> is included in index.html.',
         );
         if (typeof window.logEvalMessage === "function") {
           window.logEvalMessage(
@@ -117,45 +113,40 @@
   };
 
   function _createRendererSelector() {
-    var filebar = document.getElementById("filebar");
+    const filebar = document.getElementById("filebar");
     if (!filebar) return;
 
     if (document.getElementById("renderer-selector-container")) return;
 
-    var container = document.createElement("div");
+    const container = document.createElement("div");
     container.className = "renderer-selector";
     container.id = "renderer-selector-container";
 
-    var label = document.createElement("span");
+    const label = document.createElement("span");
     label.className = "renderer-label";
     label.textContent = "Renderer";
     container.appendChild(label);
 
-    var button = document.createElement("button");
+    const button = document.createElement("button");
     button.className = "regular-button renderer-button";
     button.id = "renderer-button";
     button.title = "Switch renderer";
 
-    var currentRenderer = RENDERERS.find(function (r) {
-      return r.code === _activeRenderer;
-    });
+    const currentRenderer = RENDERERS.find((r) => r.code === _activeRenderer);
     button.innerHTML =
-      '<span class="renderer-text">' +
-      (currentRenderer ? currentRenderer.name : "SVG.js (SVG)") +
-      "</span>" +
+      `<span class="renderer-text">${currentRenderer ? currentRenderer.name : "SVG.js (SVG)"}</span>` +
       '<span class="renderer-arrow">▼</span>';
     container.appendChild(button);
 
-    var dropdown = document.createElement("div");
+    const dropdown = document.createElement("div");
     dropdown.className = "renderer-dropdown";
     dropdown.id = "renderer-dropdown";
 
-    RENDERERS.forEach(function (renderer) {
-      var option = document.createElement("div");
+    RENDERERS.forEach((renderer) => {
+      const option = document.createElement("div");
       option.className = "renderer-option";
       option.dataset.renderer = renderer.code;
-      option.innerHTML =
-        '<span class="renderer-name">' + renderer.name + "</span>";
+      option.innerHTML = `<span class="renderer-name">${renderer.name}</span>`;
 
       option.addEventListener("click", function () {
         window.setActiveRenderer(renderer.code);
@@ -188,17 +179,17 @@
   }
 
   function _toggleDropdown() {
-    var dropdown = document.getElementById("renderer-dropdown");
-    var button = document.getElementById("renderer-button");
+    const dropdown = document.getElementById("renderer-dropdown");
+    const button = document.getElementById("renderer-button");
     if (!dropdown || !button) return;
 
     if (dropdown.classList.contains("show")) {
       _hideDropdown();
     } else {
-      var buttonRect = button.getBoundingClientRect();
-      var containerRect = button.parentElement.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+      const containerRect = button.parentElement.getBoundingClientRect();
 
-      dropdown.style.top = buttonRect.bottom - containerRect.top + 2 + "px";
+      dropdown.style.top = `${buttonRect.bottom - containerRect.top + 2}px`;
 
       dropdown.classList.add("show");
       button.classList.add("active");
@@ -206,20 +197,18 @@
   }
 
   function _hideDropdown() {
-    var dropdown = document.getElementById("renderer-dropdown");
-    var button = document.getElementById("renderer-button");
+    const dropdown = document.getElementById("renderer-dropdown");
+    const button = document.getElementById("renderer-button");
     if (dropdown) dropdown.classList.remove("show");
     if (button) button.classList.remove("active");
   }
 
   function _updateSelectorUI() {
-    var button = document.getElementById("renderer-button");
+    const button = document.getElementById("renderer-button");
     if (button) {
-      var textEl = button.querySelector(".renderer-text");
+      const textEl = button.querySelector(".renderer-text");
       if (textEl) {
-        var current = RENDERERS.find(function (r) {
-          return r.code === _activeRenderer;
-        });
+        const current = RENDERERS.find((r) => r.code === _activeRenderer);
         textEl.textContent = current ? current.name : _activeRenderer;
       }
     }
@@ -228,8 +217,8 @@
   }
 
   function _updateActiveRenderer() {
-    var options = document.querySelectorAll(".renderer-option");
-    options.forEach(function (option) {
+    const options = document.querySelectorAll(".renderer-option");
+    options.forEach((option) => {
       if (option.dataset.renderer === _activeRenderer) {
         option.classList.add("active");
       } else {

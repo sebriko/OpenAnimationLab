@@ -5,6 +5,11 @@ class PerformanceManager {
     this.tabPreloadCache = new Map();
     this.editorChangeTimeout = null;
     this.isInitialized = false;
+
+    // References for cleanup
+    this._visibilityHandler = null;
+    this._canvasObserver = null;
+    this._cleanupTimerId = null;
   }
 
   optimizedRunCode() {
@@ -48,15 +53,16 @@ class PerformanceManager {
     if (!window.app?.ticker) return;
 
     // Throttle PixiJS FPS when the page is not visible
-    document.addEventListener("visibilitychange", () => {
+    this._visibilityHandler = () => {
       if (document.hidden) {
         window.app.ticker.maxFPS = 10;
       } else {
         window.app.ticker.maxFPS = 60;
       }
-    });
+    };
+    document.addEventListener("visibilitychange", this._visibilityHandler);
 
-    const observer = new IntersectionObserver((entries) => {
+    this._canvasObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           window.app.ticker.start();
@@ -68,7 +74,7 @@ class PerformanceManager {
 
     const canvasContainer = document.getElementById("canvas-container");
     if (canvasContainer) {
-      observer.observe(canvasContainer);
+      this._canvasObserver.observe(canvasContainer);
     }
   }
 
@@ -139,6 +145,33 @@ class PerformanceManager {
     };
   }
 
+  // Adaptive cleanup: schedules the next run based on page visibility
+  _scheduleCleanup() {
+    const baseInterval = 30000;
+
+    this._cleanupTimerId = setTimeout(() => {
+      if (!document.hidden) {
+        this.cleanupUnusedResources();
+      }
+      this._scheduleCleanup();
+    }, baseInterval);
+  }
+
+  cleanup() {
+    if (this._visibilityHandler) {
+      document.removeEventListener("visibilitychange", this._visibilityHandler);
+      this._visibilityHandler = null;
+    }
+    if (this._canvasObserver) {
+      this._canvasObserver.disconnect();
+      this._canvasObserver = null;
+    }
+    if (this._cleanupTimerId) {
+      clearTimeout(this._cleanupTimerId);
+      this._cleanupTimerId = null;
+    }
+  }
+
   initialize() {
     if (this.isInitialized) return;
 
@@ -146,7 +179,7 @@ class PerformanceManager {
     this.optimizeCanvasRendering();
     this.setupPerformanceObserver();
 
-    setInterval(() => this.cleanupUnusedResources(), 30000);
+    this._scheduleCleanup();
 
     document.addEventListener("mouseover", (e) => {
       if (e.target.classList.contains("tab")) {

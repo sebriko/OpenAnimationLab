@@ -1,12 +1,12 @@
 globalThis.INSTANCE_KEY ??= Symbol("MyClassInstance");
-var INSTANCE_KEY = globalThis.INSTANCE_KEY;
+const INSTANCE_KEY = globalThis.INSTANCE_KEY;
 
 class Board {
   constructor(width, height, backgroundColor = 0xffffff) {
-    const canvasContainer = document.getElementById("canvas-container");
-    if (canvasContainer) {
-      canvasContainer.style.display = "none";
-      canvasContainer.style.visibility = "hidden";
+    const canvasContainerInit = document.getElementById("canvas-container");
+    if (canvasContainerInit) {
+      canvasContainerInit.style.display = "none";
+      canvasContainerInit.style.visibility = "hidden";
     }
 
     this.width = width;
@@ -57,6 +57,9 @@ class Board {
 
     this.isMobile = this.detectMobile();
 
+    // Cache frequently accessed DOM elements to avoid repeated queries
+    this.canvasContainer = document.getElementById("canvas-container");
+
     this.devicePixelRatio = window.devicePixelRatio || 1;
     // Cap at 2x: sufficient for sharp rendering while keeping GPU load reasonable
     this.maxResolution = 2;
@@ -70,14 +73,14 @@ class Board {
     this.init();
     this.createGrid(10, 8, this.width, this.height);
 
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       this.showPreview();
       this.resizeCanvas();
       this.startAutoMaintenance();
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         this.hidePreloader();
-      }, 500);
-    }, 50);
+      });
+    });
   }
 
   detectMobile() {
@@ -577,11 +580,11 @@ class Board {
       }
 
       if (window.app.stage) {
-        while (window.app.stage.children.length > 0) {
-          const child = window.app.stage.children[0];
-          window.app.stage.removeChild(child);
-          if (child.destroy) {
-            child.destroy(true);
+        const stageChildren = [...window.app.stage.children];
+        window.app.stage.removeChildren();
+        for (let i = stageChildren.length - 1; i >= 0; i--) {
+          if (stageChildren[i].destroy) {
+            stageChildren[i].destroy(true);
           }
         }
       }
@@ -600,12 +603,11 @@ class Board {
       window.app = null;
     }
 
-    const canvasContainer = document.getElementById("canvas-container");
-    if (canvasContainer) {
-      while (canvasContainer.firstChild) {
-        canvasContainer.removeChild(canvasContainer.firstChild);
+    if (this.canvasContainer) {
+      while (this.canvasContainer.firstChild) {
+        this.canvasContainer.removeChild(this.canvasContainer.firstChild);
       }
-      canvasContainer.style.visibility = "hidden";
+      this.canvasContainer.style.visibility = "hidden";
     }
 
     if (Board[INSTANCE_KEY] === this) {
@@ -627,30 +629,27 @@ class Board {
       devicePixelRatio: this.devicePixelRatio,
       memoryUsage: performance.memory
         ? {
-            used:
-              (performance.memory.usedJSHeapSize / 1048576).toFixed(2) + " MB",
-            total:
-              (performance.memory.totalJSHeapSize / 1048576).toFixed(2) + " MB",
+            used: `${(performance.memory.usedJSHeapSize / 1048576).toFixed(2)} MB`,
+            total: `${(performance.memory.totalJSHeapSize / 1048576).toFixed(2)} MB`,
           }
         : "Not available",
     };
   }
 
   prepareCanvasContainer() {
-    const canvasContainer = document.getElementById("canvas-container");
-    if (!canvasContainer) {
+    if (!this.canvasContainer) {
       console.warn("Canvas container not found.");
       return;
     }
 
-    canvasContainer.style.visibility = "hidden";
-    canvasContainer.style.position = "absolute";
-    canvasContainer.style.backgroundColor = "#F5F5F5";
+    this.canvasContainer.style.visibility = "hidden";
+    this.canvasContainer.style.position = "absolute";
+    this.canvasContainer.style.backgroundColor = "#F5F5F5";
 
     // CSS-level font/image smoothing for the container element
-    canvasContainer.style.imageRendering = "auto";
-    canvasContainer.style.WebkitFontSmoothing = "antialiased";
-    canvasContainer.style.MozOsxFontSmoothing = "grayscale";
+    this.canvasContainer.style.imageRendering = "auto";
+    this.canvasContainer.style.WebkitFontSmoothing = "antialiased";
+    this.canvasContainer.style.MozOsxFontSmoothing = "grayscale";
 
     // Set initial size to avoid flicker before the first resizeCanvas() call
     const preview = document.getElementById("preview");
@@ -669,31 +668,30 @@ class Board {
       const leftPos = (previewRect.width - scaledWidth) / 2;
       const topPos = (previewRect.height - scaledHeight) / 2;
 
-      Object.assign(canvasContainer.style, {
-        width: scaledWidth + "px",
-        height: scaledHeight + "px",
-        left: leftPos + "px",
-        top: topPos + "px",
-        transition: "none", // No transitions while loading
+      Object.assign(this.canvasContainer.style, {
+        width: `${scaledWidth}px`,
+        height: `${scaledHeight}px`,
+        left: `${leftPos}px`,
+        top: `${topPos}px`,
+        transition: "none",
       });
     }
   }
 
   createPreloader() {
-    const canvasContainer = document.getElementById("canvas-container");
-    if (!canvasContainer) {
+    if (!this.canvasContainer) {
       console.warn("Canvas container not found. Skipping preloader.");
       return;
     }
 
     setTimeout(() => {
-      canvasContainer.style.display = "block";
-      canvasContainer.style.visibility = "visible";
-      canvasContainer.style.opacity = "0";
-      canvasContainer.style.transition = "opacity 0.2s ease-in";
+      this.canvasContainer.style.display = "block";
+      this.canvasContainer.style.visibility = "visible";
+      this.canvasContainer.style.opacity = "0";
+      this.canvasContainer.style.transition = "opacity 0.2s ease-in";
 
       requestAnimationFrame(() => {
-        canvasContainer.style.opacity = "1";
+        this.canvasContainer.style.opacity = "1";
       });
     }, 10);
 
@@ -706,7 +704,7 @@ class Board {
       );
 
       this.preloader.setDimensions(this.width, this.height);
-      canvasContainer.appendChild(this.preloader._element);
+      this.canvasContainer.appendChild(this.preloader._element);
 
       this.preloader._element.style.position = "absolute";
       this.preloader._element.style.top = "0";
@@ -720,47 +718,45 @@ class Board {
   }
 
   createFallbackPreloader() {
-    const canvasContainer = document.getElementById("canvas-container");
-    if (!canvasContainer) return;
+    if (!this.canvasContainer) return;
 
     this.fallbackPreloader = document.createElement("div");
-    this.fallbackPreloader.style.cssText =
-      "position: absolute;\n" +
-      "top: 0;\n" +
-      "left: 0;\n" +
-      "width: 100%;\n" +
-      "height: 100%;\n" +
-      "background-color: #F5F5F5;\n" +
-      "display: flex;\n" +
-      "align-items: center;\n" +
-      "justify-content: center;\n" +
-      "z-index: 1000;\n" +
-      "transition: opacity 0.3s ease-out;";
+    this.fallbackPreloader.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #F5F5F5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: opacity 0.3s ease-out;`;
 
     const spinner = document.createElement("div");
-    spinner.style.cssText =
-      "width: 40px;\n" +
-      "height: 40px;\n" +
-      "border: 3px solid #ddd;\n" +
-      "border-top-color: #666;\n" +
-      "border-radius: 50%;\n" +
-      "animation: spin 1s linear infinite;";
+    spinner.style.cssText = `
+      width: 40px;
+      height: 40px;
+      border: 3px solid #ddd;
+      border-top-color: #666;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;`;
 
     if (!document.querySelector("#fallback-spinner-style")) {
       const style = document.createElement("style");
       style.id = "fallback-spinner-style";
-      style.textContent =
-        "@keyframes spin {\n" + "  to { transform: rotate(360deg); }\n" + "}";
+      style.textContent = `@keyframes spin {
+  to { transform: rotate(360deg); }
+}`;
       document.head.appendChild(style);
     }
 
     this.fallbackPreloader.appendChild(spinner);
-    canvasContainer.appendChild(this.fallbackPreloader);
+    this.canvasContainer.appendChild(this.fallbackPreloader);
   }
 
   hidePreloader() {
-    const canvasContainer = document.getElementById("canvas-container");
-
     if (this.preloader && typeof this.preloader.hide === "function") {
       this.preloader.hide();
       setTimeout(() => {
@@ -768,8 +764,8 @@ class Board {
           this.preloader.destroy();
           this.preloader = null;
         }
-        if (canvasContainer) {
-          canvasContainer.style.backgroundColor = "transparent";
+        if (this.canvasContainer) {
+          this.canvasContainer.style.backgroundColor = "transparent";
         }
       }, 500);
     } else if (this.fallbackPreloader) {
@@ -779,8 +775,8 @@ class Board {
           this.fallbackPreloader.parentNode.removeChild(this.fallbackPreloader);
           this.fallbackPreloader = null;
         }
-        if (canvasContainer) {
-          canvasContainer.style.backgroundColor = "transparent";
+        if (this.canvasContainer) {
+          this.canvasContainer.style.backgroundColor = "transparent";
         }
       }, 300);
     }
@@ -916,7 +912,7 @@ class Board {
         try {
           callback(mouseEvent, child);
         } catch (error) {
-          console.error("Error in " + eventType + " event handler:", error);
+          console.error(`Error in ${eventType} event handler:`, error);
         }
       });
     }
@@ -1033,7 +1029,9 @@ class Board {
         delete listeners[eventType];
       }
 
-      if (Object.keys(listeners).length === 0) {
+      let hasListeners = false;
+      for (const _ in listeners) { hasListeners = true; break; }
+      if (!hasListeners) {
         this.mouseListeners.delete(child);
       }
     }
@@ -1079,9 +1077,8 @@ class Board {
   }
 
   async init() {
-    const canvasContainer = document.getElementById("canvas-container");
-    if (canvasContainer) {
-      const allCanvases = canvasContainer.querySelectorAll("canvas");
+    if (this.canvasContainer) {
+      const allCanvases = this.canvasContainer.querySelectorAll("canvas");
       allCanvases.forEach((canvas) => {
         canvas.remove();
       });
@@ -1159,9 +1156,7 @@ class Board {
 
     app.ticker.maxFPS = this.currentFPS;
 
-    document
-      .getElementById("canvas-container")
-      .appendChild(app.view || app.canvas);
+    this.canvasContainer.appendChild(app.view || app.canvas);
 
     const canvasEl = app.view || app.canvas;
     canvasEl.style.imageRendering = "auto";
@@ -1197,7 +1192,7 @@ class Board {
         try {
           listener.callback(mouseEvent);
         } catch (error) {
-          console.error("Error in global " + eventType + " event handler:", error);
+          console.error(`Error in global ${eventType} event handler:`, error);
         }
       }
     });
@@ -1247,15 +1242,14 @@ class Board {
   }
 
   showPreview() {
-    const container = document.getElementById("canvas-container");
-    if (container && container.style.visibility !== "visible") {
-      container.style.visibility = "visible";
+    if (this.canvasContainer && this.canvasContainer.style.visibility !== "visible") {
+      this.canvasContainer.style.visibility = "visible";
     }
   }
 
   getAvailableSpace() {
     const preview = document.getElementById("preview");
-    const container = document.getElementById("canvas-container");
+    const container = this.canvasContainer;
 
     if (!preview || !container) {
       return { width: 800, height: 600, margin: 20 };
@@ -1319,7 +1313,7 @@ class Board {
   //   Browser downsampling produces sharper lines/text than PIXI at low resolution.
   performResize() {
     const canvas = app.view || app.canvas;
-    const container = document.getElementById("canvas-container");
+    const container = this.canvasContainer;
     const preview = document.getElementById("preview");
 
     if (!canvas || !container || !preview) {
@@ -1356,8 +1350,8 @@ class Board {
         app.stage.scale.set(this.scaleValue);
       } else {
         if (canvasElement) {
-          canvasElement.style.width = scaledWidth + "px";
-          canvasElement.style.height = scaledHeight + "px";
+          canvasElement.style.width = `${scaledWidth}px`;
+          canvasElement.style.height = `${scaledHeight}px`;
         }
         app.renderer.resize(this.width, this.height);
         app.stage.scale.set(1);
@@ -1370,10 +1364,10 @@ class Board {
 
       Object.assign(container.style, {
         position: "absolute",
-        width: scaledWidth + "px",
-        height: scaledHeight + "px",
-        left: leftPos + "px",
-        top: topPos + "px",
+        width: `${scaledWidth}px`,
+        height: `${scaledHeight}px`,
+        left: `${leftPos}px`,
+        top: `${topPos}px`,
         transform: "none",
         overflow: "hidden",
         touchAction: availableSpace.isMobile ? "none" : "auto",

@@ -165,10 +165,10 @@ window.PreloaderManager = {
       return;
     }
 
-    var savedLanguage = localStorage.getItem("language");
+    let savedLanguage = localStorage.getItem("language");
 
     if (!savedLanguage) {
-      var consentGiven = localStorage.getItem("cookie_consent") === "accepted";
+      const consentGiven = localStorage.getItem("cookie_consent") === "accepted";
       if (consentGiven) {
         savedLanguage = this.getCookie("language");
       }
@@ -177,7 +177,7 @@ window.PreloaderManager = {
     if (savedLanguage && ["en", "de"].includes(savedLanguage)) {
       this.currentLanguage = savedLanguage;
     } else {
-      var browserLang = navigator.language.substring(0, 2);
+      const browserLang = navigator.language.substring(0, 2);
       this.currentLanguage = browserLang === "de" ? "de" : "en";
     }
   },

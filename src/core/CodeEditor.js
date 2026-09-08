@@ -1,4 +1,4 @@
-var code;
+let code;
 
 // UTILITY FUNCTIONS
 // Extract class names from an object
