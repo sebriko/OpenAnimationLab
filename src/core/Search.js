@@ -321,9 +321,8 @@ function clearSearch() {
 function openSearchForm(replaceMode = false) {
   const searchForm = document.getElementById("search-form");
 
-  const editorVisible =
-    document.querySelector(".CodeMirror") !== null &&
-    document.querySelector(".CodeMirror").offsetParent !== null;
+  const cmEl = document.querySelector(".CodeMirror");
+  const editorVisible = cmEl !== null && cmEl.offsetParent !== null;
 
   if (!editorVisible) {
     const message = window.i18n
@@ -385,9 +384,8 @@ function toggleSearchForm() {
   if (searchFormVisible) {
     searchForm.style.display = "none";
     clearSearch();
-    const editorVisible =
-      document.querySelector(".CodeMirror") !== null &&
-      document.querySelector(".CodeMirror").offsetParent !== null;
+    const cmEl = document.querySelector(".CodeMirror");
+    const editorVisible = cmEl !== null && cmEl.offsetParent !== null;
     if (editorVisible) {
       editor.focus();
     }
@@ -470,9 +468,8 @@ function setupSearchForm() {
       const searchForm = document.getElementById("search-form");
       searchForm.style.display = "none";
       clearSearch();
-      const editorVisible =
-        document.querySelector(".CodeMirror") !== null &&
-        document.querySelector(".CodeMirror").offsetParent !== null;
+      const cmEl = document.querySelector(".CodeMirror");
+      const editorVisible = cmEl !== null && cmEl.offsetParent !== null;
       if (editorVisible) {
         editor.focus();
       }
@@ -515,9 +512,8 @@ function setupSearchForm() {
         e.preventDefault();
         document.getElementById("search-form").style.display = "none";
         clearSearch();
-        const editorVisible =
-          document.querySelector(".CodeMirror") !== null &&
-          document.querySelector(".CodeMirror").offsetParent !== null;
+        const cmEl = document.querySelector(".CodeMirror");
+        const editorVisible = cmEl !== null && cmEl.offsetParent !== null;
         if (editorVisible) {
           editor.focus();
         }
@@ -691,5 +687,3 @@ document.addEventListener("languageChanged", function (e) {
     updateSearchResults(editorSearchState.currentPos, editorSearchState.count);
   }
 });
-
-window.debugSearch = function () {};

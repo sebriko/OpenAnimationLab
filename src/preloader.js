@@ -47,9 +47,12 @@ window.PreloaderManager = {
     this.addSubtitle();
 
     document.body.classList.add("loading");
-    this.startProgressAnimation();
     this.startBackgroundInitialization();
     this.waitForLoad();
+  },
+
+  delay: function (ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   },
 
   startBackgroundInitialization: function () {
@@ -61,7 +64,7 @@ window.PreloaderManager = {
     }, 100);
   },
 
-  initializeApplication: function () {
+  initializeApplication: async function () {
     try {
       this.updateProgress(20);
       this.updateStatus(this.t("loadingComponents"));
@@ -70,83 +73,76 @@ window.PreloaderManager = {
         window.initializeEditor();
       }
 
-      setTimeout(() => {
-        this.updateProgress(40);
+      await this.delay(100);
+      this.updateProgress(40);
 
-        const canvasContainer = document.getElementById("canvas-container");
-        if (canvasContainer) {
-          canvasContainer.style.visibility = "hidden";
-          canvasContainer.style.position = "absolute";
-        }
+      const canvasContainer = document.getElementById("canvas-container");
+      if (canvasContainer) {
+        canvasContainer.style.visibility = "hidden";
+        canvasContainer.style.position = "absolute";
+      }
 
-        if (typeof setupDragFunctionality === "function") {
-          setupDragFunctionality();
-        }
+      if (typeof setupDragFunctionality === "function") {
+        setupDragFunctionality();
+      }
 
-        this.updateProgress(50);
+      this.updateProgress(50);
 
-        setTimeout(() => {
-          this.updateProgress(60);
-          this.updateStatus(this.t("loadingLibraries"));
+      await this.delay(100);
+      this.updateProgress(60);
+      this.updateStatus(this.t("loadingLibraries"));
 
-          if (typeof setupSearchForm === "function") {
-            setupSearchForm();
-          }
+      if (typeof setupSearchForm === "function") {
+        setupSearchForm();
+      }
 
-          if (window.i18n) {
-            window.i18n.applyLanguage();
-          }
+      if (window.i18n) {
+        window.i18n.applyLanguage();
+      }
 
-          this.updateProgress(70);
+      this.updateProgress(70);
 
-          if (window.performanceManager) {
-            window.performanceManager.initialize();
-          }
+      if (window.performanceManager) {
+        window.performanceManager.initialize();
+      }
 
-          setTimeout(() => {
-            this.updateProgress(75);
+      await this.delay(100);
+      this.updateProgress(75);
 
-            if (typeof addTab === "function") {
-              const urlParams = new URLSearchParams(window.location.search);
-              const templateParam = urlParams.get("t");
+      if (typeof addTab === "function") {
+        const urlParams = new URLSearchParams(window.location.search);
+        const templateParam = urlParams.get("t");
 
-              if (templateParam) {
-                this.updateStatus(
-                  this.t("loadingTemplate") || "Loading template...",
-                );
+        if (templateParam) {
+          this.updateStatus(this.t("loadingTemplate") || "Loading template...");
 
-                // Store template info for loading after the preloader dismisses
-                window._pendingTemplateLoad = {
-                  templateParam: templateParam,
-                  shouldLoad: true,
-                };
+          // Store template info for loading after the preloader dismisses
+          window._pendingTemplateLoad = {
+            templateParam: templateParam,
+            shouldLoad: true,
+          };
 
-                document.getElementById("preview-table").style.display = "none";
+          document.getElementById("preview-table").style.display = "none";
 
-                if (typeof findTemplateByImageName === "function") {
-                  const template = findTemplateByImageName(templateParam);
-                  if (template) {
-                    window._pendingTemplateLoad.template = template;
-                  }
-                }
-              }
+          if (typeof findTemplateByImageName === "function") {
+            const template = findTemplateByImageName(templateParam);
+            if (template) {
+              window._pendingTemplateLoad.template = template;
             }
+          }
+        }
+      }
 
-            this.updateProgress(85);
+      this.updateProgress(85);
 
-            setTimeout(() => {
-              this.updateProgress(90);
-              this.updateStatus(this.t("almostReady"));
+      await this.delay(100);
+      this.updateProgress(90);
+      this.updateStatus(this.t("almostReady"));
 
-              setTimeout(() => {
-                this.updateProgress(95);
-                this.updateStatus(this.t("ready"));
-                this.initializationComplete = true;
-              }, 200);
-            }, 100);
-          }, 100);
-        }, 100);
-      }, 100);
+      await this.delay(200);
+      this.updateProgress(95);
+      this.updateStatus(this.t("ready"));
+      this.initializationComplete = true;
     } catch (error) {
       console.error("Error during background initialization:", error);
       // Mark complete so the preloader doesn't hang on error
@@ -182,15 +178,7 @@ window.PreloaderManager = {
     }
   },
 
-  getCookie: function (name) {
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(";");
-    for (let i = 0; i < ca.length; i++) {
-      let c = ca[i].trim();
-      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-    }
-    return null;
-  },
+  getCookie: function (name) { return window.getCookie(name); },
 
   t: function (key) {
     return (
@@ -246,23 +234,17 @@ window.PreloaderManager = {
     }
   },
 
-  startProgressAnimation: function () {
-    // Progress is driven by initializeApplication phases, not a timer.
-  },
-
   waitForLoad: function () {
-    const self = this;
-
     this.checkInterval = setInterval(() => {
-      const elapsed = Date.now() - self.startTime;
+      const elapsed = Date.now() - this.startTime;
 
-      if (self.initializationComplete && elapsed >= self.minimumDisplayTime) {
-        self.completeLoading();
+      if (this.initializationComplete && elapsed >= this.minimumDisplayTime) {
+        this.completeLoading();
       }
 
-      if (elapsed >= self.maximumWaitTime) {
+      if (elapsed >= this.maximumWaitTime) {
         console.warn("Maximum wait time reached, forcing load completion");
-        self.completeLoading();
+        this.completeLoading();
       }
     }, 100);
   },
@@ -280,14 +262,6 @@ window.PreloaderManager = {
     if (percentageText) {
       percentageText.textContent = Math.round(percentage) + "%";
     }
-  },
-
-  getStatusMessage: function (percentage) {
-    if (percentage < 30) return this.t("initializing");
-    if (percentage < 50) return this.t("loadingComponents");
-    if (percentage < 70) return this.t("loadingLibraries");
-    if (percentage < 90) return this.t("almostReady");
-    return this.t("ready");
   },
 
   updateStatus: function (message) {

@@ -1,26 +1,3 @@
-/**
- * Shared onclone callback for html2canvas: waits for fonts and replaces
- * input/textarea elements with div clones so their values are captured.
- */
-async function prepareClonedDocInputs(clonedDoc) {
-  await document.fonts.ready;
-  await new Promise((resolve) => setTimeout(resolve, 200));
-
-  const inputs = clonedDoc.querySelectorAll("input, textarea");
-  inputs.forEach((input) => {
-    if (input.value) {
-      const div = clonedDoc.createElement("div");
-      const computedStyle = window.getComputedStyle(input);
-      div.style.cssText = computedStyle.cssText;
-      div.style.pointerEvents = "none";
-      div.style.whiteSpace =
-        input.tagName === "TEXTAREA" ? "pre-wrap" : "nowrap";
-      div.textContent = input.value;
-      input.parentNode.replaceChild(div, input);
-    }
-  });
-}
-
 function saveCode() {
   const activeTab = document.querySelector(".tab.active"); // Aktiven Tab ermitteln
   let tabName = activeTab ? activeTab.textContent.trim() : "untitled"; // Tab-Name oder 'untitled'
@@ -159,7 +136,7 @@ async function publishCode() {
 
 /* Overlay zum Verstecken des schwarzen Rechtecks */
 #loading-overlay {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
@@ -177,284 +154,7 @@ body {
   background-color: #ffffff;
 }
 
-/* CSS for HTML UI Components */
-.pixi-html-ui {
-  font-family: Arial, sans-serif;
-  color: #555;
-  box-sizing: border-box;
-}
-
-/* Button styles */
-.pixi-button {
-  background: linear-gradient(to bottom, #fafafa, #efefef);
-  border: 1px solid #aaaaaa;
-  border-radius: 10px;
-  cursor: pointer;
-  text-align: center;
-  padding: 8px 10px;
-  line-height: 0.7; /* Zeilenhöhe zurücksetzen */
-  transition: all 0.2s;
-  outline: none;
-
-  user-select: none;
-  -webkit-user-select: none; /* Safari */
-  -ms-user-select: none; /* IE/Edge */
-
-  display: inline-block; /* Sicherstellen, dass der Button als Inline-Block behandelt wird */
-  vertical-align: middle; /* Text vertikal zentrieren */
-}
-
-.pixi-button:hover {
-  border-color: #228b22;
-  background: #ffffff;
-}
-
-.pixi-button:active {
-  background: #dddddd;
-}
-
-.pixi-button.active {
-  border-color: #228b22;
-  background: #e8f5e8;
-}
-
-/* Änderungen für den NumericStepper mit SVG-Buttons */
-.pixi-numeric-stepper {
-  display: flex;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 4px;
-  overflow: hidden;
-  height: auto; /* Höhe wird jetzt automatisch angepasst */
-}
-
-.pixi-numeric-input {
-  flex-grow: 1;
-  border: 1px solid #aaaaaa;
-  padding: 4px 8px;
-  text-align: left;
-  color: #333333; /* Schriftfarbe auf dunkelgrau ändern */
-  /* Entfernen der Standard-Browser-Stepper-Pfeile */
-  -moz-appearance: textfield; /* Firefox */
-}
-
-/* Chrome, Safari, Edge, Opera */
-.pixi-numeric-input::-webkit-outer-spin-button,
-.pixi-numeric-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Container für die Buttons */
-.pixi-stepper-buttons {
-  display: flex;
-  flex-direction: column; /* Buttons untereinander anordnen */
-}
-
-.pixi-stepper-btn {
-  background: linear-gradient(to bottom, #fafafa, #efefef);
-  border: 1px solid #aaaaaa;
-  cursor: pointer;
-  text-align: center;
-  padding: 0; /* Kein Padding für SVG-Buttons */
-  transition: all 0.2s;
-  flex: 1; /* Buttons nehmen gleich viel Platz ein */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px; /* Minimale Breite für Buttons */
-  color: #666666; /* Farbe für die SVG-Pfeile */
-}
-
-.pixi-stepper-increase {
-  border-bottom: none; /* Entfernt doppelte Grenzen zwischen den Buttons */
-  border-top-right-radius: 4px;
-}
-
-.pixi-stepper-decrease {
-  border-bottom-right-radius: 4px;
-}
-
-.pixi-stepper-btn:hover {
-  background-color: #e8e8e8;
-  border-color: #228b22;
-  color: #228b22; /* Grüne Farbe für die SVG-Pfeile beim Hover */
-}
-
-.pixi-stepper-btn:active {
-  background-color: #dddddd;
-  color: #1a6b1a; /* Dunklere grüne Farbe für die SVG-Pfeile beim Klicken */
-}
-
-/* SVG-Styles */
-.pixi-stepper-btn svg {
-  width: 50%;
-  height: 50%;
-}
-
-/* Dropdown styles */
-.pixi-dropdown {
-  border: 1px solid #aaaaaa;
-  border-radius: 4px;
-  padding: 4px 8px;
-  background-color: white;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-
-.pixi-dropdown:hover {
-  border-color: #228b22;
-}
-
-.pixi-dropdown:focus {
-  outline: none;
-  border-color: #228b22;
-  box-shadow: 0 0 0 2px rgba(34, 139, 34, 0.2);
-}
-
-/* TextInput styles */
-.pixi-text-input {
-  border: 1px solid #aaaaaa;
-  border-radius: 4px;
-  padding: 5px 8px;
-  background-color: white;
-  transition: border-color 0.2s;
-}
-
-.pixi-text-input:hover {
-  border-color: #228b22;
-}
-
-.pixi-text-input:focus {
-  outline: none;
-  border-color: #228b22;
-  box-shadow: 0 0 0 2px rgba(34, 139, 34, 0.2);
-}
-
-/* RadioButton styles */
-.pixi-radio-container {
-  background-color: rgba(255, 255, 255, 0.8);
-  padding: 5px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-}
-
-.pixi-radio {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  border: 2px solid #555555;
-  border-radius: 50%;
-  background-color: white;
-  cursor: pointer;
-  position: relative;
-}
-
-.pixi-radio:checked {
-  background-color: white;
-}
-
-.pixi-radio:checked::after {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 4px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #228b22;
-}
-
-.pixi-radio:hover {
-  border-color: #228b22;
-}
-
-.pixi-radio-label {
-  margin-left: 5px;
-  cursor: pointer;
-}
-
-/* Toggle Switch styles */
-.pixi-toggle-container {
-  background-color: rgba(255, 255, 255, 0.8);
-  padding: 5px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-}
-
-.pixi-toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 20px;
-}
-
-.pixi-toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.pixi-toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: 0.4s;
-  border-radius: 10px;
-}
-
-.pixi-toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  transition: 0.4s;
-  border-radius: 50%;
-}
-
-input:checked + .pixi-toggle-slider {
-  background-color: #228b22;
-}
-
-input:focus + .pixi-toggle-slider {
-  box-shadow: 0 0 1px #228b22;
-}
-
-input:checked + .pixi-toggle-slider:before {
-  transform: translateX(20px);
-}
-
-.pixi-toggle-label {
-  margin-left: 10px;
-  cursor: pointer;
-}
-
-/* Common overlay container */
-#pixi-ui-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* Let events pass through to PixiJS canvas by default */
-  z-index: 10;
-}
-
-/* Component-specific states */
-.pixi-html-ui {
-  pointer-events: auto; /* Allow UI elements to receive events */
-  transform-origin: top left;
-}
-
+###UI-Styles###
   </style>
   
       <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
@@ -740,7 +440,24 @@ async function takeScreenshotSVGClassic(
       logging: false,
       letterRendering: true,
       foreignObjectRendering: false,
-      onclone: prepareClonedDocInputs,
+      onclone: async (clonedDoc) => {
+        await document.fonts.ready;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        const inputs = clonedDoc.querySelectorAll("input, textarea");
+        inputs.forEach((input) => {
+          if (input.value) {
+            const div = clonedDoc.createElement("div");
+            const computedStyle = window.getComputedStyle(input);
+            div.style.cssText = computedStyle.cssText;
+            div.style.pointerEvents = "none";
+            div.style.whiteSpace =
+              input.tagName === "TEXTAREA" ? "pre-wrap" : "nowrap";
+            div.textContent = input.value;
+            input.parentNode.replaceChild(div, input);
+          }
+        });
+      },
     });
 
     downloadCanvas(resultCanvas, `${tabName}.png`);
@@ -842,7 +559,24 @@ async function takeScreenshotSVGWithModel3D(
         logging: false,
         letterRendering: true,
         foreignObjectRendering: false,
-        onclone: prepareClonedDocInputs,
+        onclone: async (clonedDoc) => {
+          await document.fonts.ready;
+          await new Promise((resolve) => setTimeout(resolve, 200));
+
+          const inputs = clonedDoc.querySelectorAll("input, textarea");
+          inputs.forEach((input) => {
+            if (input.value) {
+              const div = clonedDoc.createElement("div");
+              const computedStyle = window.getComputedStyle(input);
+              div.style.cssText = computedStyle.cssText;
+              div.style.pointerEvents = "none";
+              div.style.whiteSpace =
+                input.tagName === "TEXTAREA" ? "pre-wrap" : "nowrap";
+              div.textContent = input.value;
+              input.parentNode.replaceChild(div, input);
+            }
+          });
+        },
       });
 
       guiElement.style.width = originalWidth;
@@ -989,7 +723,25 @@ async function takeScreenshotPixi() {
       logging: false,
       letterRendering: true,
       foreignObjectRendering: false,
-      onclone: prepareClonedDocInputs,
+      onclone: async (clonedDoc) => {
+        await document.fonts.ready;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        // Input-Felder in sichtbare Divs umwandeln
+        const inputs = clonedDoc.querySelectorAll("input, textarea");
+        inputs.forEach((input) => {
+          if (input.value) {
+            const div = clonedDoc.createElement("div");
+            const computedStyle = window.getComputedStyle(input);
+            div.style.cssText = computedStyle.cssText;
+            div.style.pointerEvents = "none";
+            div.style.whiteSpace =
+              input.tagName === "TEXTAREA" ? "pre-wrap" : "nowrap";
+            div.textContent = input.value;
+            input.parentNode.replaceChild(div, input);
+          }
+        });
+      },
     });
 
     // Styles und iframes sofort wiederherstellen
@@ -1118,7 +870,30 @@ async function takeScreenshotWithHtml2Canvas() {
       // Experimentelle Optionen für besseres Text-Rendering
       letterRendering: true,
       foreignObjectRendering: false,
-      onclone: prepareClonedDocInputs,
+      // Callback für Font-Loading
+      onclone: async (clonedDoc) => {
+        await document.fonts.ready;
+        // Warte zusätzlich für Font-Rendering
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        // Fix für Input-Felder
+        const inputs = clonedDoc.querySelectorAll("input, textarea");
+        inputs.forEach((input) => {
+          if (input.value) {
+            const div = clonedDoc.createElement("div");
+            const computedStyle = window.getComputedStyle(input);
+
+            // Kopiere Styles
+            div.style.cssText = computedStyle.cssText;
+            div.style.pointerEvents = "none";
+            div.style.whiteSpace =
+              input.tagName === "TEXTAREA" ? "pre-wrap" : "nowrap";
+            div.textContent = input.value;
+
+            input.parentNode.replaceChild(div, input);
+          }
+        });
+      },
     });
 
     // Kombiniere Canvas
@@ -1206,7 +981,6 @@ function downloadCanvas(canvas, filename) {
 
 // Globale Variable für den Vorschau-Vollbildmodus Status
 let isPreviewFullscreen = false;
-let fullscreenScrollPosition = null;
 
 // Funktion für den Vorschau-Vollbildmodus
 function togglePreviewFullscreen() {
@@ -1218,11 +992,6 @@ function togglePreviewFullscreen() {
 
   if (!isPreviewFullscreen) {
     // Vollbildmodus aktivieren
-
-    // Editor-Scrollposition vor Vollbild speichern
-    if (typeof editor !== "undefined" && editor && editor.getScrollInfo) {
-      fullscreenScrollPosition = editor.getScrollInfo();
-    }
 
     // Aktuelle Splitter-Position vor Vollbild speichern
     if (window.editorPreviewSplitter) {
@@ -1328,23 +1097,10 @@ function togglePreviewFullscreen() {
       if (window.editorPreviewSplitter) {
         window.editorPreviewSplitter.restorePosition();
       }
-      // Editor nach display:none neu berechnen lassen und Scrollposition wiederherstellen
-      if (typeof editor !== "undefined" && editor) {
-        if (editor.refresh) {
-          editor.refresh();
-        }
-        setTimeout(() => {
-          if (fullscreenScrollPosition && editor.scrollTo) {
-            editor.scrollTo(fullscreenScrollPosition.left, fullscreenScrollPosition.top);
-            fullscreenScrollPosition = null;
-          }
-        }, 50);
-      }
     }, 10);
   }
 
   isPreviewFullscreen = !isPreviewFullscreen;
-  toggleBodyFullscreenClass();
 
   // Explizite Neuberechnung der Größe und Position der Animation
   setTimeout(() => {
@@ -1352,8 +1108,16 @@ function togglePreviewFullscreen() {
     window.dispatchEvent(new Event("resize"));
 
     // Falls es ein Board-Objekt gibt, explizit die Größe anpassen
-    const boardInstance = window.getBoardInstance();
-    if (boardInstance) boardInstance.resizeCanvas();
+    if (
+      window.Board &&
+      Board.getInstance &&
+      typeof Board.getInstance === "function"
+    ) {
+      const boardInstance = Board.getInstance();
+      if (boardInstance && typeof boardInstance.resizeCanvas === "function") {
+        boardInstance.resizeCanvas();
+      }
+    }
 
     // Alternative: Falls board als globale Variable existiert
     if (window.board && typeof window.board.resizeCanvas === "function") {
@@ -1416,6 +1180,13 @@ function toggleBodyFullscreenClass() {
     document.body.classList.remove("fullscreen-mode");
   }
 }
+
+// Die togglePreviewFullscreen Funktion erweitern
+const originalTogglePreviewFullscreen = togglePreviewFullscreen;
+togglePreviewFullscreen = function () {
+  originalTogglePreviewFullscreen();
+  toggleBodyFullscreenClass();
+};
 
 // ==============================================
 // UNIFIED COLLAPSIBLE SYSTEM HELPERS

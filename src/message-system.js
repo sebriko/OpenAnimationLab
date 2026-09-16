@@ -1,7 +1,4 @@
 let systemMessages = [];
-let isDragging = false;
-let dragOffset = { x: 0, y: 0 };
-let activeWindow = null;
 
 // Rate-limiting and throttling state for message system
 let messageDisplayScheduled = false;
@@ -164,54 +161,9 @@ function setupDragFunctionality() {
   windows.forEach((windowId, index) => {
     const modalWindow = document.getElementById(windowId);
     const header = document.getElementById(headers[index]);
-
     if (!modalWindow || !header) return;
-
-    header.addEventListener("mousedown", function (e) {
-      isDragging = true;
-      activeWindow = modalWindow;
-
-      const computedStyle = window.getComputedStyle(modalWindow);
-      const currentLeft = parseInt(computedStyle.left) || 0;
-      const currentTop = parseInt(computedStyle.top) || 0;
-
-      if (computedStyle.transform !== "none") {
-        const rect = modalWindow.getBoundingClientRect();
-        modalWindow.style.transform = "none";
-        modalWindow.style.left = rect.left + "px";
-        modalWindow.style.top = rect.top + "px";
-        dragOffset.x = e.clientX - rect.left;
-        dragOffset.y = e.clientY - rect.top;
-      } else {
-        dragOffset.x = e.clientX - currentLeft;
-        dragOffset.y = e.clientY - currentTop;
-      }
-
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-
-      e.preventDefault();
-    });
+    window.makeDraggable(modalWindow, header);
   });
-
-  function onMouseMove(e) {
-    if (!isDragging || !activeWindow) return;
-
-    const newLeft = e.clientX - dragOffset.x;
-    const newTop = e.clientY - dragOffset.y;
-
-    const maxLeft = window.innerWidth - activeWindow.offsetWidth;
-    const maxTop = window.innerHeight - activeWindow.offsetHeight;
-
-    activeWindow.style.left = Math.max(0, Math.min(newLeft, maxLeft)) + "px";
-    activeWindow.style.top = Math.max(0, Math.min(newTop, maxTop)) + "px";
-  }
-
-  function onMouseUp() {
-    isDragging = false;
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
-  }
 }
 
 document.addEventListener("keydown", function (e) {

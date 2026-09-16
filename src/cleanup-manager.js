@@ -158,6 +158,7 @@ class CleanupManager {
   }
 
   removeConsoleLogs() {
+    // TODO: not yet implemented — only logs item names, does not actually remove console.log calls
     const debugFiles = [
       "src/tab-memory-management.js",
       "src/template-organizer.js",
@@ -190,6 +191,7 @@ class CleanupManager {
   }
 
   removeUnusedCSS() {
+    // TODO: not yet implemented — only logs selector names, does not actually remove CSS
     const unusedSelectors = [
       ".tab-connector",
       ".fullscreen-editor",
@@ -222,6 +224,7 @@ class CleanupManager {
   }
 
   removeBuildTools() {
+    // TODO: not yet implemented — only logs tool names, does not actually remove build tools
     const buildTools = [
       "src/css-cleanup-analyzer.js",
       "src/find-unused-css.js",
@@ -232,7 +235,7 @@ class CleanupManager {
     this.removedItems.push(`${buildTools.length} build tools removed`);
   }
 
-  async performCleanup() {
+  performCleanup() {
     this.removeDebugCode();
     this.removeUnusedCSS();
     this.removeBuildTools();

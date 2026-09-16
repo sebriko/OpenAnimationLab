@@ -1,0 +1,763 @@
+        .template-organizer-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 550px;
+            height: 90vh;
+            max-height: 700px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .template-organizer-modal * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Ausnahmen: Eingabefelder und editierbare Elemente */
+        .template-organizer-modal input,
+        .template-organizer-modal textarea,
+        .template-organizer-modal [contenteditable="true"] {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+
+        .template-organizer-modal .modal-window-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 0;
+        }
+
+        /* Info Bar */
+        .organizer-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--info-bg, #e3f2fd);
+            color: var(--info-color, #1976d2);
+            font-size: 14px;
+        }
+
+        /* Content Area */
+        .organizer-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: var(--bg-lighter);
+        }
+
+        /* Categories */
+        .organizer-category {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: var(--bg-medium);
+            border-bottom: 1px solid var(--border-light);
+            cursor: move;
+        }
+
+        .category-header .drag-handle {
+            color: var(--text-light);
+            margin-right: 10px;
+            cursor: grab;
+        }
+
+        .category-header .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .category-name {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .category-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        /* Edit Modal - für Kategorie- und Template-Namen */
+        .edit-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+
+            /* Textauswahl deaktivieren */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .edit-modal * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Textauswahl nur in Inputs erlauben */
+        .edit-modal input,
+        .edit-modal textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+
+        .edit-modal-content {
+            background: var(--bg-light);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+        }
+
+        /* Große Modal-Variante für Kategorie-Bearbeitung */
+        .edit-modal-content.large-modal {
+            max-width: 800px;
+            max-height: 80vh;
+        }
+
+        .edit-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .edit-modal-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        /* Edit Modal Body - Wichtige Änderung */
+        .edit-modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: calc(90vh - 140px);
+        }
+
+        /* Große Modal-Variante - Body mit mehr Platz */
+        .large-modal .edit-modal-body {
+            flex: 1;
+        }
+
+        /* Alle Labels in Modals */
+        .edit-modal-body label,
+        .template-editor-body label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            word-wrap: break-word; /* Lange Wörter umbrechen */
+        }
+
+        /* Input-Felder - Wichtige Änderungen */
+        .name-input,
+        .title-input,
+        .image-input {
+            width: 100%;
+            max-width: 100%; /* Explizit setzen */
+            padding: 10px;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            background: var(--bg-lighter);
+            color: var(--text-primary);
+            font-size: 14px;
+            box-sizing: border-box; /* Kritisch wichtig! */
+            overflow: hidden; /* Kein Overflow bei langen Texten */
+            text-overflow: ellipsis; /* ... bei zu langem Text */
+        }
+
+        .name-input:focus,
+        .title-input:focus,
+        .image-input:focus {
+            outline: 2px solid var(--accent-color);
+            outline-offset: -1px;
+        }
+
+        .edit-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid var(--border-light);
+            flex-wrap: wrap; /* Buttons umbrechen wenn nötig */
+        }
+
+        /* Description Editor Modal */
+        .description-editor-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+
+            /* Textauswahl deaktivieren */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .description-editor-modal * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Textauswahl nur in Textareas erlauben */
+        .description-editor-modal textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+
+        .description-editor-content {
+            background: var(--bg-light);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .description-editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .description-editor-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .description-editor-body {
+            padding: 20px;
+        }
+
+        .language-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .lang-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .lang-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .lang-tab.active {
+            color: var(--accent-color);
+        }
+
+        .lang-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-color);
+        }
+
+        .description-tab-content label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .description-editor-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        /* Templates Container */
+        .template-container {
+            padding: 15px;
+            min-height: 80px;
+            background: var(--bg-lighter);
+        }
+
+        .template-container:empty::before {
+            content: attr(data-empty-text);
+            display: block;
+            text-align: center;
+            color: var(--text-light);
+            font-style: italic;
+            padding: 20px;
+        }
+
+        /* Template Item */
+        .organizer-template {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: move;
+            transition: all 0.2s;
+        }
+
+        .organizer-template:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .organizer-template .drag-handle {
+            color: var(--text-light);
+            cursor: grab;
+        }
+
+        .template-thumbnail {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+        }
+
+        .template-info {
+            flex: 1;
+        }
+
+        .template-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .template-image-name {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .template-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        /* Icon Buttons */
+        .icon-button {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .icon-button:hover {
+            background: var(--bg-lighter);
+            border-color: var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .icon-button .material-icons {
+            font-size: 18px;
+        }
+
+        /* Add Template Button */
+        .add-template-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            border: 2px dashed var(--border-light);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+	.add-category-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 2px dashed var(--border-light);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .add-category-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: var(--bg-lighter);
+        }
+
+        .add-category-btn .material-icons {
+            font-size: 20px;
+        }
+
+        .add-template-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: var(--bg-lighter);
+        }
+
+        /* Actions Footer */
+        .organizer-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 15px 20px;
+            background: var(--bg-light);
+            border-top: 1px solid var(--border-light);
+        }
+
+        /* Template Editor Modal */
+        .template-editor-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+
+            /* Textauswahl deaktivieren */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .template-editor-modal * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Textauswahl nur in Input und Textarea erlauben */
+        .template-editor-modal input,
+        .template-editor-modal textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+
+        .template-editor-content {
+            background: var(--bg-light);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+        }
+
+        .template-editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .template-editor-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        /* Template Editor Body - Wichtige Änderung */
+        .template-editor-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: calc(90vh - 140px);
+        }
+
+        .template-editor-body label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .title-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            background: var(--bg-lighter);
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        /* Image Upload Container */
+        .image-upload-container {
+            margin-bottom: 20px;
+        }
+
+        .current-image-preview {
+            margin-bottom: 10px;
+        }
+
+        /* Image Upload Buttons - NEUE STYLES für bessere Ausrichtung */
+        .image-upload-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* Spezielle Styles für Image Buttons */
+        .image-button {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 5px !important;
+            padding: 8px 16px !important;
+        }
+
+        .image-button .material-icons {
+            font-size: 18px !important;
+            line-height: 1 !important;
+            vertical-align: middle !important;
+        }
+
+        .image-button span:not(.material-icons) {
+            line-height: 1 !important;
+            vertical-align: middle !important;
+        }
+
+        /* Textarea - Wichtige Änderungen */
+        .description-textarea,
+        .code-textarea {
+            width: 100%;
+            max-width: 100%; /* Explizit setzen */
+            padding: 10px;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            background: var(--bg-lighter);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box; /* Kritisch wichtig! */
+            overflow-y: auto; /* Nur vertikales Scrollen in der Textarea */
+            overflow-x: hidden; /* Kein horizontales Scrollen */
+            word-wrap: break-word; /* Lange Zeilen umbrechen */
+        }
+
+        /* Code Textarea spezifisch */
+        .code-textarea {
+            height: 300px;
+            background: var(--bg-dark);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 20px;
+            white-space: pre-wrap; /* Code-Formatierung beibehalten aber umbrechen */
+            word-break: break-all; /* Sehr lange Strings umbrechen */
+        }
+
+        /* Große Textarea für Kategorie-Beschreibung */
+        .large-textarea {
+            height: 300px;
+        }
+
+        .image-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            background: var(--bg-lighter);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .template-editor-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid var(--border-light);
+            flex-wrap: wrap; /* Buttons umbrechen wenn nötig */
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .description-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            background: var(--bg-lighter);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .description-textarea:focus {
+            outline: 2px solid var(--accent-color);
+            outline-offset: -1px;
+        }
+
+        /* Notification */
+        .organizer-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-color, #4CAF50);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 10002;
+        }
+
+        .organizer-notification.show {
+            transform: translateX(0);
+        }
+
+        /* Sortable Ghost */
+        .sortable-ghost {
+            opacity: 0.4;
+        }
+
+        .sortable-drag {
+            opacity: 0.9;
+        }
+
+        /* Dark Theme Support */
+        .dark-theme .organizer-info {
+            background: var(--info-bg-dark, #1e3a5f);
+            color: var(--info-color-dark, #64b5f6);
+        }
+
+        /* Responsive - angepasst für kleinere Breite */
+        @media (max-width: 600px) {
+            .template-organizer-modal {
+                width: 95%;
+                height: 95vh;
+            }
+
+            .organizer-template {
+                flex-wrap: wrap;
+            }
+
+            .template-thumbnail {
+                width: 50px;
+                height: 50px;
+            }
+
+            /* Große Modals auf kleinen Bildschirmen anpassen */
+            .edit-modal-content.large-modal {
+                max-width: 95%;
+                max-height: 90vh;
+            }
+        }

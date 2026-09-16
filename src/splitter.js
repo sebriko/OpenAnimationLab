@@ -84,10 +84,8 @@ class EditorPreviewSplitter {
   adjustPortraitLayout() {
     const canvasContainer = document.getElementById("canvas-container");
 
-    if (canvasContainer && window.Board) {
-      const boardInstance = window.Board.getInstance
-        ? window.Board.getInstance()
-        : null;
+    if (canvasContainer) {
+      const boardInstance = window.getBoardInstance();
 
       if (boardInstance) {
         const boardWidth = boardInstance.width || 800;
@@ -106,12 +104,8 @@ class EditorPreviewSplitter {
     }
 
     setTimeout(() => {
-      if (window.Board && window.Board.getInstance) {
-        const boardInstance = window.Board.getInstance();
-        if (boardInstance && boardInstance.resizeCanvas) {
-          boardInstance.resizeCanvas();
-        }
-      }
+      const boardInstance = window.getBoardInstance();
+      if (boardInstance) boardInstance.resizeCanvas();
     }, 100);
   }
 
@@ -287,14 +281,8 @@ class EditorPreviewSplitter {
       }, 10);
     }
 
-    if (window.Board && window.Board.getInstance) {
-      const boardInstance = window.Board.getInstance();
-      if (boardInstance && boardInstance.resizeCanvas) {
-        setTimeout(() => {
-          boardInstance.resizeCanvas();
-        }, 20);
-      }
-    }
+    const boardInstance = window.getBoardInstance();
+    if (boardInstance) boardInstance.resizeCanvas();
   }
 
   isInPortraitMode() {

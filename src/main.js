@@ -21,16 +21,8 @@ document.addEventListener("DOMContentLoaded", function () {
   window.addEventListener("preloaderComplete", function () {
     requestAnimationFrame(() => {
       // Resize canvas after layout has stabilized
-      if (
-        window.Board &&
-        Board.getInstance &&
-        typeof Board.getInstance === "function"
-      ) {
-        const boardInstance = Board.getInstance();
-        if (boardInstance && typeof boardInstance.resizeCanvas === "function") {
-          boardInstance.resizeCanvas();
-        }
-      }
+      const boardInstance = window.getBoardInstance();
+      if (boardInstance) boardInstance.resizeCanvas();
 
       // Load a pending template if one was queued before the preloader finished
       if (

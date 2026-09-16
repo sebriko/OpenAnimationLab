@@ -200,16 +200,16 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the group",
-          de: "Horizontale Position der Gruppe",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the group",
-          de: "Vertikale Position der Gruppe",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -224,8 +224,8 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
       visible: {
         name: "visible",
         info: {
-          en: "Visibility of the entire group (true/false)",
-          de: "Sichtbarkeit der gesamten Gruppe (true/false)",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
@@ -248,29 +248,29 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
       setTransformationPoint: {
         example: "setTransformationPoint(50, 50)",
         info: {
-          en: "Defines the transformation point for position of the group",
-          de: "Definiert den Transformationspunkt für die Position der Gruppe",
+          en: "Sets the anchor point for positioning (x, y in pixels relative to the element)",
+          de: "Setzt den Ankerpunkt für die Positionierung (x, y in Pixeln relativ zum Element)",
         },
       },
       setRotationPoint: {
         example: "setRotationPoint(25, 25)",
         info: {
-          en: "Sets the rotation pivot relative to the group's origin (0, 0)",
-          de: "Setzt den Rotationspunkt relativ zum Ursprung (0, 0) der Gruppe",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the entire group proportionally",
-          de: "Skaliert die gesamte Gruppe proportional",
+          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
         },
       },
       setAlpha: {
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the entire group (0 = invisible, 1 = fully visible)",
-          de: "Setzt die Transparenz der gesamten Gruppe (0 = unsichtbar, 1 = vollständig sichtbar)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       getBounds: {
@@ -337,8 +337,8 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -646,16 +646,16 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -670,8 +670,8 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
       visible: {
         name: "visible",
         info: {
-          en: "Visibility of the element (true/false)",
-          de: "Sichtbarkeit des Elements (true/false)",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
@@ -680,44 +680,44 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
       setBorder: {
         example: "setBorder(0xff0000, 2)",
         info: {
-          en: "Sets a border with color and thickness",
-          de: "Setzt einen Rahmen mit Farbe und Dicke",
+          en: "Sets a border (color in hexadecimal format, thickness in pixels)",
+          de: "Setzt einen Rahmen (Farbe im Hexadezimalformat, Dicke in Pixeln)",
         },
       },
       setTransformationPoint: {
         example: "setTransformationPoint(0, 0)",
         info: {
-          en: "Defines the transformation point for position of the element",
-          de: "Definiert den Transformationspunkt für die Position des Elements",
+          en: "Sets the anchor point for positioning (x, y in pixels relative to the element)",
+          de: "Setzt den Ankerpunkt für die Positionierung (x, y in Pixeln relativ zum Element)",
         },
       },
       setRotationPoint: {
         example: "setRotationPoint(50, 50)",
         info: {
-          en: "Sets the rotation pivot relative to the element's origin (0, 0)",
-          de: "Setzt den Rotationspunkt relativ zum Ursprung (0, 0) des Elements",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
       setGradient: {
         example:
           'setGradient("linear", [{offset:0,color:"#ff0"},{offset:1,color:"#f00"}], 90)',
         info: {
-          en: "Creates a linear or radial gradient. Optional angle in degrees for linear gradients (0 = left to right, 90 = top to bottom)",
-          de: "Erstellt einen linearen oder radialen Farbverlauf. Optionaler Winkel in Grad für lineare Verläufe (0 = links nach rechts, 90 = oben nach unten)",
+          en: "Creates a linear or radial color gradient. Parameters: type ('linear' or 'radial'), array of color stops [{offset: 0-1, color: '#hex'}], optional angle in degrees for linear gradients",
+          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ ('linear' oder 'radial'), Array von Farbstopps [{offset: 0-1, color: '#hex'}], optionaler Winkel in Grad für lineare Verläufe",
         },
       },
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the entire element proportionally",
-          de: "Skaliert das gesamte Element proportional",
+          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
         },
       },
       setAlpha: {
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the element (0 = invisible, 1 = fully visible)",
-          de: "Setzt die Transparenz des Elements (0 = unsichtbar, 1 = vollständig sichtbar)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       setCornerRadius: {
@@ -791,8 +791,8 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -1134,16 +1134,16 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -1158,8 +1158,8 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
       visible: {
         name: "visible",
         info: {
-          en: "Visibility of the element",
-          de: "Sichtbarkeit des Elements",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
@@ -1175,44 +1175,44 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
       setBorder: {
         example: "setBorder(0xff0000, 2)",
         info: {
-          en: "Sets a border with color and thickness",
-          de: "Setzt einen Rahmen mit Farbe und Dicke",
+          en: "Sets a border (color in hexadecimal format, thickness in pixels)",
+          de: "Setzt einen Rahmen (Farbe im Hexadezimalformat, Dicke in Pixeln)",
         },
       },
       setTransformationPoint: {
         example: "setTransformationPoint(0, 0)",
         info: {
-          en: "Defines the transformation point for position of the element",
-          de: "Definiert den Transformationspunkt für die Position des Elements",
+          en: "Sets the anchor point for positioning (x, y in pixels relative to the element)",
+          de: "Setzt den Ankerpunkt für die Positionierung (x, y in Pixeln relativ zum Element)",
         },
       },
       setRotationPoint: {
         example: "setRotationPoint(0, 0)",
         info: {
-          en: "Sets the rotation pivot relative to the element's origin (0, 0)",
-          de: "Setzt den Rotationspunkt relativ zum Ursprung (0, 0) des Elements",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
       setGradient: {
         example:
           'setGradient("radial", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])',
         info: {
-          en: "Creates a radial gradient",
-          de: "Erstellt einen radialen Farbverlauf",
+          en: "Creates a radial color gradient. Parameters: type ('radial'), array of color stops [{offset: 0-1, color: '#hex'}]",
+          de: "Erstellt einen radialen Farbverlauf. Parameter: Typ ('radial'), Array von Farbstopps [{offset: 0-1, color: '#hex'}]",
         },
       },
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the circle proportionally",
-          de: "Skaliert den Kreis proportional",
+          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
         },
       },
       setAlpha: {
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the entire circle (0 = invisible, 1 = fully visible)",
-          de: "Setzt die Transparenz des gesamten Kreises (0 = unsichtbar, 1 = vollständig sichtbar)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       setRadius: {
@@ -1265,8 +1265,8 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -1479,16 +1479,16 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -1503,8 +1503,8 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
       visible: {
         name: "visible",
         info: {
-          en: "Visibility of the element",
-          de: "Sichtbarkeit des Elements",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
@@ -1513,44 +1513,44 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
       setBorder: {
         example: "setBorder(0xff0000, 2)",
         info: {
-          en: "Sets a border with color and thickness",
-          de: "Setzt einen Rahmen mit Farbe und Dicke",
+          en: "Sets a border (color in hexadecimal format, thickness in pixels)",
+          de: "Setzt einen Rahmen (Farbe im Hexadezimalformat, Dicke in Pixeln)",
         },
       },
       setTransformationPoint: {
         example: "setTransformationPoint(0, 0)",
         info: {
-          en: "Defines the transformation point for position of the element",
-          de: "Definiert den Transformationspunkt für die Position des Elements",
+          en: "Sets the anchor point for positioning (x, y in pixels relative to the element)",
+          de: "Setzt den Ankerpunkt für die Positionierung (x, y in Pixeln relativ zum Element)",
         },
       },
       setRotationPoint: {
         example: "setRotationPoint(0, 0)",
         info: {
-          en: "Sets the rotation pivot relative to the element's origin (0, 0)",
-          de: "Setzt den Rotationspunkt relativ zum Ursprung (0, 0) des Elements",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
       setGradient: {
         example:
           'setGradient("radial", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])',
         info: {
-          en: "Creates a gradient",
-          de: "Erstellt einen Farbverlauf",
+          en: "Creates a linear or radial color gradient. Parameters: type ('linear' or 'radial'), array of color stops [{offset: 0-1, color: '#hex'}]",
+          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ ('linear' oder 'radial'), Array von Farbstopps [{offset: 0-1, color: '#hex'}]",
         },
       },
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the ellipse proportionally",
-          de: "Skaliert die Ellipse proportional",
+          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
         },
       },
       setAlpha: {
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the entire ellipse (0 = invisible, 1 = fully visible)",
-          de: "Setzt die Transparenz der gesamten Ellipse (0 = unsichtbar, 1 = vollständig sichtbar)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       setRadiusX: {
@@ -1569,7 +1569,7 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -1610,8 +1610,8 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -1832,16 +1832,16 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -1856,8 +1856,8 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
       visible: {
         name: "visible",
         info: {
-          en: "Visibility of the element",
-          de: "Sichtbarkeit des Elements",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
@@ -1866,44 +1866,44 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
       setBorder: {
         example: "setBorder(0xff0000, 2)",
         info: {
-          en: "Sets a border with color and thickness",
-          de: "Setzt einen Rahmen mit Farbe und Dicke",
+          en: "Sets a border (color in hexadecimal format, thickness in pixels)",
+          de: "Setzt einen Rahmen (Farbe im Hexadezimalformat, Dicke in Pixeln)",
         },
       },
       setTransformationPoint: {
         example: "setTransformationPoint(0, 0)",
         info: {
-          en: "Defines the transformation point for position of the element",
-          de: "Definiert den Transformationspunkt für die Position des Elements",
+          en: "Sets the anchor point for positioning (x, y in pixels relative to the element)",
+          de: "Setzt den Ankerpunkt für die Positionierung (x, y in Pixeln relativ zum Element)",
         },
       },
       setRotationPoint: {
         example: "setRotationPoint(0, 0)",
         info: {
-          en: "Sets the rotation pivot relative to the element's origin (0, 0)",
-          de: "Setzt den Rotationspunkt relativ zum Ursprung (0, 0) des Elements",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
       setGradient: {
         example:
           'setGradient("radial", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])',
         info: {
-          en: "Creates a gradient",
-          de: "Erstellt einen Farbverlauf",
+          en: "Creates a linear or radial color gradient. Parameters: type ('linear' or 'radial'), array of color stops [{offset: 0-1, color: '#hex'}]",
+          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ ('linear' oder 'radial'), Array von Farbstopps [{offset: 0-1, color: '#hex'}]",
         },
       },
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the polygon proportionally",
-          de: "Skaliert das Vieleck proportional",
+          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
         },
       },
       setAlpha: {
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the entire polygon (0 = invisible, 1 = fully visible)",
-          de: "Setzt die Transparenz des gesamten Vielecks (0 = unsichtbar, 1 = vollständig sichtbar)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       setStartAngle: {
@@ -1915,7 +1915,7 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -1956,8 +1956,8 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -2166,8 +2166,8 @@ PixiJSEdu.LinePath = class LinePath extends PIXI.Container {
       points: {
         name: "points",
         info: {
-          en: "Array of points to define the line",
-          de: "Array von Punkten zur Definition der Linie",
+          en: "Array of coordinate pairs [[x1,y1], [x2,y2], ...] in pixels",
+          de: "Array von Koordinatenpaaren [[x1,y1], [x2,y2], ...] in Pixeln",
         },
       },
       color: {
@@ -2189,24 +2189,24 @@ PixiJSEdu.LinePath = class LinePath extends PIXI.Container {
       visible: {
         name: "visible",
         info: {
-          en: "Sets the visibility of the entire object",
-          de: "Setzt die Sichtbarkeit des gesamten Objekts",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -2223,8 +2223,8 @@ PixiJSEdu.LinePath = class LinePath extends PIXI.Container {
       setAlpha: {
         name: "setAlpha",
         info: {
-          en: "Sets the transparency of the entire object (0.0 = fully transparent, 1.0 = fully opaque)",
-          de: "Setzt die Transparenz des gesamten Objekts (0.0 = vollständig transparent, 1.0 = vollständig undurchsichtig)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "setAlpha(0.5)",
       },
@@ -2294,7 +2294,7 @@ PixiJSEdu.LinePath = class LinePath extends PIXI.Container {
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -2335,8 +2335,8 @@ PixiJSEdu.LinePath = class LinePath extends PIXI.Container {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -2777,24 +2777,24 @@ PixiJSEdu.BezierPath = class BezierPath extends PIXI.Container {
       visible: {
         name: "visible",
         info: {
-          en: "Sets the visibility of the entire object",
-          de: "Setzt die Sichtbarkeit des gesamten Objekts",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -2811,8 +2811,8 @@ PixiJSEdu.BezierPath = class BezierPath extends PIXI.Container {
       setAlpha: {
         name: "setAlpha",
         info: {
-          en: "Sets the transparency of the entire object (0.0 = fully transparent, 1.0 = fully opaque)",
-          de: "Setzt die Transparenz des gesamten Objekts (0.0 = vollständig transparent, 1.0 = vollständig undurchsichtig)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "setAlpha(0.5)",
       },
@@ -2883,7 +2883,7 @@ PixiJSEdu.BezierPath = class BezierPath extends PIXI.Container {
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -2924,8 +2924,8 @@ PixiJSEdu.BezierPath = class BezierPath extends PIXI.Container {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -3335,8 +3335,8 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
       points: {
         name: "points",
         info: {
-          en: "Array of points to define the shape",
-          de: "Array von Punkten zur Definition der Form",
+          en: "Array of coordinate pairs [[x1,y1], [x2,y2], ...] in pixels",
+          de: "Array von Koordinatenpaaren [[x1,y1], [x2,y2], ...] in Pixeln",
         },
       },
       color: {
@@ -3358,26 +3358,26 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
       visible: {
         name: "visible",
         info: {
-          en: "Defines whether the object is visible or invisible",
-          de: "Legt fest, ob das Objekt sichtbar oder unsichtbar ist",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
-        example: "visible = true",
+        example: "visible = false",
       },
     },
     methods: {
@@ -3393,8 +3393,8 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
         name: "setAlpha",
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the entire object (0.0 = fully transparent, 1.0 = fully opaque)",
-          de: "Setzt die Transparenz des gesamten Objekts (0.0 = vollständig transparent, 1.0 = vollständig undurchsichtig)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       setPoints: {
@@ -3527,7 +3527,7 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -3568,8 +3568,8 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -4165,16 +4165,16 @@ PixiJSEdu.Arrow = class Arrow extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -4189,16 +4189,16 @@ PixiJSEdu.Arrow = class Arrow extends PIXI.Container {
       visible: {
         name: "visible",
         info: {
-          en: "Sets the visibility of the object",
-          de: "Setzt die Sichtbarkeit des Objekts",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
       alpha: {
         name: "alpha",
         info: {
-          en: "Sets the transparency of the object (0.0 to 1.0)",
-          de: "Setzt die Transparenz des Objekts (0.0 bis 1.0)",
+          en: "Transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "alpha = 0.5",
       },
@@ -4242,8 +4242,8 @@ PixiJSEdu.Arrow = class Arrow extends PIXI.Container {
       setAlpha: {
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the entire arrow (0.0 to 1.0)",
-          de: "Setzt die Transparenz des gesamten Pfeils (0.0 bis 1.0)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       setOutline: {
@@ -4262,7 +4262,7 @@ PixiJSEdu.Arrow = class Arrow extends PIXI.Container {
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -4303,8 +4303,8 @@ PixiJSEdu.Arrow = class Arrow extends PIXI.Container {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -4683,32 +4683,32 @@ PixiJSEdu.Parallelogram = class Parallelogram extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
       visible: {
         name: "visible",
         info: {
-          en: "Sets the visibility of the parallelogram",
-          de: "Setzt die Sichtbarkeit des Parallelogramms",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
       alpha: {
         name: "alpha",
         info: {
-          en: "Sets the transparency of the parallelogram (0.0 to 1.0)",
-          de: "Setzt die Transparenz des Parallelogramms (0.0 bis 1.0)",
+          en: "Transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "alpha = 0.5",
       },
@@ -4725,8 +4725,8 @@ PixiJSEdu.Parallelogram = class Parallelogram extends PIXI.Container {
       setAlpha: {
         name: "setAlpha",
         info: {
-          en: "Sets the transparency of the parallelogram (0.0 to 1.0)",
-          de: "Setzt die Transparenz des Parallelogramms (0.0 bis 1.0)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "setAlpha(0.5)",
       },
@@ -4780,7 +4780,7 @@ PixiJSEdu.Parallelogram = class Parallelogram extends PIXI.Container {
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -4821,8 +4821,8 @@ PixiJSEdu.Parallelogram = class Parallelogram extends PIXI.Container {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -5128,8 +5128,8 @@ PixiJSEdu.PointLabel = class PointLabel extends PIXI.Container {
       fontSize: {
         name: "fontSize",
         info: {
-          en: "Font size for the text",
-          de: "Schriftgröße für den Text",
+          en: "Font size in pixels",
+          de: "Schriftgröße in Pixeln",
         },
       },
       textColor: {
@@ -5158,32 +5158,32 @@ PixiJSEdu.PointLabel = class PointLabel extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
       visible: {
         name: "visible",
         info: {
-          en: "Sets the visibility of the object",
-          de: "Setzt die Sichtbarkeit des Objekts",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
       alpha: {
         name: "alpha",
         info: {
-          en: "Sets the transparency of the object (0.0 to 1.0)",
-          de: "Setzt die Transparenz des Objekts (0.0 bis 1.0)",
+          en: "Transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "alpha = 0.5",
       },
@@ -5206,8 +5206,8 @@ PixiJSEdu.PointLabel = class PointLabel extends PIXI.Container {
       setFontSize: {
         example: "setFontSize(16)",
         info: {
-          en: "Sets the font size of the text",
-          de: "Setzt die Schriftgröße des Textes",
+          en: "Sets the font size in pixels",
+          de: "Setzt die Schriftgröße in Pixeln",
         },
       },
       setPoint: {
@@ -5241,13 +5241,13 @@ PixiJSEdu.PointLabel = class PointLabel extends PIXI.Container {
       setAlpha: {
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the entire label (0.0 to 1.0)",
-          de: "Setzt die Transparenz der gesamten Beschriftung (0.0 bis 1.0)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -5288,8 +5288,8 @@ PixiJSEdu.PointLabel = class PointLabel extends PIXI.Container {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -5594,8 +5594,8 @@ PixiJSEdu.LineLabel = class LineLabel extends PIXI.Container {
       fontSize: {
         name: "fontSize",
         info: {
-          en: "Font size for the text",
-          de: "Schriftgröße für den Text",
+          en: "Font size in pixels",
+          de: "Schriftgröße in Pixeln",
         },
       },
       textColor: {
@@ -5624,32 +5624,32 @@ PixiJSEdu.LineLabel = class LineLabel extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
       visible: {
         name: "visible",
         info: {
-          en: "Sets the visibility of the object",
-          de: "Setzt die Sichtbarkeit des Objekts",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
       alpha: {
         name: "alpha",
         info: {
-          en: "Sets the transparency of the object (0.0 to 1.0)",
-          de: "Setzt die Transparenz des Objekts (0.0 bis 1.0)",
+          en: "Transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "alpha = 0.5",
       },
@@ -5672,8 +5672,8 @@ PixiJSEdu.LineLabel = class LineLabel extends PIXI.Container {
       setFontSize: {
         example: "setFontSize(16)",
         info: {
-          en: "Sets the font size of the text",
-          de: "Setzt die Schriftgröße des Textes",
+          en: "Sets the font size in pixels",
+          de: "Setzt die Schriftgröße in Pixeln",
         },
       },
       setDistance: {
@@ -5714,8 +5714,8 @@ PixiJSEdu.LineLabel = class LineLabel extends PIXI.Container {
       setAlpha: {
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the entire label (0.0 to 1.0)",
-          de: "Setzt die Transparenz der gesamten Beschriftung (0.0 bis 1.0)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       setFlipSide: {
@@ -5727,7 +5727,7 @@ PixiJSEdu.LineLabel = class LineLabel extends PIXI.Container {
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -5736,8 +5736,8 @@ PixiJSEdu.LineLabel = class LineLabel extends PIXI.Container {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
     },
@@ -6077,8 +6077,8 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
       radius: {
         name: "radius",
         info: {
-          en: "Radius of the arc",
-          de: "Radius des Kreisbogens",
+          en: "Radius of the arc in pixels",
+          de: "Radius des Kreisbogens in Pixeln",
         },
       },
       label: {
@@ -6098,8 +6098,8 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
       fontSize: {
         name: "fontSize",
         info: {
-          en: "Font size for the text",
-          de: "Schriftgröße für den Text",
+          en: "Font size in pixels",
+          de: "Schriftgröße in Pixeln",
         },
       },
       textColor: {
@@ -6128,32 +6128,32 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
       visible: {
         name: "visible",
         info: {
-          en: "Sets the visibility of the object",
-          de: "Setzt die Sichtbarkeit des Objekts",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
       alpha: {
         name: "alpha",
         info: {
-          en: "Sets the transparency of the object (0.0 to 1.0)",
-          de: "Setzt die Transparenz des Objekts (0.0 bis 1.0)",
+          en: "Transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "alpha = 0.5",
       },
@@ -6176,8 +6176,8 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
       setFontSize: {
         example: "setFontSize(16)",
         info: {
-          en: "Sets the font size of the text",
-          de: "Setzt die Schriftgröße des Textes",
+          en: "Sets the font size in pixels",
+          de: "Setzt die Schriftgröße in Pixeln",
         },
       },
       setLineColor: {
@@ -6197,8 +6197,8 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
       setRadius: {
         example: "setRadius(30)",
         info: {
-          en: "Sets the radius of the arc",
-          de: "Setzt den Radius des Kreisbogens",
+          en: "Sets the radius of the arc in pixels",
+          de: "Setzt den Radius des Kreisbogens in Pixeln",
         },
       },
       setCenter: {
@@ -6225,8 +6225,8 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
       setAlpha: {
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the entire angle arc (0.0 to 1.0)",
-          de: "Setzt die Transparenz des gesamten Winkelbogens (0.0 bis 1.0)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       setLabelDistance: {
@@ -6259,7 +6259,7 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -6268,8 +6268,8 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
     },
@@ -6641,16 +6641,16 @@ PixiJSEdu.Line = class Line extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -6665,16 +6665,16 @@ PixiJSEdu.Line = class Line extends PIXI.Container {
       visible: {
         name: "visible",
         info: {
-          en: "Sets the visibility of the object",
-          de: "Setzt die Sichtbarkeit des Objekts",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
       alpha: {
         name: "alpha",
         info: {
-          en: "Sets the transparency of the object (0.0 to 1.0)",
-          de: "Setzt die Transparenz des Objekts (0.0 bis 1.0)",
+          en: "Transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "alpha = 0.5",
       },
@@ -6718,13 +6718,13 @@ PixiJSEdu.Line = class Line extends PIXI.Container {
       setAlpha: {
         example: "setAlpha(0.5)",
         info: {
-          en: "Sets the transparency of the line (0.0 to 1.0)",
-          de: "Setzt die Transparenz der Linie (0.0 bis 1.0)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -6913,8 +6913,8 @@ PixiJSEdu.Ruler = class Ruler extends PIXI.Container {
       fontSize: {
         name: "fontSize",
         info: {
-          en: "Font size of the labels",
-          de: "Schriftgröße der Labels",
+          en: "Font size in pixels",
+          de: "Schriftgröße in Pixeln",
         },
       },
       fontColor: {
@@ -6950,24 +6950,24 @@ PixiJSEdu.Ruler = class Ruler extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the ruler",
-          de: "Horizontale Position des Lineals",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the ruler",
-          de: "Vertikale Position des Lineals",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
       visible: {
         name: "visible",
         info: {
-          en: "Controls the visibility of the ruler",
-          de: "Steuert die Sichtbarkeit des Lineals",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
@@ -7328,16 +7328,16 @@ PixiJSEdu.CoordinateSystem = class CoordinateSystem extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -7352,8 +7352,8 @@ PixiJSEdu.CoordinateSystem = class CoordinateSystem extends PIXI.Container {
       visible: {
         name: "visible",
         info: {
-          en: "Controls the visibility of the entire coordinate system",
-          de: "Steuert die Sichtbarkeit des gesamten Koordinatensystems",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
@@ -7507,16 +7507,16 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
@@ -7531,10 +7531,10 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
       visible: {
         name: "visible",
         info: {
-          en: "Defines whether the object is visible or invisible",
-          de: "Legt fest, ob das Objekt sichtbar oder unsichtbar ist",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
-        example: "visible = true",
+        example: "visible = false",
       },
       maintainStrokeWidth: {
         name: "maintainStrokeWidth",
@@ -7557,32 +7557,32 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
       setScale: {
         name: "setScale",
         info: {
-          en: "Scales the element in both directions",
-          de: "Skaliert das Element in beide Richtungen",
+          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
         },
         example: "setScale(1.5, 1.5)",
       },
       setAlpha: {
         name: "setAlpha",
         info: {
-          en: "Sets the transparency of the element (0 = invisible, 1 = fully visible)",
-          de: "Setzt die Transparenz des Elements (0 = unsichtbar, 1 = vollständig sichtbar)",
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "setAlpha(0.5)",
       },
       setRotationPoint: {
         example: "setRotationPoint(0, 0)",
         info: {
-          en: "Sets the rotation pivot relative to the element's origin (0, 0)",
-          de: "Setzt den Rotationspunkt relativ zum Ursprung (0, 0) des Elements",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
       setTransformationPoint: {
         name: "setTransformationPoint",
         example: "setTransformationPoint(0, 0)",
         info: {
-          en: "Defines the transformation point for position of the element",
-          de: "Definiert den Transformationspunkt für die Position des Elements",
+          en: "Sets the anchor point for positioning (x, y in pixels relative to the element)",
+          de: "Setzt den Ankerpunkt für die Positionierung (x, y in Pixeln relativ zum Element)",
         },
       },
       removeFromParent: {
@@ -7595,7 +7595,7 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
@@ -7636,8 +7636,8 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
       setDragging: {
         example: "setDragging(0, 0, 1280, 720)",
         info: {
-          en: "Enables dragging within the specified rectangular bounds",
-          de: "Ermöglicht das Ziehen innerhalb der angegebenen Rechtecksgrenzen",
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
         },
       },
       onDragStart: {
@@ -8689,23 +8689,23 @@ PixiJSEdu.Timer = class Timer extends PIXI.Container {
       addAnimation: {
         example: 'addAnimation(myObject, "x", 100, 300)',
         info: {
-          en: "Adds an animation: object, property, start value, end value",
-          de: "Fügt eine Animation hinzu: Objekt, Eigenschaft, Startwert, Endwert",
+          en: "Adds an animation for a property. Parameters: target object, property name as string, start value, end value",
+          de: "Fügt eine Animation für eine Eigenschaft hinzu. Parameter: Zielobjekt, Eigenschaftsname als String, Startwert, Endwert",
         },
       },
       addKeyframeAnimation: {
         example:
           'addKeyframeAnimation(myObject, "alpha", [{time: 0, value: 0}, {time: 0.5, value: 1}, {time: 1, value: 0}])',
         info: {
-          en: "Adds a keyframe animation with multiple time points",
-          de: "Fügt eine Keyframe-Animation hinzu mit mehreren Zeitpunkten",
+          en: "Adds a keyframe animation. Parameters: target object, property name as string, array of keyframes [{time: 0-1, value: number}]",
+          de: "Fügt eine Keyframe-Animation hinzu. Parameter: Zielobjekt, Eigenschaftsname als String, Array von Keyframes [{time: 0-1, value: Zahl}]",
         },
       },
       setEasing: {
         example: 'setEasing("easeInOut")',
         info: {
-          en: 'Sets the easing function: "linear", "easeIn", "easeOut", "easeInOut", "bounce"',
-          de: 'Setzt die Easing-Funktion: "linear", "easeIn", "easeOut", "easeInOut", "bounce"',
+          en: 'Sets the easing function for smooth transitions: "linear" (constant speed), "easeIn" (slow start), "easeOut" (slow end), "easeInOut" (slow start and end), "bounce" (bouncing effect)',
+          de: 'Setzt die Easing-Funktion für sanfte Übergänge: "linear" (konstante Geschwindigkeit), "easeIn" (langsamer Start), "easeOut" (langsames Ende), "easeInOut" (langsamer Start und Ende), "bounce" (Federeffekt)',
         },
       },
       onComplete: {
@@ -9031,24 +9031,24 @@ PixiJSEdu.ParticleSystem = class ParticleSystem extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the particle system",
-          de: "Horizontale Position des Partikelsystems",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the particle system",
-          de: "Vertikale Position des Partikelsystems",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
       visible: {
         name: "visible",
         info: {
-          en: "Visibility of the particle system",
-          de: "Sichtbarkeit des Partikelsystems",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
         example: "visible = false",
       },
@@ -10177,32 +10177,32 @@ PixiJSEdu.SimplePNG = class SimplePNG extends PIXI.Container {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
         },
         example: "y = 200",
       },
       visible: {
         name: "visible",
         info: {
-          en: "Defines whether the object is visible or invisible",
-          de: "Legt fest, ob das Objekt sichtbar oder unsichtbar ist",
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
         },
-        example: "visible = true",
+        example: "visible = false",
       },
       alpha: {
         name: "alpha",
         info: {
-          en: "Transparency of the image (0.0 to 1.0)",
-          de: "Transparenz des Bildes (0.0 bis 1.0)",
+          en: "Transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
         },
         example: "alpha = 0.5",
       },
@@ -10211,14 +10211,14 @@ PixiJSEdu.SimplePNG = class SimplePNG extends PIXI.Container {
       setScale: {
         name: "setScale",
         info: {
-          en: "Scales the element in both directions",
-          de: "Skaliert das Element in beide Richtungen",
+          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
         },
         example: "setScale(1.5, 1.5)",
       },
       onClick: {
         example:
-          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hello World"); }',
         info: {
           en: "Defines a function to execute when the element is clicked.",
           de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",

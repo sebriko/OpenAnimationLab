@@ -519,43 +519,7 @@
     setupDraggable() {
       const header = document.getElementById("tipOfTheDayHeader");
       if (!header) return;
-
-      let isDragging = false;
-      let dragOffset = { x: 0, y: 0 };
-
-      header.addEventListener("mousedown", (e) => {
-        if (e.target.closest(".modal-window-close")) return;
-
-        isDragging = true;
-        const rect = this.modalWindow.getBoundingClientRect();
-        dragOffset.x = e.clientX - rect.left;
-        dragOffset.y = e.clientY - rect.top;
-
-        header.style.cursor = "grabbing";
-        e.preventDefault();
-      });
-
-      document.addEventListener("mousemove", (e) => {
-        if (!isDragging) return;
-
-        const newLeft = e.clientX - dragOffset.x;
-        const newTop = e.clientY - dragOffset.y;
-
-        const maxLeft = window.innerWidth - this.modalWindow.offsetWidth - 50;
-        const maxTop = window.innerHeight - this.modalWindow.offsetHeight - 50;
-
-        this.modalWindow.style.left =
-          Math.max(50, Math.min(newLeft, maxLeft)) + "px";
-        this.modalWindow.style.top =
-          Math.max(50, Math.min(newTop, maxTop)) + "px";
-      });
-
-      document.addEventListener("mouseup", () => {
-        isDragging = false;
-        header.style.cursor = "move";
-      });
-
-      header.style.cursor = "move";
+      window.makeDraggable(this.modalWindow, header, { margin: 50 });
     },
 
     getDefaultTips() {

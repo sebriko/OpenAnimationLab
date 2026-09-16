@@ -17,19 +17,8 @@ if (fileToLoad) {
 
               // Resize canvas after code is loaded into the editor
               setTimeout(() => {
-                if (
-                  window.Board &&
-                  Board.getInstance &&
-                  typeof Board.getInstance === "function"
-                ) {
-                  const boardInstance = Board.getInstance();
-                  if (
-                    boardInstance &&
-                    typeof boardInstance.resizeCanvas === "function"
-                  ) {
-                    boardInstance.resizeCanvas();
-                  }
-                }
+                const boardInstance = window.getBoardInstance();
+                if (boardInstance) boardInstance.resizeCanvas();
               }, 150);
             })
             .catch((err) => console.error("Error loading file:", err));

@@ -851,7 +851,6 @@ ${rendererAlias}
         }
 
         eval(preparedCode);
-      } else {
       }
     } catch (err) {
       const ctx = window.__codeErrorContext || {};
@@ -865,31 +864,8 @@ ${rendererAlias}
   }, 50);
 
   setTimeout(() => {
-    preview.style.visibility = "visible";
-  }, 50);
-
-  setTimeout(() => {
-    // Retrieve the board instance in a renderer-agnostic way
-    let boardInstance = null;
-
-    if (
-      typeof Board !== "undefined" &&
-      typeof Board.getInstance === "function"
-    ) {
-      boardInstance = Board.getInstance();
-    }
-    // Additional fallback for the SVG renderer
-    if (
-      !boardInstance &&
-      typeof BoardSVG !== "undefined" &&
-      typeof BoardSVG.getInstance === "function"
-    ) {
-      boardInstance = BoardSVG.getInstance();
-    }
-
-    if (boardInstance && typeof boardInstance.resizeCanvas === "function") {
-      boardInstance.resizeCanvas();
-    }
+    const boardInstance = window.getBoardInstance();
+    if (boardInstance) boardInstance.resizeCanvas();
 
     preview.style.visibility = "visible";
   }, 50);

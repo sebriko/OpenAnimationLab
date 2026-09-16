@@ -53,13 +53,6 @@
   };
 
   /**
-   * Sets global aliases so user code can use "Board", "Rectangle", etc.
-   * regardless of which renderer is selected.
-   * Currently a no-op — the Board alias is injected inside runCode().
-   */
-  window.applyRendererAliases = function () {};
-
-  /**
    * Sets the active renderer and persists the selection.
    * @param {'pixi'|'svg'} type
    * @param {boolean} [autoRerun=true]

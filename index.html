@@ -7,33 +7,25 @@
     <title>Open Animation Lab</title>
     <meta name="description" content="Open-source editor for interactive learning animations. Supports vector objects and simple scripts. Ideal for teaching, tutorials, and technical visualizations." />
 
+    <!-- Shared utilities — loaded first so inline scripts can use window.getCookie -->
+    <script src="src/utils.js"></script>
+
     <!-- Early theme detection — must run before stylesheets to avoid flash of unstyled content -->
     <script>
         (function () {
             "use strict";
-    
-            function getCookie(name) {
-              const nameEQ = name + "=";
-              const ca = document.cookie.split(";");
-              for (let i = 0; i < ca.length; i++) {
-                let c = ca[i].trim();
-                if (c.indexOf(nameEQ) === 0)
-                  return c.substring(nameEQ.length, c.length);
-              }
-              return null;
-            }
-    
-            var consentGiven =
+
+            const consentGiven =
               localStorage.getItem("cookie_consent") === "accepted";
-    
+
             // Read from localStorage always; read cookie only if consent was given
-            var savedTheme = localStorage.getItem("theme");
+            let savedTheme = localStorage.getItem("theme");
             if (!savedTheme && consentGiven) {
-              savedTheme = getCookie("theme");
+              savedTheme = window.getCookie("theme");
             }
-    
-            var themeToApply = savedTheme === "dark" ? "dark" : "light";
-    
+
+            const themeToApply = savedTheme === "dark" ? "dark" : "light";
+
             document.documentElement.classList.add(themeToApply + "-theme");
             window.__earlyTheme = themeToApply;
           })();
@@ -43,35 +35,24 @@
     <script>
         (function () {
             "use strict";
-    
-            function getCookieLocal(name) {
-              const nameEQ = name + "=";
-              const ca = document.cookie.split(";");
-              for (let i = 0; i < ca.length; i++) {
-                let c = ca[i].trim();
-                if (c.indexOf(nameEQ) === 0)
-                  return c.substring(nameEQ.length, c.length);
-              }
-              return null;
-            }
-    
-            var consentGiven =
+
+            const consentGiven =
               localStorage.getItem("cookie_consent") === "accepted";
-    
+
             // Priority: URL param > localStorage > cookie (with consent) > browser language
-            var detectedLanguage = "en";
-            var urlParams = new URLSearchParams(window.location.search);
-            var urlLang = urlParams.get("lang");
+            let detectedLanguage = "en";
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlLang = urlParams.get("lang");
     
             if (urlLang && ["de", "en"].includes(urlLang)) {
               detectedLanguage = urlLang;
             } else {
-              var storedLang = localStorage.getItem("language");
+              const storedLang = localStorage.getItem("language");
               if (storedLang && ["de", "en"].includes(storedLang)) {
                 detectedLanguage = storedLang;
               } else {
                 if (consentGiven) {
-                  var cookieLang = getCookieLocal("language");
+                  const cookieLang = window.getCookie("language");
                   if (cookieLang && ["de", "en"].includes(cookieLang)) {
                     detectedLanguage = cookieLang;
                   }
@@ -86,18 +67,18 @@
     
             window.__detectedLanguage = detectedLanguage;
     
-            var templateFile =
+            const templateFile =
               detectedLanguage === "de"
                 ? "ProjectTemplates_de.js"
                 : "ProjectTemplates_en.js";
-    
-            var templateScript = document.createElement("script");
+
+            const templateScript = document.createElement("script");
             templateScript.src = "custom/" + templateFile;
             templateScript.id = "dynamic-project-templates";
             templateScript.onerror = function () {
               console.warn("Failed to load " + templateFile + ", falling back to default");
               if (templateFile !== "ProjectTemplates_en.js") {
-                var fallbackScript = document.createElement("script");
+                const fallbackScript = document.createElement("script");
                 fallbackScript.src = "custom/ProjectTemplates_en.js";
                 document.head.appendChild(fallbackScript);
               }
@@ -117,6 +98,7 @@
     <script src="src/core/SvgJSEdu.js"></script>
     <script src="src/core/HtmlSvgEdu.js"></script>
     <script src="src/safeCode.js"></script>
+    <script src="src/core/BoardBase.js"></script>
     <script src="src/core/Board.js"></script>
     <script src="src/core/BoardSVG.js"></script>
 
@@ -188,8 +170,8 @@
 
     <script>
         window.APP_CONFIG = {
-            version: "3.9.1",
-            build: "2026-09-08",
+            version: "3.10.0",
+            build: "2026-09-16",
             status: "Release",
           };
     </script>
