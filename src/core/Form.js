@@ -380,6 +380,7 @@ function parseConstructorArgs(argsString) {
   let stringChar = "";
   let inObject = 0;
   let inArray = 0;
+  let inParen = 0;
   let inTemplate = false;
 
   for (let i = 0; i < argsString.length; i++) {
@@ -411,6 +412,8 @@ function parseConstructorArgs(argsString) {
       if (char === "}") inObject--;
       if (char === "[") inArray++;
       if (char === "]") inArray--;
+      if (char === "(") inParen++;
+      if (char === ")") inParen--;
     }
 
     if (
@@ -418,7 +421,8 @@ function parseConstructorArgs(argsString) {
       !inString &&
       !inTemplate &&
       inObject === 0 &&
-      inArray === 0
+      inArray === 0 &&
+      inParen === 0
     ) {
       const trimmed = current.trim();
       result.push({
@@ -710,10 +714,7 @@ function updateConstructorLine(jsonInput) {
     if (foundStart) {
       constructorContent += line;
 
-      for (let char of line) {
-        if (char === "(") openParens++;
-        if (char === ")") openParens--;
-      }
+      openParens += countParensDelta(line);
 
       endLine = i;
 

@@ -1,5 +1,44 @@
 let code;
 
+// Count net open parentheses in a string, respecting string literals
+// (single-quoted, double-quoted, and template literals) so that parentheses
+// inside strings are not counted.  Returns the change in nesting depth.
+function countParensDelta(text) {
+  let delta = 0;
+  let inString = false;
+  let stringChar = "";
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    // Handle string delimiters
+    if (!inString && (ch === "'" || ch === '"' || ch === "`")) {
+      inString = true;
+      stringChar = ch;
+      continue;
+    }
+    if (inString) {
+      if (ch === "\\" && i + 1 < text.length) {
+        i++; // skip escaped character
+        continue;
+      }
+      if (ch === stringChar) {
+        inString = false;
+      }
+      continue;
+    }
+
+    // Handle line comments
+    if (ch === "/" && i + 1 < text.length && text[i + 1] === "/") {
+      break; // rest of the line is a comment
+    }
+
+    if (ch === "(") delta++;
+    else if (ch === ")") delta--;
+  }
+  return delta;
+}
+
 // UTILITY FUNCTIONS
 // Extract class names from an object
 function extractClassNames(obj) {
@@ -538,20 +577,22 @@ function parseConstructorStatement() {
       completeStatement += "\n" + line;
     }
 
-    for (let char of line) {
-      if (char === "(") {
-        parenCount++;
+    // Find the first '(' to mark the start of the argument list, then use
+    // string-aware parenthesis counting to find the matching ')'.
+    if (!foundStart) {
+      const idx = line.indexOf("(");
+      if (idx !== -1) {
         foundStart = true;
-      } else if (char === ")") {
-        parenCount--;
-        if (foundStart && parenCount === 0) {
-          endLine = i;
-          break;
-        }
+        // Count from the first '(' onward using string-aware counting.
+        // We add 1 for the opening '(' itself, then count the rest.
+        parenCount = 1 + countParensDelta(line.slice(idx + 1));
       }
+    } else {
+      parenCount += countParensDelta(line);
     }
 
     if (foundStart && parenCount === 0) {
+      endLine = i;
       break;
     }
   }
@@ -672,7 +713,10 @@ function runCode() {
 
   code = editor.getValue();
 
-  code = code.replace(/\\(?!\\)/g, "\\\\");
+  // Double lone backslashes so that escape sequences like \n in user strings
+  // become literal \\n (the Text component renders \\n as a line break).
+  // Exclude \\, \', \", and \` so that escaped quotes remain intact.
+  code = code.replace(/\\(?![\\'"`])/g, "\\\\");
 
   const activeTab = document.querySelector(".tab.active");
   let tabName = activeTab ? activeTab.getAttribute("data-tab") : "Tab 1";
@@ -704,22 +748,22 @@ function runCode() {
         const varName = declMatch[1];
         let rest = declMatch[2];
 
-        if (rest.includes(")")) {
+        // Count parentheses in `rest` while respecting string context so that
+        // nested calls like String(value) or strings like "foo)" don't trick
+        // us into thinking the constructor ends on this line.
+        let openParens = 1 + countParensDelta(rest);
+
+        if (openParens === 0) {
           result.push(`${varName}.instanceName = "${varName}";`);
           lineMap.push(i);
         } else {
-          let openParens = 1;
-
           while (i + 1 < lines.length && openParens > 0) {
             i++;
             const nextLine = lines[i];
             result.push(nextLine);
             lineMap.push(i);
 
-            for (let char of nextLine) {
-              if (char === "(") openParens++;
-              else if (char === ")") openParens--;
-            }
+            openParens += countParensDelta(nextLine);
 
             if (openParens === 0) {
               result.push(`${varName}.instanceName = "${varName}";`);

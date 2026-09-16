@@ -46,7 +46,7 @@ async function publishCode() {
 
   let jsCode = editor.getValue();
 
-  jsCode = jsCode.replace(/\\(?!\\)/g, "\\\\");
+  jsCode = jsCode.replace(/\\(?![\\'"`])/g, "\\\\");
 
   jsCode = replacer(jsCode);
 
