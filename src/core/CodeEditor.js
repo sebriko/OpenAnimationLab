@@ -715,8 +715,8 @@ function runCode() {
 
   // Double lone backslashes so that escape sequences like \n in user strings
   // become literal \\n (the Text component renders \\n as a line break).
-  // Exclude \\, \', \", and \` so that escaped quotes remain intact.
-  code = code.replace(/\\(?![\\'"`])/g, "\\\\");
+  // Only exclude \\ so that already-escaped backslashes are not doubled again.
+  code = code.replace(/\\(?!\\)/g, "\\\\");
 
   const activeTab = document.querySelector(".tab.active");
   let tabName = activeTab ? activeTab.getAttribute("data-tab") : "Tab 1";

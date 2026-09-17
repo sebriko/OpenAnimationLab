@@ -67,7 +67,9 @@ async function publishCode() {
     <script src="https://www.educational-animation.org/oal/src/core/SvgJSEdu.js"><\/script>
   
     <script src="https://www.educational-animation.org/oal/src/core/HtmlSvgEdu.js"><\/script>
-  
+
+    <script src="https://www.educational-animation.org/oal/src/core/BoardBase.js"><\/script>
+
     <script src="https://www.educational-animation.org/oal/src/core/BoardSVG.js"><\/script>`;
 
     // Board → BoardSVG Alias, damit "new Board(...)" im SVG-Modus funktioniert
