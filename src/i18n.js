@@ -29,6 +29,14 @@ class I18nManager {
         en: "Publish",
         de: "Veröffentlichen",
       },
+      publish_html: {
+        en: "Export as HTML",
+        de: "Als HTML exportieren",
+      },
+      publish_h5p: {
+        en: "Export as H5P",
+        de: "Als H5P exportieren",
+      },
       run_code: {
         en: "Run Code",
         de: "Code ausführen",

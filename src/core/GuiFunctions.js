@@ -509,6 +509,212 @@ input:checked + .pixi-toggle-slider:before {
   document.body.removeChild(link);
 }
 
+// ── Publish Dropdown Helpers ──
+
+function togglePublishMenu(event) {
+  event.stopPropagation();
+  const menu = document.getElementById("publishMenu");
+  menu.classList.toggle("open");
+
+  // Close when clicking anywhere else
+  if (menu.classList.contains("open")) {
+    const close = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.classList.remove("open");
+        document.removeEventListener("click", close);
+      }
+    };
+    // Delay so the current click doesn't immediately close it
+    setTimeout(() => document.addEventListener("click", close), 0);
+  }
+}
+
+function closePublishMenu() {
+  document.getElementById("publishMenu").classList.remove("open");
+}
+
+// ── H5P Export ──
+
+async function publishH5P() {
+  // Tab-Name ermitteln (wie bei publishCode)
+  const activeTab = document.querySelector(".tab.active");
+  let tabName = activeTab ? activeTab.textContent.trim() : "animation";
+  tabName = tabName.slice(0, -1).trim();
+
+  let jsCode = editor.getValue();
+  jsCode = jsCode.replace(/\\(?![\\'"`])/g, "\\\\");
+  jsCode = replacer(jsCode);
+
+  const renderer =
+    typeof getActiveRenderer === "function" ? getActiveRenderer() : "pixi";
+
+  // Build the same standalone HTML that publishCode() produces
+  let rendererScripts = "";
+  let postLoadCode = "";
+  let rendererAlias = "";
+
+  if (renderer === "svg") {
+    rendererScripts = `
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.5/svg.min.js"><\/script>
+    <script src="https://www.educational-animation.org/oal/src/core/SvgJSEdu.js"><\/script>
+    <script src="https://www.educational-animation.org/oal/src/core/HtmlSvgEdu.js"><\/script>
+    <script src="https://www.educational-animation.org/oal/src/core/BoardBase.js"><\/script>
+    <script src="https://www.educational-animation.org/oal/src/core/BoardSVG.js"><\/script>`;
+    rendererAlias = "const Board = BoardSVG;";
+    postLoadCode = `
+    let overlayFrameCount = 0;
+    function removeOverlay() {
+      overlayFrameCount++;
+      if (overlayFrameCount > 3) {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) { overlay.style.transition='opacity 0.2s'; overlay.style.opacity='0'; setTimeout(()=>overlay.remove(),200); }
+      } else { requestAnimationFrame(removeOverlay); }
+    }
+    requestAnimationFrame(removeOverlay);`;
+  } else {
+    rendererScripts = `
+  <script src="https://pixijs.download/release/pixi.js"><\/script>
+    <script src="https://www.educational-animation.org/oal/src/core/PixiJSEdu.js"><\/script>
+    <script src="https://www.educational-animation.org/oal/src/core/HtmlSvgEdu.js"><\/script>
+    <script src="https://www.educational-animation.org/oal/src/core/Board.js"><\/script>`;
+    rendererAlias = "";
+    postLoadCode = `
+    setTimeout(() => {
+      if (typeof board !== 'undefined' && board.app && board.app.renderer) {
+        board.app.renderer.backgroundColor = 0xFFFFFF;
+      }
+      if (typeof board !== 'undefined' && board.app && board.app.stage) {
+        const bg = new PIXI.Graphics();
+        bg.beginFill(0xFFFFFF);
+        bg.drawRect(0, 0, board.app.screen.width, board.app.screen.height);
+        bg.endFill();
+        board.app.stage.addChildAt(bg, 0);
+      }
+    }, 10);
+    let overlayFrameCount = 0;
+    function removeOverlay() {
+      overlayFrameCount++;
+      if (overlayFrameCount > 3) {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) { overlay.style.transition='opacity 0.2s'; overlay.style.opacity='0'; setTimeout(()=>overlay.remove(),200); }
+      } else { requestAnimationFrame(removeOverlay); }
+    }
+    requestAnimationFrame(removeOverlay);`;
+  }
+
+  const htmlContent = String.raw`<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>${tabName}</title>
+  <style>
+    #preview { width:100%; height:100vh; overflow:hidden; position:relative; border:none; background:#fff; }
+    #loading-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:9999; pointer-events:none; transition:opacity .2s ease-out; }
+    body { margin:0; padding:0; overflow:hidden; background:#fff; }
+    #pixi-ui-overlay { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
+    .pixi-html-ui { pointer-events:auto; transform-origin:top left; font-family:Arial,sans-serif; color:#555; box-sizing:border-box; }
+    .pixi-button { background:linear-gradient(to bottom,#fafafa,#efefef); border:1px solid #aaa; border-radius:10px; cursor:pointer; text-align:center; padding:8px 10px; line-height:.7; transition:all .2s; outline:none; user-select:none; display:inline-block; vertical-align:middle; }
+    .pixi-button:hover { border-color:#228b22; background:#fff; }
+    .pixi-button:active { background:#ddd; }
+    .pixi-button.active { border-color:#228b22; background:#e8f5e8; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async><\/script>
+  ${rendererScripts}
+  <script>window.exportMode=true;<\/script>
+</head>
+<body>
+  <div id="preview"><div id="loading-overlay"></div></div>
+  <div id="canvas-container"></div>
+  <script>
+    ${rendererAlias}
+    ${jsCode}
+    ${postLoadCode}
+  <\/script>
+</body>
+</html>`;
+
+  // ── Build H5P ZIP ──
+  const zip = new JSZip();
+
+  // h5p.json – package metadata
+  zip.file("h5p.json", JSON.stringify({
+    title: tabName,
+    language: "und",
+    mainLibrary: "OALAnimation",
+    preloadedDependencies: [
+      { machineName: "OALAnimation", majorVersion: 1, minorVersion: 0 }
+    ]
+  }, null, 2));
+
+  // content/content.json – the animation HTML
+  zip.file("content/content.json", JSON.stringify({
+    htmlContent: htmlContent
+  }));
+
+  // OALAnimation library
+  const libDir = "OALAnimation-1.0";
+
+  zip.file(`${libDir}/library.json`, JSON.stringify({
+    title: "OAL Animation",
+    description: "Displays an Open Animation Lab animation inside an iframe.",
+    machineName: "OALAnimation",
+    majorVersion: 1,
+    minorVersion: 0,
+    patchVersion: 0,
+    runnable: 1,
+    preloadedJs: [{ path: "oal-animation.js" }],
+    preloadedCss: [{ path: "oal-animation.css" }]
+  }, null, 2));
+
+  zip.file(`${libDir}/oal-animation.js`, `\
+H5P.OALAnimation = (function () {
+  function OALAnimation(params, contentId) {
+    this.htmlContent = params.htmlContent || "";
+    this.contentId = contentId;
+  }
+
+  OALAnimation.prototype.attach = function ($container) {
+    var wrapper = $container.get ? $container.get(0) : $container;
+    wrapper.classList.add("h5p-oal-animation");
+
+    var iframe = document.createElement("iframe");
+    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
+    iframe.style.border = "none";
+    iframe.srcdoc = this.htmlContent;
+    wrapper.innerHTML = "";
+    wrapper.appendChild(iframe);
+  };
+
+  return OALAnimation;
+})();
+`);
+
+  zip.file(`${libDir}/oal-animation.css`, `\
+.h5p-oal-animation {
+  width: 100%;
+  height: 600px;
+  overflow: hidden;
+}
+.h5p-oal-animation iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+`);
+
+  // Generate and download
+  const blob = await zip.generateAsync({ type: "blob" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${tabName}.h5p`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 // Screenshot-Button Event Listener
 document
   .getElementById("screenshotButton")

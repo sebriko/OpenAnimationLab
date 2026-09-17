@@ -506,6 +506,63 @@ input[type="file"] {
   margin-right: 3px;
 }
 
+/* Publish Dropdown */
+.publish-dropdown {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.publish-main-btn {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important;
+}
+
+.publish-arrow-btn {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  padding: 0 2px !important;
+  min-width: 24px;
+}
+
+.publish-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background-color: var(--bg-dark);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 100%;
+  overflow: hidden;
+}
+
+.publish-menu.open {
+  display: block;
+}
+
+.publish-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 15px;
+  border: none;
+  background: none;
+  color: var(--text-light);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.publish-menu button:hover {
+  background-color: var(--primary-color);
+  color: var(--text-white);
+}
+
 /* ==============================================
    SEARCH & REPLACE FUNCTIONALITY - THEME INTEGRATED
    ============================================== */

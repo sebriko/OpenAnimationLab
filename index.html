@@ -170,8 +170,8 @@
 
     <script>
         window.APP_CONFIG = {
-            version: "3.10.2",
-            build: "2026-09-16",
+            version: "3.11.0",
+            build: "2026-09-17",
             status: "Release",
           };
     </script>
@@ -222,9 +222,17 @@
                 <span class="material-icons">folder_open</span>
             </label>
             <input type="file" id="loadFile" onchange="loadCode(event)" />
-            <button class="regular-button" onclick="publishCode()" data-i18n-title="publish_animation" data-i18n="publish">
-                Publish
-            </button>
+            <div class="publish-dropdown">
+                <button class="regular-button publish-main-btn" onclick="publishCode()" data-i18n-title="publish_animation" data-i18n="publish">
+                    Publish
+                </button><button class="regular-button publish-arrow-btn" onclick="togglePublishMenu(event)">
+                    <span class="material-icons" style="font-size:16px">arrow_drop_down</span>
+                </button>
+                <div class="publish-menu" id="publishMenu">
+                    <button onclick="publishCode(); closePublishMenu();" data-i18n="publish_html">HTML</button>
+                    <button onclick="publishH5P(); closePublishMenu();" data-i18n="publish_h5p">H5P</button>
+                </div>
+            </div>
             <button class="show-button active" id="theme-toggle" onclick="" data-i18n-title="theme_toggle">
                 <span class="material-icons">brightness_6</span>
             </button>
