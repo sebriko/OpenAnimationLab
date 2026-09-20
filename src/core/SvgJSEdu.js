@@ -196,6 +196,7 @@ class SvgJSElement {
     this._alpha = 1.0;
     this._scaleX = 1;
     this._scaleY = 1;
+    this._scaleStrokes = false;
 
     this._clickHandler = null;
     this._mouseDownHandler = null;
@@ -251,6 +252,18 @@ class SvgJSElement {
 
   _applyScale() {
     // Overridden by subclasses
+  }
+
+  _applyNonScalingStroke() {
+    if (!this._group) return;
+    const elements = this._group.node.querySelectorAll("[stroke]:not([stroke='none'])");
+    elements.forEach((el) => {
+      if (!this._scaleStrokes) {
+        el.setAttribute("vector-effect", "non-scaling-stroke");
+      } else {
+        el.removeAttribute("vector-effect");
+      }
+    });
   }
 
   set x(value) {
@@ -315,11 +328,13 @@ class SvgJSElement {
 
   // ---------- Skalierung ----------
 
-  setScale(scaleX, scaleY) {
+  setScale(scaleX, scaleY, scaleStrokes = false) {
     this._scaleX = scaleX;
     this._scaleY = scaleY !== undefined ? scaleY : scaleX;
+    this._scaleStrokes = scaleStrokes;
     this._applyScale();
     this._updateTransform();
+    this._applyNonScalingStroke();
     return this;
   }
 
@@ -719,8 +734,8 @@ SvgJSEdu.Group = class Group extends SvgJSElement {
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -1161,8 +1176,8 @@ SvgJSEdu.Rectangle = class Rectangle extends SvgJSElement {
       setScale: {
         example: "setScale(1.5, 1.5)",
         info: {
-          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size)",
-          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße)",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -1689,8 +1704,8 @@ SvgJSEdu.Circle = class Circle extends SvgJSElement {
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -2052,8 +2067,8 @@ SvgJSEdu.Ellipse = class Ellipse extends SvgJSElement {
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -2681,8 +2696,8 @@ SvgJSEdu.Polygon = class Polygon {
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -2795,6 +2810,7 @@ SvgJSEdu.Polygon = class Polygon {
 
     this._scaleX = 1;
     this._scaleY = 1;
+    this._scaleStrokes = false;
 
     this._visible = true;
 
@@ -3021,10 +3037,24 @@ SvgJSEdu.Polygon = class Polygon {
     this._draw();
   }
 
-  setScale(factor) {
+  setScale(factor, scaleStrokes = false) {
     this._scaleX = factor;
     this._scaleY = factor;
+    this._scaleStrokes = scaleStrokes;
     this._updateTransform();
+    this._applyNonScalingStroke();
+  }
+
+  _applyNonScalingStroke() {
+    if (!this._group) return;
+    const elements = this._group.node.querySelectorAll("[stroke]:not([stroke='none'])");
+    elements.forEach((el) => {
+      if (!this._scaleStrokes) {
+        el.setAttribute("vector-effect", "non-scaling-stroke");
+      } else {
+        el.removeAttribute("vector-effect");
+      }
+    });
   }
 
   setAlpha(value) {
@@ -8044,8 +8074,8 @@ SvgJSEdu.SimpleSVG = class SimpleSVG extends SvgJSElement {
       setScale: {
         name: "setScale",
         info: {
-          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size)",
-          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße)",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
         example: "setScale(1.5, 1.5)",
       },
@@ -8164,7 +8194,7 @@ SvgJSEdu.SimpleSVG = class SimpleSVG extends SvgJSElement {
   constructor(svgString) {
     super();
     this._originalSvgString = svgString;
-    this._maintainStrokeWidth = false;
+    this._maintainStrokeWidth = true;
     this._resolution = 2;
     this._svgNestedGroup = null;
     this._originalDimensions = null;
@@ -8310,6 +8340,10 @@ _loadSVG() {
 
     this._svgNestedGroup = SVG(nestedSvg);
 
+    if (this._maintainStrokeWidth) {
+      this.maintainStrokeWidth = true;
+    }
+
     if (this._scaleX !== 1 || this._scaleY !== 1) {
       this._applyScale();
     }
@@ -8438,8 +8472,8 @@ SvgJSEdu.SimplePNG = class SimplePNG extends SvgJSElement {
       setScale: {
         name: "setScale",
         info: {
-          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size)",
-          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße)",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
         example: "setScale(1.5, 1.5)",
       },

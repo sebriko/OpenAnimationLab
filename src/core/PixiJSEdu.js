@@ -101,6 +101,13 @@ class PixiJSElement extends PIXI.Container {
     this._mouseUpHandler = null;
     this._mouseOverHandler = null;
     this._mouseOutHandler = null;
+    this._scaleStrokes = false;
+  }
+
+  _effectiveStrokeWidth(width) {
+    if (this._scaleStrokes || !width) return width || 0;
+    const s = this.scale.x;
+    return s !== 0 ? width / s : width;
   }
 
   _updatePosition() {
@@ -159,9 +166,13 @@ class PixiJSElement extends PIXI.Container {
     return this;
   }
 
-  setScale(factor) {
+  setScale(factor, scaleStrokes = false) {
+    this._scaleStrokes = scaleStrokes;
     this.scale.set(factor);
     this._updatePosition();
+    if (typeof this._draw === "function") {
+      this._draw();
+    }
   }
 
   setAlpha(alpha) {
@@ -262,8 +273,8 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -529,9 +540,18 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
     return this;
   }
 
-  setScale(factor) {
+  setScale(factor, scaleStrokes = false) {
+    this._scaleStrokes = scaleStrokes;
     this.scale.set(factor);
     this._updatePosition();
+    this.children.forEach((child) => {
+      if (child._scaleStrokes !== undefined) {
+        child._scaleStrokes = scaleStrokes;
+        if (typeof child._draw === "function") {
+          child._draw();
+        }
+      }
+    });
     return this;
   }
 
@@ -709,8 +729,8 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -848,10 +868,11 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
   }
 
   _draw() {
+    const effectiveBorder = this._effectiveStrokeWidth(this._borderLine);
     if (!this._gradientStops) {
       this.rectGraphics.clear();
       this.rectGraphics.lineStyle(
-        this._borderLine || 0,
+        effectiveBorder || 0,
         this._borderColor || 0,
       );
       if (this._color !== null) {
@@ -917,7 +938,7 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
       this.addChildAt(this.gradientSprite, 0);
       this.rectGraphics.clear();
       this.rectGraphics.lineStyle(
-        this._borderLine || 0,
+        effectiveBorder || 0,
         this._borderColor || 0,
       );
       this.rectGraphics.beginFill(this._color, 0);
@@ -1204,8 +1225,8 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -1315,10 +1336,11 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
   }
 
   _draw() {
+    const effectiveBorder = this._effectiveStrokeWidth(this._borderLine);
     if (!this._gradientStops) {
       this.circleGraphics.clear();
       this.circleGraphics.lineStyle(
-        this._borderLine || 0,
+        effectiveBorder || 0,
         this._borderColor || 0,
       );
       if (this._color !== null) {
@@ -1365,7 +1387,7 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
       ctx.arc(this._radius, this._radius, this._radius, 0, Math.PI * 2);
       ctx.fill();
       if (this._borderLine) {
-        ctx.lineWidth = this._borderLine;
+        ctx.lineWidth = effectiveBorder;
         ctx.strokeStyle = "#" + this._borderColor.toString(16).padStart(6, "0");
         ctx.stroke();
       }
@@ -1380,7 +1402,7 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
       this.addChildAt(this.gradientSprite, 0);
       this.circleGraphics.clear();
       this.circleGraphics.lineStyle(
-        this._borderLine || 0,
+        effectiveBorder || 0,
         this._borderColor || 0,
       );
       this.circleGraphics.beginFill(this._color, 0);
@@ -1542,8 +1564,8 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -1661,10 +1683,11 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
   }
 
   _draw() {
+    const effectiveBorder = this._effectiveStrokeWidth(this._borderLine);
     if (!this._gradientStops) {
       this.ellipseGraphics.clear();
       this.ellipseGraphics.lineStyle(
-        this._borderLine || 0,
+        effectiveBorder || 0,
         this._borderColor || 0,
       );
       if (this._color !== null) {
@@ -1720,7 +1743,7 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
       );
       ctx.fill();
       if (this._borderLine) {
-        ctx.lineWidth = this._borderLine;
+        ctx.lineWidth = effectiveBorder;
         ctx.strokeStyle =
           "#" + this._borderColor.toString(16).padStart(6, "0");
         ctx.stroke();
@@ -1736,7 +1759,7 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
       this.addChildAt(this.gradientSprite, 0);
       this.ellipseGraphics.clear();
       this.ellipseGraphics.lineStyle(
-        this._borderLine || 0,
+        effectiveBorder || 0,
         this._borderColor || 0,
       );
       this.ellipseGraphics.beginFill(this._color, 0);
@@ -1895,8 +1918,8 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
       setScale: {
         example: "setScale(0.75)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -2018,11 +2041,12 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
     return points;
   }
   _draw() {
+    const effectiveBorder = this._effectiveStrokeWidth(this._borderLine);
     const points = this._calculatePolygonPoints();
     if (!this._gradientStops) {
       this.polygonGraphics.clear();
       this.polygonGraphics.lineStyle(
-        this._borderLine || 0,
+        effectiveBorder || 0,
         this._borderColor || 0,
       );
       if (this._color !== null) {
@@ -2040,7 +2064,7 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
     } else {
       const canvas = document.createElement("canvas");
       const diameter = this._radius * 2;
-      const padding = this._borderLine ? this._borderLine : 0;
+      const padding = effectiveBorder || 0;
       canvas.width = diameter + padding * 2;
       canvas.height = diameter + padding * 2;
       const ctx = canvas.getContext("2d");
@@ -2084,7 +2108,7 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
       ctx.closePath();
       ctx.fill();
       if (this._borderLine) {
-        ctx.lineWidth = this._borderLine;
+        ctx.lineWidth = effectiveBorder;
         ctx.strokeStyle = "#" + this._borderColor.toString(16).padStart(6, "0");
         ctx.stroke();
       }
@@ -2099,7 +2123,7 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
       this.addChildAt(this.gradientSprite, 0);
       this.polygonGraphics.clear();
       this.polygonGraphics.lineStyle(
-        this._borderLine || 0,
+        effectiveBorder || 0,
         this._borderColor || 0,
       );
       this.polygonGraphics.beginFill(this._color, 0);
@@ -7557,8 +7581,8 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
       setScale: {
         name: "setScale",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
         example: "setScale(1.5, 1.5)",
       },
@@ -10211,8 +10235,8 @@ PixiJSEdu.SimplePNG = class SimplePNG extends PIXI.Container {
       setScale: {
         name: "setScale",
         info: {
-          en: "Scales the element proportionally (1.0 = original size, 0.5 = half size, 2.0 = double size)",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße, 0.5 = halbe Größe, 2.0 = doppelte Größe)",
+          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
         example: "setScale(1.5, 1.5)",
       },
