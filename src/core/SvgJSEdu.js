@@ -2849,6 +2849,15 @@ SvgJSEdu.Polygon = class Polygon {
     board.addChild(this);
   }
 
+  // ---------- Gradient helpers ----------
+
+  _removeGradientDef() {
+    if (this._gradientDef) {
+      this._gradientDef.remove();
+      this._gradientDef = null;
+    }
+  }
+
   // ---------- Polygon points ----------
 
   _calculatePolygonPoints() {
