@@ -923,27 +923,280 @@ CodeMirror.registerHelper("lint", "javascript", customLinter);
 CodeMirror.registerHelper("hint", "custom", function (editor) {
   var cursor = editor.getCursor();
   var token = editor.getTokenAt(cursor);
+  var line = editor.getLine(cursor.line);
+  var textBefore = line.slice(0, cursor.ch);
 
-  if (token.string === ".") {
-    var line = editor.getLine(cursor.line);
-    var beforeDot = line.slice(0, token.start).trim().split(".").pop();
+  // ── 1. "new " keyword completion ──────────────────────────────────
+  var newMatch = textBefore.match(/\bnew\s+(\w*)$/);
+  if (newMatch) {
+    var typed = newMatch[1]; // partial class name typed so far
+    var fromCh = cursor.ch - typed.length;
 
+    // Collect library classes from active renderer + HtmlSvgEdu
+    var classes = [];
+    var graphicsNs = getActiveGraphicsNamespace();
+    var rendererType = getActiveRendererType();
+    var graphicsNsName = rendererType === "svg" ? "SvgJSEdu" : "PixiJSEdu";
+
+    // Classes to hide from autocomplete suggestions
+    var excludedClasses = [
+      "BoardGUI", "Component", "Particle", "Particles", "Preloader", "SpatialHash",
+    ];
+
+    if (graphicsNs) {
+      Object.keys(graphicsNs).forEach(function (key) {
+        if (typeof graphicsNs[key] === "function" && /^[A-Z]/.test(key)
+            && excludedClasses.indexOf(key) === -1) {
+          classes.push({ name: key, source: graphicsNsName, cls: graphicsNs[key] });
+        }
+      });
+    }
+    if (typeof HtmlSvgEdu !== "undefined") {
+      Object.keys(HtmlSvgEdu).forEach(function (key) {
+        if (typeof HtmlSvgEdu[key] === "function" && /^[A-Z]/.test(key)
+            && excludedClasses.indexOf(key) === -1) {
+          // Avoid duplicates (e.g. MathForm exists in both)
+          if (!classes.some(function (c) { return c.name === key; })) {
+            classes.push({ name: key, source: "HtmlSvgEdu", cls: HtmlSvgEdu[key] });
+          }
+        }
+      });
+    }
+
+    // JS built-in constructors
+    var jsBuiltins = [
+      "Array", "ArrayBuffer", "Boolean", "DataView", "Date", "Error",
+      "Float32Array", "Float64Array", "Function", "Int8Array", "Int16Array",
+      "Int32Array", "Map", "Number", "Object", "Promise", "Proxy",
+      "RegExp", "Set", "String", "Symbol", "TypeError", "Uint8Array",
+      "Uint16Array", "Uint32Array", "URL", "URLSearchParams",
+      "WeakMap", "WeakSet",
+    ];
+    jsBuiltins.forEach(function (name) {
+      classes.push({ name: name, source: "JavaScript", cls: null });
+    });
+
+    // Filter by what the user has typed so far
+    var filtered = classes.filter(function (c) {
+      return c.name.toLowerCase().indexOf(typed.toLowerCase()) === 0;
+    });
+
+    // Sort: graphics classes first, then GUI (HtmlSvgEdu), then JS builtins
+    function sourceOrder(s) {
+      if (s === "HtmlSvgEdu") return 1;
+      if (s === "JavaScript") return 2;
+      return 0; // PixiJSEdu / SvgJSEdu
+    }
+    filtered.sort(function (a, b) {
+      var diff = sourceOrder(a.source) - sourceOrder(b.source);
+      if (diff !== 0) return diff;
+      return a.name.localeCompare(b.name);
+    });
+
+    // Build hint items with constructor signature info
+    var hintList = filtered.map(function (c) {
+      var displayText = c.name;
+      var signatureText = "";
+
+      // Extract constructor params from serializationMap if available
+      if (c.cls && c.cls.serializationMap && c.cls.serializationMap.constructor) {
+        var params = Object.keys(c.cls.serializationMap.constructor);
+        signatureText = "(" + params.join(", ") + ")";
+        displayText = c.name + signatureText;
+      }
+
+      return {
+        text: c.name,
+        displayText: displayText,
+        className: c.source !== "JavaScript" ? "cm-hint-library" : "cm-hint-builtin",
+        render: function (element, self, data) {
+          // Class name (bold)
+          var nameSpan = document.createElement("span");
+          nameSpan.className = "cm-hint-classname";
+          nameSpan.textContent = c.name;
+          element.appendChild(nameSpan);
+
+          // Constructor signature
+          if (signatureText) {
+            var sigSpan = document.createElement("span");
+            sigSpan.className = "cm-hint-signature";
+            sigSpan.textContent = signatureText;
+            element.appendChild(sigSpan);
+          }
+
+          // Source badge
+          var badge = document.createElement("span");
+          badge.className = "cm-hint-badge";
+          badge.textContent = c.source;
+          element.appendChild(badge);
+        },
+      };
+    });
+
+    return {
+      list: hintList,
+      from: { line: cursor.line, ch: fromCh },
+      to: { line: cursor.line, ch: cursor.ch },
+    };
+  }
+
+  // ── 2. Dot-operator member completion ──────────────────────────────
+  // Extract the word before the dot (handles "myVar." and partial "myVar.se")
+  var dotMatch = textBefore.match(/(\w+)\.(\w*)$/);
+  if (dotMatch) {
+    var varName = dotMatch[1];
+    var partialMember = dotMatch[2]; // may be "" if cursor is right after the dot
+    var memberFromCh = cursor.ch - partialMember.length;
+
+    // Scan all lines in the editor for: let/const/var <varName> = new <ClassName>(
+    var resolvedClass = null;
+    var allCode = editor.getValue();
+    var declRegex = new RegExp(
+      "(?:const|let|var)\\s+" + varName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+      "\\s*=\\s*new\\s+(\\w+)\\s*\\(",
+    );
+    var declMatch = allCode.match(declRegex);
+    if (declMatch) {
+      var className = declMatch[1];
+
+      // Resolve the class from the active renderer namespace or HtmlSvgEdu
+      var graphicsNs = getActiveGraphicsNamespace();
+      if (graphicsNs && typeof graphicsNs[className] === "function") {
+        resolvedClass = graphicsNs[className];
+      } else if (typeof HtmlSvgEdu !== "undefined" && typeof HtmlSvgEdu[className] === "function") {
+        resolvedClass = HtmlSvgEdu[className];
+      }
+      // Handle the "Board" alias (always available at top level)
+      if (!resolvedClass && className === "Board") {
+        if (typeof Board !== "undefined") resolvedClass = Board;
+        else if (typeof BoardSVG !== "undefined") resolvedClass = BoardSVG;
+      }
+    }
+
+    if (resolvedClass) {
+      var memberHints = [];
+      var smap = resolvedClass.serializationMap;
+
+      if (smap) {
+        // Collect setters (properties)
+        if (smap.setter) {
+          Object.keys(smap.setter).forEach(function (key) {
+            var entry = smap.setter[key];
+            var info = entry.info;
+            var desc = info ? (info.de || info.en || "") : "";
+            memberHints.push({
+              name: key,
+              kind: "property",
+              example: entry.example || "",
+              desc: desc,
+            });
+          });
+        }
+
+        // Collect methods
+        if (smap.methods) {
+          Object.keys(smap.methods).forEach(function (key) {
+            var entry = smap.methods[key];
+            var info = entry.info;
+            var desc = info ? (info.de || info.en || "") : "";
+            // Extract signature from example, e.g. "setFillColor(0xff0000)" → "(0xff0000)"
+            var sig = "";
+            if (entry.example) {
+              var sigMatch = entry.example.match(/^\w+(\([^)]*\))/);
+              if (sigMatch) sig = sigMatch[1];
+            }
+            memberHints.push({
+              name: key,
+              kind: "method",
+              sig: sig,
+              example: entry.example || "",
+              desc: desc,
+            });
+          });
+        }
+      }
+
+      // Filter by partial member name typed so far
+      if (partialMember) {
+        memberHints = memberHints.filter(function (h) {
+          return h.name.toLowerCase().indexOf(partialMember.toLowerCase()) === 0;
+        });
+      }
+
+      // Sort: properties first, then methods, alphabetically within each group
+      memberHints.sort(function (a, b) {
+        var aOrd = a.kind === "property" ? 0 : 1;
+        var bOrd = b.kind === "property" ? 0 : 1;
+        if (aOrd !== bOrd) return aOrd - bOrd;
+        return a.name.localeCompare(b.name);
+      });
+
+      var hintItems = memberHints.map(function (h) {
+        return {
+          text: h.name,
+          displayText: h.kind === "method" ? h.name + (h.sig || "()") : h.name,
+          render: function (element, self, data) {
+            // Kind icon
+            var icon = document.createElement("span");
+            icon.className = "cm-hint-kind";
+            icon.textContent = h.kind === "property" ? "P" : "M";
+            icon.title = h.kind === "property" ? "Property" : "Method";
+            element.appendChild(icon);
+
+            // Member name
+            var nameSpan = document.createElement("span");
+            nameSpan.className = "cm-hint-classname";
+            nameSpan.textContent = h.name;
+            element.appendChild(nameSpan);
+
+            // Signature for methods
+            if (h.kind === "method" && h.sig) {
+              var sigSpan = document.createElement("span");
+              sigSpan.className = "cm-hint-signature";
+              sigSpan.textContent = h.sig;
+              element.appendChild(sigSpan);
+            }
+
+            // Description
+            if (h.desc) {
+              var descSpan = document.createElement("span");
+              descSpan.className = "cm-hint-desc";
+              descSpan.textContent = h.desc;
+              element.appendChild(descSpan);
+            }
+          },
+        };
+      });
+
+      if (hintItems.length > 0) {
+        return {
+          list: hintItems,
+          from: { line: cursor.line, ch: memberFromCh },
+          to: { line: cursor.line, ch: cursor.ch },
+        };
+      }
+    }
+
+    // Fallback: try eval for global objects (e.g. Math., JSON.)
     try {
-      var obj = eval(beforeDot);
-
+      var obj = eval(varName);
       if (obj) {
         var suggestions = Object.getOwnPropertyNames(obj)
           .concat(Object.keys(obj))
-          .filter((item, pos, arr) => arr.indexOf(item) === pos);
-
+          .filter(function (item, pos, arr) { return arr.indexOf(item) === pos; });
+        if (partialMember) {
+          suggestions = suggestions.filter(function (s) {
+            return s.toLowerCase().indexOf(partialMember.toLowerCase()) === 0;
+          });
+        }
         return {
           list: suggestions,
-          from: { line: cursor.line, ch: token.start + 1 },
+          from: { line: cursor.line, ch: memberFromCh },
           to: { line: cursor.line, ch: cursor.ch },
         };
       }
     } catch (e) {
-      console.warn("No valid object found:", e);
+      // no global object found — that's fine
     }
   }
 
@@ -1168,6 +1421,108 @@ style.textContent = `
 .CodeMirror-lines {
   line-height: 1.4 !important;
 }
+
+/* ── Autocomplete hint styles ────────────────────────────────────── */
+.CodeMirror-hints {
+  max-height: 260px !important;
+  min-width: 280px !important;
+  font-family: 'Consolas', 'Monaco', 'Menlo', monospace !important;
+  font-size: 13px !important;
+  border: 1px solid rgba(0,0,0,0.15) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+  padding: 4px 0 !important;
+  overflow-y: auto !important;
+}
+
+.CodeMirror-hint {
+  padding: 4px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+}
+
+li.CodeMirror-hint-active {
+  background: #4a90d9 !important;
+  color: #fff !important;
+}
+
+li.CodeMirror-hint-active .cm-hint-signature {
+  color: rgba(255,255,255,0.75) !important;
+}
+
+li.CodeMirror-hint-active .cm-hint-badge {
+  background: rgba(255,255,255,0.2) !important;
+  color: #fff !important;
+}
+
+.cm-hint-classname {
+  font-weight: 600;
+}
+
+.cm-hint-signature {
+  color: #888;
+  font-weight: 400;
+  font-size: 0.92em;
+}
+
+.cm-hint-badge {
+  margin-left: auto;
+  font-size: 0.78em;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  font-weight: 500;
+}
+
+.cm-hint-builtin .cm-hint-badge {
+  background: rgba(150, 150, 150, 0.12);
+  color: #888;
+}
+
+/* Kind indicator (P = Property, M = Method) */
+.cm-hint-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  font-size: 0.75em;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cm-hint-kind[title="Property"] {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.cm-hint-kind[title="Method"] {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+li.CodeMirror-hint-active .cm-hint-kind {
+  background: rgba(255,255,255,0.2) !important;
+  color: #fff !important;
+}
+
+.cm-hint-desc {
+  margin-left: auto;
+  font-size: 0.78em;
+  color: #888;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+li.CodeMirror-hint-active .cm-hint-desc {
+  color: rgba(255,255,255,0.7) !important;
+}
 `;
 document.head.appendChild(style);
 
@@ -1334,6 +1689,15 @@ document.addEventListener("DOMContentLoaded", () => {
   editor.on("inputRead", function (cm, changeObj) {
     if (changeObj.text[0] === ".") {
       cm.showHint();
+    }
+
+    // Trigger autocomplete after "new " (space after new keyword)
+    if (changeObj.text[0] === " " || /^[A-Za-z]$/.test(changeObj.text[0])) {
+      var cur = cm.getCursor();
+      var lineSoFar = cm.getLine(cur.line).slice(0, cur.ch);
+      if (/\bnew\s+\w*$/.test(lineSoFar)) {
+        cm.showHint({ completeSingle: false });
+      }
     }
 
     if (changeObj.text[0] === "}" || changeObj.text[0] === "]") {
