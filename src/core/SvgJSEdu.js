@@ -224,20 +224,11 @@ class SvgJSElement {
   _updateTransform() {
     if (!this._group) return;
 
-    // rotationPivot is in scaled coordinates, matching PixiJS visual-coordinate semantics
     const scaledPivotX = this._rotationPivotX * this._scaleX;
     const scaledPivotY = this._rotationPivotY * this._scaleY;
 
     const rpWorldX = this._visualX + scaledPivotX - this._pivotX;
     const rpWorldY = this._visualY + scaledPivotY - this._pivotY;
-
-    // Transform sequence:
-    // 1. translate to rotation pivot in world coordinates
-    // 2. rotate
-    // 3. translate back to object origin (in scaled coordinates)
-    //
-    // Scale is applied directly on the shape element via _applyScale(),
-    // not here, matching PixiJS sprite re-render behavior.
 
     let transform = `translate(${rpWorldX}, ${rpWorldY})`;
 
@@ -245,13 +236,18 @@ class SvgJSElement {
       transform += ` rotate(${this._rotationDegrees})`;
     }
 
-    transform += ` translate(${-scaledPivotX}, ${-scaledPivotY})`;
+    if (this._scaleX !== 1 || this._scaleY !== 1) {
+      transform += ` scale(${this._scaleX}, ${this._scaleY})`;
+    }
+
+    transform += ` translate(${-this._rotationPivotX}, ${-this._rotationPivotY})`;
 
     this._group.attr("transform", transform);
   }
 
   _applyScale() {
-    // Overridden by subclasses
+    // Overridden by subclasses (e.g. SimpleSVG, SimplePNG)
+    // For normal shapes, scaling is handled via _updateTransform().
   }
 
   _applyNonScalingStroke() {
@@ -732,10 +728,10 @@ SvgJSEdu.Group = class Group extends SvgJSElement {
         },
       },
       setScale: {
-        example: "setScale(0.75)",
+        example: "setScale(1.5, 1.5)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -1702,10 +1698,10 @@ SvgJSEdu.Circle = class Circle extends SvgJSElement {
         },
       },
       setScale: {
-        example: "setScale(0.75)",
+        example: "setScale(1.5, 1.5)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -2065,10 +2061,10 @@ SvgJSEdu.Ellipse = class Ellipse extends SvgJSElement {
         },
       },
       setScale: {
-        example: "setScale(0.75)",
+        example: "setScale(1.5, 1.5)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -2694,10 +2690,10 @@ SvgJSEdu.Polygon = class Polygon {
         },
       },
       setScale: {
-        example: "setScale(0.75)",
+        example: "setScale(1.5, 1.5)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -3046,12 +3042,14 @@ SvgJSEdu.Polygon = class Polygon {
     this._draw();
   }
 
-  setScale(factor, scaleStrokes = false) {
-    this._scaleX = factor;
-    this._scaleY = factor;
+  setScale(scaleX, scaleY, scaleStrokes = false) {
+    this._scaleX = scaleX;
+    this._scaleY = scaleY !== undefined ? scaleY : scaleX;
     this._scaleStrokes = scaleStrokes;
+    this._applyScale();
     this._updateTransform();
     this._applyNonScalingStroke();
+    return this;
   }
 
   _applyNonScalingStroke() {
@@ -8409,6 +8407,28 @@ _loadSVG() {
     return this.getOriginalHeight() * this._scaleY;
   }
 
+  // SimpleSVG handles scaling via element resize in _applyScale(),
+  // so _updateTransform() must NOT include scale() in the transform.
+  _updateTransform() {
+    if (!this._group) return;
+
+    const scaledPivotX = this._rotationPivotX * this._scaleX;
+    const scaledPivotY = this._rotationPivotY * this._scaleY;
+
+    const rpWorldX = this._visualX + scaledPivotX - this._pivotX;
+    const rpWorldY = this._visualY + scaledPivotY - this._pivotY;
+
+    let transform = `translate(${rpWorldX}, ${rpWorldY})`;
+
+    if (this._rotationDegrees !== 0) {
+      transform += ` rotate(${this._rotationDegrees})`;
+    }
+
+    transform += ` translate(${-scaledPivotX}, ${-scaledPivotY})`;
+
+    this._group.attr("transform", transform);
+  }
+
   _applyScale() {
     if (this._svgNestedGroup) {
       const dims = this._originalDimensions;
@@ -8582,6 +8602,28 @@ SvgJSEdu.SimplePNG = class SimplePNG extends SvgJSElement {
 
   getCurrentHeight() {
     return this.getOriginalHeight() * this._scaleY;
+  }
+
+  // SimplePNG handles scaling via element resize in _applyScale(),
+  // so _updateTransform() must NOT include scale() in the transform.
+  _updateTransform() {
+    if (!this._group) return;
+
+    const scaledPivotX = this._rotationPivotX * this._scaleX;
+    const scaledPivotY = this._rotationPivotY * this._scaleY;
+
+    const rpWorldX = this._visualX + scaledPivotX - this._pivotX;
+    const rpWorldY = this._visualY + scaledPivotY - this._pivotY;
+
+    let transform = `translate(${rpWorldX}, ${rpWorldY})`;
+
+    if (this._rotationDegrees !== 0) {
+      transform += ` rotate(${this._rotationDegrees})`;
+    }
+
+    transform += ` translate(${-scaledPivotX}, ${-scaledPivotY})`;
+
+    this._group.attr("transform", transform);
   }
 
   _applyScale() {

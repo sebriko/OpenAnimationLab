@@ -166,9 +166,15 @@ class PixiJSElement extends PIXI.Container {
     return this;
   }
 
-  setScale(factor, scaleStrokes = false) {
+  setScale(scaleX, scaleY, scaleStrokes = false) {
+    if (typeof scaleY === "boolean") {
+      scaleStrokes = scaleY;
+      scaleY = scaleX;
+    } else if (scaleY === undefined) {
+      scaleY = scaleX;
+    }
     this._scaleStrokes = scaleStrokes;
-    this.scale.set(factor);
+    this.scale.set(scaleX, scaleY);
     this._updatePosition();
     if (typeof this._draw === "function") {
       this._draw();
@@ -271,10 +277,10 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
         },
       },
       setScale: {
-        example: "setScale(0.75)",
+        example: "setScale(1.5, 1.5)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -540,9 +546,15 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
     return this;
   }
 
-  setScale(factor, scaleStrokes = false) {
+  setScale(scaleX, scaleY, scaleStrokes = false) {
+    if (typeof scaleY === "boolean") {
+      scaleStrokes = scaleY;
+      scaleY = scaleX;
+    } else if (scaleY === undefined) {
+      scaleY = scaleX;
+    }
     this._scaleStrokes = scaleStrokes;
-    this.scale.set(factor);
+    this.scale.set(scaleX, scaleY);
     this._updatePosition();
     this.children.forEach((child) => {
       if (child._scaleStrokes !== undefined) {
@@ -727,10 +739,10 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
         },
       },
       setScale: {
-        example: "setScale(0.75)",
+        example: "setScale(1.5, 1.5)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -1223,10 +1235,10 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
         },
       },
       setScale: {
-        example: "setScale(0.75)",
+        example: "setScale(1.5, 1.5)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -1562,10 +1574,10 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
         },
       },
       setScale: {
-        example: "setScale(0.75)",
+        example: "setScale(1.5, 1.5)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -1916,10 +1928,10 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
         },
       },
       setScale: {
-        example: "setScale(0.75)",
+        example: "setScale(1.5, 1.5)",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
       },
       setAlpha: {
@@ -7581,8 +7593,8 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
       setScale: {
         name: "setScale",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
         example: "setScale(1.5, 1.5)",
       },
@@ -10235,8 +10247,8 @@ PixiJSEdu.SimplePNG = class SimplePNG extends PIXI.Container {
       setScale: {
         name: "setScale",
         info: {
-          en: "Scales the element proportionally (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
-          de: "Skaliert das Element proportional (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
         },
         example: "setScale(1.5, 1.5)",
       },
