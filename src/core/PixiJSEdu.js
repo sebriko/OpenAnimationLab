@@ -3366,7 +3366,7 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
       en: "https://www.educational-animation.org",
     },
     example:
-      "let mySplinePath = new SplinePath([[0,0], [100,50], [200,100]], 0xff0000, 3);",
+      "let mySplinePath = new SplinePath([[0,0], [100,50], [200,100]], 0xff0000, 3, 0);",
     constructor: {
       points: {
         name: "points",
@@ -3387,6 +3387,13 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
         info: {
           en: "Line thickness in pixels",
           de: "Linienstärke in Pixeln",
+        },
+      },
+      tension: {
+        name: "tension",
+        info: {
+          en: "Tension of the spline curve (0 = smooth, 1 = straight lines)",
+          de: "Spannung der Spline-Kurve (0 = glatt, 1 = gerade Linien)",
         },
       },
     },
@@ -3488,6 +3495,14 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
           de: "Setzt die Linienstärke der Spline",
         },
         example: "setThickness(5)",
+      },
+      setTension: {
+        name: "setTension",
+        example: "setTension(0.5)",
+        info: {
+          en: "Sets the tension of the spline curve (0 = smooth, 1 = straight lines)",
+          de: "Setzt die Spannung der Spline-Kurve (0 = glatt, 1 = gerade Linien)",
+        },
       },
       markAt: {
         name: "markAt",
@@ -3634,11 +3649,12 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
       },
     },
   };
-  constructor(points = [], color = 0x000000, thickness = 2) {
+  constructor(points = [], color = 0x000000, thickness = 2, tension = 0) {
     super();
     this.points = points;
     this._color = color;
     this._thickness = thickness;
+    this._tension = tension;
     this.markedX = 0;
     this.markedY = 0;
     this.markerInitialized = false;
@@ -3730,6 +3746,10 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
   }
   setColor(color) {
     this._color = color;
+    this._draw();
+  }
+  setTension(tension) {
+    this._tension = tension;
     this._draw();
   }
   setThickness(thickness) {
@@ -3916,6 +3936,7 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
       graphics.beginFill(0x000000, 0);
     }
     if (this.points.length > 1) {
+      const f = (1 - this._tension) / 6;
       const [x0, y0] = this.points[0];
       graphics.moveTo(x0, y0);
       for (let i = 0; i < this.points.length - 1; i++) {
@@ -3923,10 +3944,10 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
         const p1 = this.points[i];
         const p2 = this.points[i + 1];
         const p3 = this.points[i + 2] || p2;
-        const controlX1 = p1[0] + (p2[0] - p0[0]) / 6;
-        const controlY1 = p1[1] + (p2[1] - p0[1]) / 6;
-        const controlX2 = p2[0] - (p3[0] - p1[0]) / 6;
-        const controlY2 = p2[1] - (p3[1] - p1[1]) / 6;
+        const controlX1 = p1[0] + (p2[0] - p0[0]) * f;
+        const controlY1 = p1[1] + (p2[1] - p0[1]) * f;
+        const controlX2 = p2[0] - (p3[0] - p1[0]) * f;
+        const controlY2 = p2[1] - (p3[1] - p1[1]) * f;
         graphics.bezierCurveTo(
           controlX1,
           controlY1,
@@ -3956,15 +3977,16 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
   getY(x) {
     if (this.points.length < 2) return null;
     const sortedPoints = [...this.points].sort((a, b) => a[0] - b[0]);
+    const f = (1 - this._tension) / 6;
     for (let i = 0; i < sortedPoints.length - 1; i++) {
       let p0 = sortedPoints[i === 0 ? i : i - 1];
       let p1 = sortedPoints[i];
       let p2 = sortedPoints[i + 1];
       let p3 = sortedPoints[i + 2] || p2;
-      const controlX1 = p1[0] + (p2[0] - p0[0]) / 6;
-      const controlY1 = p1[1] + (p2[1] - p0[1]) / 6;
-      const controlX2 = p2[0] - (p3[0] - p1[0]) / 6;
-      const controlY2 = p2[1] - (p3[1] - p1[1]) / 6;
+      const controlX1 = p1[0] + (p2[0] - p0[0]) * f;
+      const controlY1 = p1[1] + (p2[1] - p0[1]) * f;
+      const controlX2 = p2[0] - (p3[0] - p1[0]) * f;
+      const controlY2 = p2[1] - (p3[1] - p1[1]) * f;
       if (p1[0] <= x && x <= p2[0]) {
         let t = 0.5;
         const tolerance = 0.0001;
@@ -3994,15 +4016,16 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
     if (this.points.length < 2) return null;
     const results = [];
     const sortedPoints = [...this.points].sort((a, b) => a[0] - b[0]);
+    const f = (1 - this._tension) / 6;
     for (let i = 0; i < sortedPoints.length - 1; i++) {
       let p0 = sortedPoints[i === 0 ? i : i - 1];
       let p1 = sortedPoints[i];
       let p2 = sortedPoints[i + 1];
       let p3 = sortedPoints[i + 2] || p2;
-      const controlX1 = p1[0] + (p2[0] - p0[0]) / 6;
-      const controlY1 = p1[1] + (p2[1] - p0[1]) / 6;
-      const controlX2 = p2[0] - (p3[0] - p1[0]) / 6;
-      const controlY2 = p2[1] - (p3[1] - p1[1]) / 6;
+      const controlX1 = p1[0] + (p2[0] - p0[0]) * f;
+      const controlY1 = p1[1] + (p2[1] - p0[1]) * f;
+      const controlX2 = p2[0] - (p3[0] - p1[0]) * f;
+      const controlY2 = p2[1] - (p3[1] - p1[1]) * f;
       const minY = Math.min(p1[1], p2[1]);
       const maxY = Math.max(p1[1], p2[1]);
       const bezierMinY = Math.min(minY, controlY1, controlY2);

@@ -4367,7 +4367,7 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
       en: "https://www.educational-animation.org",
     },
     example:
-      "let mySplinePath = new SplinePath([[0,0], [100,50], [200,100]], 0xff0000, 3);",
+      "let mySplinePath = new SplinePath([[0,0], [100,50], [200,100]], 0xff0000, 3, 0);",
     constructor: {
       points: {
         name: "points",
@@ -4386,6 +4386,13 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
       thickness: {
         name: "thickness",
         info: { en: "Line thickness in pixels", de: "Linienstärke in Pixeln" },
+      },
+      tension: {
+        name: "tension",
+        info: {
+          en: "Tension of the spline curve (0 = smooth, 1 = straight lines)",
+          de: "Spannung der Spline-Kurve (0 = glatt, 1 = gerade Linien)",
+        },
       },
     },
     setter: {
@@ -4445,6 +4452,14 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
         info: {
           en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
           de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
+        },
+      },
+      setTension: {
+        name: "setTension",
+        example: "setTension(0.5)",
+        info: {
+          en: "Sets the tension of the spline curve (0 = smooth, 1 = straight lines)",
+          de: "Setzt die Spannung der Spline-Kurve (0 = glatt, 1 = gerade Linien)",
         },
       },
       setPoints: {
@@ -4553,10 +4568,16 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
     },
   };
 
-  constructor(points = [], color = 0x000000, thickness = 2) {
+  constructor(points = [], color = 0x000000, thickness = 2, tension = 0) {
     super(points, color, thickness);
+    this._tension = tension;
     this._draw();
     BoardSVG[INSTANCE_KEY].addChild(this);
+  }
+
+  setTension(tension) {
+    this._tension = tension;
+    this._draw();
   }
 
   _draw() {
@@ -4569,6 +4590,7 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
 
     // Catmull-Rom to cubic Bézier conversion
     const pts = this.points;
+    const f = (1 - this._tension) / 6;
     let d = `M ${pts[0][0]},${pts[0][1]}`;
 
     for (let i = 0; i < pts.length - 1; i++) {
@@ -4577,10 +4599,10 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
       const p2 = pts[i + 1];
       const p3 = pts[i + 2] || p2;
 
-      const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
-      const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
-      const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
-      const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+      const cp1x = p1[0] + (p2[0] - p0[0]) * f;
+      const cp1y = p1[1] + (p2[1] - p0[1]) * f;
+      const cp2x = p2[0] - (p3[0] - p1[0]) * f;
+      const cp2y = p2[1] - (p3[1] - p1[1]) * f;
 
       d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2[0]},${p2[1]}`;
     }
@@ -4615,6 +4637,7 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
   getY(x) {
     if (this.points.length < 2) return null;
     const sortedPoints = [...this.points].sort((a, b) => a[0] - b[0]);
+    const f = (1 - this._tension) / 6;
 
     for (let i = 0; i < sortedPoints.length - 1; i++) {
       const p0 = sortedPoints[i === 0 ? i : i - 1];
@@ -4622,10 +4645,10 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
       const p2 = sortedPoints[i + 1];
       const p3 = sortedPoints[i + 2] || p2;
 
-      const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
-      const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
-      const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
-      const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+      const cp1x = p1[0] + (p2[0] - p0[0]) * f;
+      const cp1y = p1[1] + (p2[1] - p0[1]) * f;
+      const cp2x = p2[0] - (p3[0] - p1[0]) * f;
+      const cp2y = p2[1] - (p3[1] - p1[1]) * f;
 
       if (p1[0] <= x && x <= p2[0]) {
         // Binary search for parameter t
@@ -4649,6 +4672,7 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
     if (this.points.length < 2) return null;
     const results = [];
     const sortedPoints = [...this.points].sort((a, b) => a[0] - b[0]);
+    const f = (1 - this._tension) / 6;
 
     for (let i = 0; i < sortedPoints.length - 1; i++) {
       const p0 = sortedPoints[i === 0 ? i : i - 1];
@@ -4656,10 +4680,10 @@ SvgJSEdu.SplinePath = class SplinePath extends PathBase {
       const p2 = sortedPoints[i + 1];
       const p3 = sortedPoints[i + 2] || p2;
 
-      const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
-      const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
-      const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
-      const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+      const cp1x = p1[0] + (p2[0] - p0[0]) * f;
+      const cp1y = p1[1] + (p2[1] - p0[1]) * f;
+      const cp2x = p2[0] - (p3[0] - p1[0]) * f;
+      const cp2y = p2[1] - (p3[1] - p1[1]) * f;
 
       // Newton-Raphson search with multiple start points to find all roots
       const startPoints = [0, 0.25, 0.5, 0.75, 1];
