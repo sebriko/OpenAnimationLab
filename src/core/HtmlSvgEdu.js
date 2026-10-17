@@ -3636,10 +3636,10 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       setHyphenation: {
         name: "setHyphenation",
         info: {
-          en: "Enables or disables automatic hyphenation (only effective when a text box width is set)",
-          de: "Aktiviert oder deaktiviert die automatische Silbentrennung (nur wirksam wenn eine Textfeld-Breite gesetzt ist)",
+          en: "Enables or disables automatic hyphenation. Optional: language code (e.g. 'de', 'en') for linguistically correct syllable breaks using the browser's built-in hyphenation dictionary (only effective when a text box width is set)",
+          de: "Aktiviert oder deaktiviert die automatische Silbentrennung. Optional: Sprachkürzel (z.B. 'de', 'en') für linguistisch korrekte Silbentrennung über das browsereigene Silbentrennungs-Wörterbuch (nur wirksam wenn eine Textfeld-Breite gesetzt ist)",
         },
-        example: "setHyphenation(true)",
+        example: 'setHyphenation(true, "de")',
       },
     },
   };
@@ -3659,6 +3659,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     this._lineHeightFactor = 1.2;
     this._letterSpacing = 0;
     this._hyphenate = false;
+    this._hyphenLang = null;
     this._boxWidth = null;
     this._boxHeight = null;
     this._wrappedLines = null;
@@ -3763,6 +3764,20 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       Math.max(0, plainText.length - 1) * this._letterSpacing
     );
   }
+  _measureTextWidth(text) {
+    const plainText = text.replace(/<[^>]+>/g, "");
+    if (!HtmlSvgEdu.Text._measureCtx) {
+      const canvas = document.createElement("canvas");
+      HtmlSvgEdu.Text._measureCtx = canvas.getContext("2d");
+    }
+    const ctx = HtmlSvgEdu.Text._measureCtx;
+    ctx.font = this._fontSize + "px " + this._font;
+    let width = ctx.measureText(plainText).width;
+    if (this._letterSpacing && plainText.length > 1) {
+      width += (plainText.length - 1) * this._letterSpacing;
+    }
+    return width;
+  }
   _getWrappedLines() {
     const hardLines = this._text.split("\\n");
     const result = [];
@@ -3778,33 +3793,88 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     const words = text.split(" ");
     const lines = [];
     let currentLine = "";
+    const measure = this._hyphenate
+      ? (t) => this._measureTextWidth(t)
+      : (t) => this._estimateTextWidth(t);
+
     for (let i = 0; i < words.length; i++) {
       const word = words[i];
       const testLine = currentLine ? currentLine + " " + word : word;
-      if (this._estimateTextWidth(testLine) <= availWidth) {
+
+      if (measure(testLine) <= availWidth) {
         currentLine = testLine;
+        continue;
+      }
+
+      if (this._hyphenate) {
+        // Try to hyphenate the word to fill the remaining space on the current line
+        const prefix = currentLine ? currentLine + " " : "";
+        const remainingWidth = availWidth - measure(prefix);
+        let hyphenated = false;
+
+        if (remainingWidth >= measure("xx-")) {
+          const hyphenPos = this._findHyphenPoint(word, remainingWidth);
+          if (
+            hyphenPos > 0 &&
+            measure(word.substring(0, hyphenPos) + "-") <= remainingWidth
+          ) {
+            lines.push(prefix + word.substring(0, hyphenPos) + "-");
+            currentLine = "";
+            hyphenated = true;
+            let rest = word.substring(hyphenPos);
+            while (rest.length > 0) {
+              if (measure(rest) <= availWidth) {
+                currentLine = rest;
+                rest = "";
+              } else {
+                const sp = this._findHyphenPoint(rest, availWidth);
+                if (sp > 0) {
+                  lines.push(rest.substring(0, sp) + "-");
+                  rest = rest.substring(sp);
+                } else {
+                  currentLine = rest;
+                  rest = "";
+                }
+              }
+            }
+          }
+        }
+
+        if (!hyphenated) {
+          // Could not hyphenate on current line — move word to new line
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = "";
+          }
+          if (measure(word) <= availWidth) {
+            currentLine = word;
+          } else {
+            // Word too long for a full line — force-hyphenate
+            let rest = word;
+            while (rest.length > 0) {
+              if (measure(rest) <= availWidth) {
+                currentLine = rest;
+                rest = "";
+              } else {
+                const sp = this._findHyphenPoint(rest, availWidth);
+                if (sp > 0) {
+                  lines.push(rest.substring(0, sp) + "-");
+                  rest = rest.substring(sp);
+                } else {
+                  currentLine = rest;
+                  rest = "";
+                }
+              }
+            }
+          }
+        }
       } else {
+        // No hyphenation — original behavior
         if (currentLine) {
           lines.push(currentLine);
           currentLine = "";
         }
-        if (this._estimateTextWidth(word) <= availWidth) {
-          currentLine = word;
-        } else if (this._hyphenate) {
-          let remaining = word;
-          while (remaining.length > 0) {
-            if (this._estimateTextWidth(remaining) <= availWidth) {
-              currentLine = remaining;
-              remaining = "";
-            } else {
-              const splitPos = this._findHyphenPoint(remaining, availWidth);
-              lines.push(remaining.substring(0, splitPos) + "-");
-              remaining = remaining.substring(splitPos);
-            }
-          }
-        } else {
-          currentLine = word;
-        }
+        currentLine = word;
       }
     }
     if (currentLine) {
@@ -3813,13 +3883,20 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     return lines.length > 0 ? lines : [""];
   }
   _findHyphenPoint(word, maxWidth) {
+    if (this._hyphenLang) {
+      const browserPoint = this._findBrowserHyphenPoint(word, maxWidth);
+      if (browserPoint > 0) return browserPoint;
+    }
+    // Fallback: vowel-based heuristic
+    const measure = this._hyphenate
+      ? (t) => this._measureTextWidth(t)
+      : (t) => this._estimateTextWidth(t);
     const vowels = "aeiouäöüAEIOUÄÖÜ";
     const isVowel = (c) => vowels.includes(c);
     let bestSyllablePos = -1;
     let lastFitPos = -1;
     for (let i = 2; i < word.length - 1; i++) {
-      if (this._estimateTextWidth(word.substring(0, i) + "-") > maxWidth)
-        break;
+      if (measure(word.substring(0, i) + "-") > maxWidth) break;
       lastFitPos = i;
       if (i >= 2 && i < word.length - 2) {
         if (!isVowel(word[i - 1]) && isVowel(word[i])) {
@@ -3836,6 +3913,62 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     }
     const splitPos = bestSyllablePos > 0 ? bestSyllablePos : lastFitPos;
     return splitPos > 0 ? splitPos : Math.max(2, Math.floor(word.length / 2));
+  }
+  _findBrowserHyphenPoint(word, maxWidth) {
+    const div = document.createElement("div");
+    div.style.position = "absolute";
+    div.style.visibility = "hidden";
+    div.style.top = "-9999px";
+    div.style.left = "-9999px";
+    div.style.whiteSpace = "normal";
+    div.style.width = maxWidth + "px";
+    div.style.fontFamily = this._font;
+    div.style.fontSize = this._fontSize + "px";
+    div.style.letterSpacing = this._letterSpacing + "px";
+    div.style.lineHeight = this._fontSize * this._lineHeightFactor + "px";
+    div.style.hyphens = "auto";
+    div.style.webkitHyphens = "auto";
+    div.style.msHyphens = "auto";
+    div.style.wordWrap = "break-word";
+    div.style.overflowWrap = "break-word";
+    div.lang = this._hyphenLang;
+    div.textContent = word;
+    document.body.appendChild(div);
+
+    const lineHeight = this._fontSize * this._lineHeightFactor;
+    if (div.offsetHeight <= lineHeight * 1.3) {
+      document.body.removeChild(div);
+      return -1;
+    }
+
+    const textNode = div.firstChild;
+    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+      document.body.removeChild(div);
+      return -1;
+    }
+
+    const range = document.createRange();
+    let breakPoint = -1;
+    let firstTop = null;
+
+    for (let i = 0; i < word.length; i++) {
+      range.setStart(textNode, i);
+      range.setEnd(textNode, i + 1);
+      const rects = range.getClientRects();
+      if (rects.length === 0) continue;
+
+      if (firstTop === null) {
+        firstTop = rects[0].top;
+      }
+
+      if (rects[0].top > firstTop + 2) {
+        breakPoint = i;
+        break;
+      }
+    }
+
+    document.body.removeChild(div);
+    return breakPoint > 1 ? breakPoint : -1;
   }
   _addStyles() {
     const style = document.createElementNS(
@@ -4028,8 +4161,9 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     this._letterSpacing = px;
     this._refreshText();
   }
-  setHyphenation(enabled) {
+  setHyphenation(enabled, lang) {
     this._hyphenate = enabled;
+    this._hyphenLang = enabled && lang ? lang : null;
     if (this._boxWidth !== null) {
       this._refreshText();
     }
