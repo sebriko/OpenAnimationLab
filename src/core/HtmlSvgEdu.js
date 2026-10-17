@@ -5378,3 +5378,827 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     super.remove();
   }
 };
+
+// ============================================================================
+// HtmlRectangle
+// ============================================================================
+
+HtmlSvgEdu.HtmlRectangle = class HtmlRectangle extends HtmlSvgEdu.Component {
+  static serializationMap = {
+    description: {
+      de: "Rechteckiges grafisches Element (HTML/CSS-basiert)",
+      en: "Rectangular graphic element (HTML/CSS-based)",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example: "let myRectangle = new HtmlRectangle(100, 50, 0xff0000, 0x000000, 2);",
+    constructor: {
+      width: {
+        name: "width",
+        info: { en: "Width of the rectangle", de: "Breite des Rechtecks" },
+      },
+      height: {
+        name: "height",
+        info: { en: "Height of the rectangle", de: "Höhe des Rechtecks" },
+      },
+      fillColor: {
+        name: "fillColor",
+        info: {
+          en: "Fill color in hexadecimal format (e.g. 0xff0000)",
+          de: "Füllfarbe im Hexadezimalformat (z.B. 0xff0000)",
+        },
+      },
+      lineColor: {
+        name: "lineColor",
+        info: {
+          en: "Line color in hexadecimal format",
+          de: "Linienfarbe im Hexadezimalformat",
+        },
+      },
+      lineThickness: {
+        name: "lineThickness",
+        info: {
+          en: "Line thickness in pixels",
+          de: "Linienstärke in Pixeln",
+        },
+      },
+    },
+    setter: {
+      x: {
+        name: "x",
+        info: {
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
+        },
+        example: "x = 100",
+      },
+      y: {
+        name: "y",
+        info: {
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
+        },
+        example: "y = 200",
+      },
+      rotation: {
+        name: "rotation",
+        info: {
+          en: "Rotation of the element in degrees",
+          de: "Drehung des Elements in Grad",
+        },
+        example: "rotation = 45",
+      },
+      visible: {
+        name: "visible",
+        info: {
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
+        },
+        example: "visible = true",
+      },
+    },
+    methods: {
+      setFillColor: {
+        example: "setFillColor(0xff0000)",
+        info: {
+          en: "Sets the fill color of the rectangle",
+          de: "Setzt die Füllfarbe des Rechtecks",
+        },
+      },
+      setLineColor: {
+        example: "setLineColor(0x000000)",
+        info: {
+          en: "Sets the line color of the rectangle",
+          de: "Setzt die Linienfarbe des Rechtecks",
+        },
+      },
+      setLineThickness: {
+        example: "setLineThickness(2)",
+        info: {
+          en: "Sets the line thickness",
+          de: "Setzt die Linienstärke",
+        },
+      },
+      setBorder: {
+        example: "setBorder(0xff0000, 2)",
+        info: {
+          en: "Sets a border (color in hexadecimal format, thickness in pixels)",
+          de: "Setzt einen Rahmen (Farbe im Hexadezimalformat, Dicke in Pixeln)",
+        },
+      },
+      setWidth: {
+        example: "setWidth(200)",
+        info: {
+          en: "Sets the width of the rectangle",
+          de: "Setzt die Breite des Rechtecks",
+        },
+      },
+      setHeight: {
+        example: "setHeight(100)",
+        info: {
+          en: "Sets the height of the rectangle",
+          de: "Setzt die Höhe des Rechtecks",
+        },
+      },
+      setCornerRadius: {
+        example: "setCornerRadius(10)",
+        info: {
+          en: "Sets the corner radius for rounded rectangles",
+          de: "Setzt den Eckenradius für abgerundete Rechtecke",
+        },
+      },
+      setRoundedCorners: {
+        example: "setRoundedCorners(10, true, true, false, false)",
+        info: {
+          en: "Sets rounded corners with radius. Optional: specify which corners (topLeft, topRight, bottomRight, bottomLeft)",
+          de: "Setzt abgerundete Ecken mit Radius. Optional: einzelne Ecken angeben (obenLinks, obenRechts, untenRechts, untenLinks)",
+        },
+      },
+      setTransformationPoint: {
+        example: "setTransformationPoint(0, 0)",
+        info: {
+          en: "Sets the anchor point for positioning (x, y in pixels relative to the element)",
+          de: "Setzt den Ankerpunkt für die Positionierung (x, y in Pixeln relativ zum Element)",
+        },
+      },
+      setRotationPoint: {
+        example: "setRotationPoint(0, 0)",
+        info: {
+          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
+        },
+      },
+      setGradient: {
+        example:
+          'setGradient("linear", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])',
+        info: {
+          en: "Creates a linear or radial color gradient. Parameters: type ('linear' or 'radial'), array of color stops [{offset: 0-1, color: '#hex'}], optional angle in degrees for linear gradients",
+          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ ('linear' oder 'radial'), Array von Farbstopps [{offset: 0-1, color: '#hex'}], optionaler Winkel in Grad für lineare Verläufe",
+        },
+      },
+      setScale: {
+        example: "setScale(1.5, 1.5)",
+        info: {
+          en: "Scales the element (scaleX, scaleY). Use equal values for proportional scaling (1.0 = original size). Strokes are not scaled by default. Pass true as last parameter to scale strokes too.",
+          de: "Skaliert das Element (scaleX, scaleY). Gleiche Werte für proportionale Skalierung verwenden (1.0 = Originalgröße). Konturen werden standardmäßig nicht mitskaliert. Übergebe true als letzten Parameter, um Konturen mitzuskalieren.",
+        },
+      },
+      setAlpha: {
+        example: "setAlpha(0.5)",
+        info: {
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
+        },
+      },
+      onClick: {
+        example:
+          'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+        info: {
+          en: "Defines a function to execute when the element is clicked.",
+          de: "Legt fest, welche Funktion beim Klick auf das Element ausgeführt wird.",
+        },
+      },
+      onMouseDown: {
+        example:
+          'onMouseDown(handleMouseDown); \n\nfunction handleMouseDown() { console.log("Mouse button pressed"); }',
+        info: {
+          en: "Defines a function to execute when the mouse button is pressed down on the element.",
+          de: "Legt fest, welche Funktion beim Drücken der Maustaste auf dem Element ausgeführt wird.",
+        },
+      },
+      onMouseUp: {
+        example:
+          'onMouseUp(handleMouseUp); \n\nfunction handleMouseUp() { console.log("Mouse button released"); }',
+        info: {
+          en: "Defines a function to execute when the mouse button is released on the element.",
+          de: "Legt fest, welche Funktion beim Loslassen der Maustaste auf dem Element ausgeführt wird.",
+        },
+      },
+      onMouseOver: {
+        example:
+          'onMouseOver(handleMouseOver); \n\nfunction handleMouseOver() { console.log("Mouse entered element"); }',
+        info: {
+          en: "Defines a function to execute when the mouse cursor enters the element.",
+          de: "Legt fest, welche Funktion beim Überfahren des Elements mit der Maus ausgeführt wird.",
+        },
+      },
+      onMouseOut: {
+        example:
+          'onMouseOut(handleMouseOut); \n\nfunction handleMouseOut() { console.log("Mouse left element"); }',
+        info: {
+          en: "Defines a function to execute when the mouse cursor leaves the element.",
+          de: "Legt fest, welche Funktion beim Verlassen des Elements mit der Maus ausgeführt wird.",
+        },
+      },
+      setDragging: {
+        example: "setDragging(0, 0, 1280, 720)",
+        info: {
+          en: "Enables dragging within the specified bounds (x1, y1, x2, y2 in pixels)",
+          de: "Ermöglicht das Ziehen innerhalb der angegebenen Grenzen (x1, y1, x2, y2 in Pixeln)",
+        },
+      },
+      onDragStart: {
+        example:
+          'onDragStart(handleDragStart); \n\nfunction handleDragStart() { console.log("Started dragging element"); }',
+        info: {
+          en: "Sets a callback function that is executed when dragging starts",
+          de: "Setzt eine Callback-Funktion, die beim Start des Ziehens ausgeführt wird",
+        },
+      },
+      onDrag: {
+        example:
+          'onDrag(handleDrag); \n\nfunction handleDrag() { console.log("Element is being dragged"); }',
+        info: {
+          en: "Sets a callback function that is executed while the element is being dragged",
+          de: "Setzt eine Callback-Funktion, die während des Ziehens des Elements ausgeführt wird",
+        },
+      },
+      onDragEnd: {
+        example:
+          'onDragEnd(handleDragEnd); \n\nfunction handleDragEnd() { console.log("Stopped dragging element"); }',
+        info: {
+          en: "Sets a callback function that is executed when dragging ends",
+          de: "Setzt eine Callback-Funktion, die beim Ende des Ziehens ausgeführt wird",
+        },
+      },
+    },
+  };
+
+  constructor(
+    width = 100,
+    height = 50,
+    fillColor = null,
+    lineColor = null,
+    lineThickness = 0,
+  ) {
+    super();
+    this._width = width;
+    this._height = height;
+    this._fillColor = fillColor;
+    this._lineColor = lineColor;
+    this._lineThickness = lineThickness;
+    this._cornerRadius = 0;
+    this._roundedCorners = {
+      topLeft: true,
+      topRight: true,
+      bottomRight: true,
+      bottomLeft: true,
+    };
+    this._gradientType = null;
+    this._gradientStops = null;
+    this._gradientAngle = 0;
+    this._alpha = 1.0;
+    this._scaleX = 1;
+    this._scaleY = 1;
+    this._scaleStrokes = false;
+    this._rotationDegrees = 0;
+    this._pivotX = 0;
+    this._pivotY = 0;
+    this._rotationPivotX = 0;
+    this._rotationPivotY = 0;
+
+    this._clickHandler = null;
+    this._mouseDownHandler = null;
+    this._mouseUpHandler = null;
+    this._mouseOverHandler = null;
+    this._mouseOutHandler = null;
+
+    this._draggable = false;
+    this._dragConstraints = null;
+    this._isDragging = false;
+    this._dragData = null;
+    this._dragStartCallback = null;
+    this._dragCallback = null;
+    this._dragEndCallback = null;
+    this._boundDragMove = null;
+    this._boundDragEnd = null;
+
+    this._createElement("div");
+    this._element.style.boxSizing = "border-box";
+    this._element.style.pointerEvents = "auto";
+    this._draw();
+  }
+
+  // ---------- Internal rendering ----------
+
+  _draw() {
+    if (!this._element) return;
+    const el = this._element;
+
+    el.style.width = this._width + "px";
+    el.style.height = this._height + "px";
+
+    // Fill / Gradient
+    if (this._gradientStops) {
+      el.style.background = this._buildCssGradient();
+    } else if (this._fillColor !== null && this._fillColor !== undefined) {
+      el.style.background = this._hexToCSS(this._fillColor);
+    } else {
+      el.style.background = "none";
+    }
+
+    // Border
+    if (this._lineColor !== null && this._lineThickness > 0) {
+      const effectiveWidth = this._scaleStrokes
+        ? this._lineThickness
+        : this._lineThickness;
+      el.style.border =
+        effectiveWidth + "px solid " + this._hexToCSS(this._lineColor);
+    } else {
+      el.style.border = "none";
+    }
+
+    // Corner radius
+    this._applyCornerRadius();
+
+    // Alpha
+    el.style.opacity = this._alpha;
+
+    // Transform
+    this._updateTransform();
+  }
+
+  _buildCssGradient() {
+    if (!this._gradientStops) return "none";
+    const stops = this._gradientStops
+      .map((s) => s.color + " " + (s.offset * 100) + "%")
+      .join(", ");
+    if (this._gradientType === "radial") {
+      return "radial-gradient(circle, " + stops + ")";
+    }
+    const angle = (this._gradientAngle || 0) + 90;
+    return "linear-gradient(" + angle + "deg, " + stops + ")";
+  }
+
+  _applyCornerRadius() {
+    if (!this._element) return;
+    if (this._cornerRadius <= 0) {
+      this._element.style.borderRadius = "0";
+      return;
+    }
+    const r = this._cornerRadius + "px";
+    const tl = this._roundedCorners.topLeft ? r : "0";
+    const tr = this._roundedCorners.topRight ? r : "0";
+    const br = this._roundedCorners.bottomRight ? r : "0";
+    const bl = this._roundedCorners.bottomLeft ? r : "0";
+    this._element.style.borderRadius = tl + " " + tr + " " + br + " " + bl;
+  }
+
+  _updateTransform() {
+    if (!this._element) return;
+
+    const scaledPivotX = this._rotationPivotX * this._scaleX;
+    const scaledPivotY = this._rotationPivotY * this._scaleY;
+
+    this._element.style.transformOrigin =
+      this._rotationPivotX + "px " + this._rotationPivotY + "px";
+
+    let transform = "";
+    if (this._scaleX !== 1 || this._scaleY !== 1) {
+      transform += "scale(" + this._scaleX + ", " + this._scaleY + ") ";
+    }
+    if (this._rotationDegrees !== 0) {
+      transform += "rotate(" + this._rotationDegrees + "deg) ";
+    }
+    this._element.style.transform = transform || "none";
+
+    // Non-scaling strokes
+    if (!this._scaleStrokes && this._lineColor !== null && this._lineThickness > 0) {
+      const avgScale = (Math.abs(this._scaleX) + Math.abs(this._scaleY)) / 2;
+      if (avgScale !== 0) {
+        const effectiveWidth = this._lineThickness / avgScale;
+        this._element.style.borderWidth = effectiveWidth + "px";
+      }
+    }
+  }
+
+  _applyPosition() {
+    if (!this._element) return;
+    this._element.style.position = "absolute";
+    this._element.style.left = (this._x - this._pivotX) + "px";
+    this._element.style.top = (this._y - this._pivotY) + "px";
+  }
+
+  // ---------- Position (override setters to include pivot) ----------
+
+  set x(value) {
+    this._x = value;
+    this._applyPosition();
+  }
+
+  get x() {
+    return this._x;
+  }
+
+  set y(value) {
+    this._y = value;
+    this._applyPosition();
+  }
+
+  get y() {
+    return this._y;
+  }
+
+  // ---------- Rotation ----------
+
+  set rotation(degrees) {
+    this._rotationDegrees = degrees;
+    this._updateTransform();
+  }
+
+  get rotation() {
+    return this._rotationDegrees;
+  }
+
+  // ---------- Dimensions ----------
+
+  setWidth(w) {
+    this._width = w;
+    this._draw();
+    return this;
+  }
+
+  setHeight(h) {
+    this._height = h;
+    this._draw();
+    return this;
+  }
+
+  getWidth() {
+    return this._width;
+  }
+
+  getHeight() {
+    return this._height;
+  }
+
+  set width(value) {
+    this._width = value;
+    this._draw();
+  }
+
+  get width() {
+    return this._width;
+  }
+
+  set height(value) {
+    this._height = value;
+    this._draw();
+  }
+
+  get height() {
+    return this._height;
+  }
+
+  // ---------- Colors ----------
+
+  setFillColor(color) {
+    this._fillColor = color;
+    this._gradientStops = null;
+    this._gradientType = null;
+    if (this._element) {
+      if (color !== null && color !== undefined) {
+        this._element.style.background = this._hexToCSS(color);
+      } else {
+        this._element.style.background = "none";
+      }
+    }
+    return this;
+  }
+
+  setLineColor(color) {
+    this._lineColor = color;
+    this._draw();
+    return this;
+  }
+
+  setLineThickness(thickness) {
+    this._lineThickness = thickness;
+    this._draw();
+    return this;
+  }
+
+  setBorder(borderColor, borderLine) {
+    this._lineColor = borderColor;
+    this._lineThickness = borderLine;
+    this._draw();
+    return this;
+  }
+
+  // ---------- Corners ----------
+
+  setCornerRadius(r) {
+    this._cornerRadius = r;
+    this._applyCornerRadius();
+    return this;
+  }
+
+  setRoundedCorners(
+    radius,
+    topLeft = true,
+    topRight = true,
+    bottomRight = true,
+    bottomLeft = true,
+  ) {
+    this._cornerRadius = radius;
+    this._roundedCorners = {
+      topLeft: topLeft,
+      topRight: topRight,
+      bottomRight: bottomRight,
+      bottomLeft: bottomLeft,
+    };
+    this._applyCornerRadius();
+    return this;
+  }
+
+  // ---------- Gradient ----------
+
+  setGradient(
+    type = "linear",
+    colorStops = [
+      { offset: 0, color: "#fff" },
+      { offset: 1, color: "#000" },
+    ],
+    angle = 0,
+  ) {
+    this._gradientType = type;
+    this._gradientStops = colorStops;
+    this._gradientAngle = angle;
+    if (this._element) {
+      this._element.style.background = this._buildCssGradient();
+    }
+    return this;
+  }
+
+  // ---------- Alpha ----------
+
+  setAlpha(alpha) {
+    this._alpha = Math.max(0, Math.min(1, alpha));
+    if (this._element) {
+      this._element.style.opacity = this._alpha;
+    }
+    return this;
+  }
+
+  // ---------- Scale ----------
+
+  setScale(scaleX, scaleY, scaleStrokes = false) {
+    this._scaleX = scaleX;
+    this._scaleY = scaleY !== undefined ? scaleY : scaleX;
+    this._scaleStrokes = scaleStrokes;
+    this._updateTransform();
+    return this;
+  }
+
+  // ---------- Transformation points ----------
+
+  setTransformationPoint(offsetX = 0, offsetY = 0) {
+    this._pivotX = offsetX;
+    this._pivotY = offsetY;
+    this._applyPosition();
+    return this;
+  }
+
+  setRotationPoint(offsetX = 0, offsetY = 0) {
+    this._rotationPivotX = offsetX;
+    this._rotationPivotY = offsetY;
+    this._updateTransform();
+    return this;
+  }
+
+  // ---------- Events ----------
+
+  onClick(handler) {
+    if (typeof handler !== "function") {
+      console.error("onClick erwartet eine Funktion als Parameter");
+      return this;
+    }
+    if (this._clickHandler) {
+      this._element.removeEventListener("click", this._clickHandler);
+    }
+    this._clickHandler = (e) => {
+      if (!this._isDragging) handler(e);
+    };
+    this._element.style.cursor = "pointer";
+    this._element.addEventListener("click", this._clickHandler);
+    return this;
+  }
+
+  onMouseDown(handler) {
+    if (typeof handler !== "function") return this;
+    if (this._mouseDownHandler) {
+      this._element.removeEventListener("mousedown", this._mouseDownHandler);
+      this._element.removeEventListener("touchstart", this._mouseDownHandler);
+    }
+    this._mouseDownHandler = handler;
+    this._element.addEventListener("mousedown", handler);
+    this._element.addEventListener("touchstart", handler);
+    return this;
+  }
+
+  onMouseUp(handler) {
+    if (typeof handler !== "function") return this;
+    if (this._mouseUpHandler) {
+      this._element.removeEventListener("mouseup", this._mouseUpHandler);
+      this._element.removeEventListener("touchend", this._mouseUpHandler);
+    }
+    this._mouseUpHandler = handler;
+    this._element.addEventListener("mouseup", handler);
+    this._element.addEventListener("touchend", handler);
+    return this;
+  }
+
+  onMouseOver(handler) {
+    if (typeof handler !== "function") return this;
+    if (this._mouseOverHandler) {
+      this._element.removeEventListener("mouseover", this._mouseOverHandler);
+    }
+    this._mouseOverHandler = handler;
+    this._element.addEventListener("mouseover", handler);
+    return this;
+  }
+
+  onMouseOut(handler) {
+    if (typeof handler !== "function") return this;
+    if (this._mouseOutHandler) {
+      this._element.removeEventListener("mouseout", this._mouseOutHandler);
+    }
+    this._mouseOutHandler = handler;
+    this._element.addEventListener("mouseout", handler);
+    return this;
+  }
+
+  // ---------- Drag & Drop ----------
+
+  setDragging(x1, y1, x2, y2) {
+    const minX = Math.min(x1, x2);
+    const maxX = Math.max(x1, x2);
+    const minY = Math.min(y1, y2);
+    const maxY = Math.max(y1, y2);
+    this._dragConstraints = { minX, maxX, minY, maxY };
+    this._draggable = true;
+    this._setupDrag();
+    return this;
+  }
+
+  _setupDrag() {
+    if (!this._element) return;
+
+    const onDragStart = (e) => {
+      e.preventDefault();
+      this._isDragging = true;
+
+      const pt = this._getPointerPos(e);
+      this._dragData = {
+        startMouseX: pt.x,
+        startMouseY: pt.y,
+        startElemX: this._x,
+        startElemY: this._y,
+      };
+
+      if (this._dragStartCallback) this._dragStartCallback(this);
+
+      this._boundDragMove = (ev) => {
+        if (!this._isDragging) return;
+        ev.preventDefault();
+        const p = this._getPointerPos(ev);
+        let newX = this._dragData.startElemX + (p.x - this._dragData.startMouseX);
+        let newY = this._dragData.startElemY + (p.y - this._dragData.startMouseY);
+
+        if (this._dragConstraints) {
+          newX = Math.max(
+            this._dragConstraints.minX,
+            Math.min(this._dragConstraints.maxX, newX),
+          );
+          newY = Math.max(
+            this._dragConstraints.minY,
+            Math.min(this._dragConstraints.maxY, newY),
+          );
+        }
+
+        this.x = newX;
+        this.y = newY;
+
+        if (this._dragCallback) this._dragCallback(this);
+      };
+
+      this._boundDragEnd = () => {
+        this._isDragging = false;
+        document.removeEventListener("mousemove", this._boundDragMove);
+        document.removeEventListener("mouseup", this._boundDragEnd);
+        document.removeEventListener("touchmove", this._boundDragMove);
+        document.removeEventListener("touchend", this._boundDragEnd);
+        if (this._dragEndCallback) this._dragEndCallback(this);
+      };
+
+      document.addEventListener("mousemove", this._boundDragMove);
+      document.addEventListener("mouseup", this._boundDragEnd);
+      document.addEventListener("touchmove", this._boundDragMove, {
+        passive: false,
+      });
+      document.addEventListener("touchend", this._boundDragEnd);
+    };
+
+    this._element.addEventListener("mousedown", onDragStart);
+    this._element.addEventListener("touchstart", onDragStart, {
+      passive: false,
+    });
+  }
+
+  _getPointerPos(e) {
+    const container = document.getElementById("pixi-ui-overlay");
+    const rect = container
+      ? container.getBoundingClientRect()
+      : { left: 0, top: 0 };
+    const scaleMatch = container
+      ? container.style.transform.match(/scale\(([\d.]+)\)/)
+      : null;
+    const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+    if (e.touches && e.touches.length > 0) {
+      return {
+        x: (e.touches[0].clientX - rect.left) / scale,
+        y: (e.touches[0].clientY - rect.top) / scale,
+      };
+    }
+    return {
+      x: (e.clientX - rect.left) / scale,
+      y: (e.clientY - rect.top) / scale,
+    };
+  }
+
+  onDragStart(handler) {
+    this._dragStartCallback = handler;
+    return this;
+  }
+
+  onDrag(handler) {
+    this._dragCallback = handler;
+    return this;
+  }
+
+  onDragEnd(handler) {
+    this._dragEndCallback = handler;
+    return this;
+  }
+
+  // ---------- Serialization ----------
+
+  getSerializableMethods() {
+    const methods = {};
+    if (this._gradientStops && this._gradientType) {
+      methods.setGradient =
+        'setGradient("' +
+        this._gradientType +
+        '", ' +
+        JSON.stringify(this._gradientStops) +
+        ", " +
+        (this._gradientAngle || 0) +
+        ")";
+    }
+    if (this._alpha !== 1) {
+      methods.setAlpha = "setAlpha(" + this._alpha + ")";
+    }
+    if (this._cornerRadius !== 0) {
+      const allCorners =
+        this._roundedCorners.topLeft &&
+        this._roundedCorners.topRight &&
+        this._roundedCorners.bottomRight &&
+        this._roundedCorners.bottomLeft;
+
+      if (allCorners) {
+        methods.setCornerRadius =
+          "setCornerRadius(" + this._cornerRadius + ")";
+      } else {
+        methods.setRoundedCorners =
+          "setRoundedCorners(" +
+          this._cornerRadius +
+          ", " +
+          this._roundedCorners.topLeft +
+          ", " +
+          this._roundedCorners.topRight +
+          ", " +
+          this._roundedCorners.bottomRight +
+          ", " +
+          this._roundedCorners.bottomLeft +
+          ")";
+      }
+    }
+    return methods;
+  }
+
+  // ---------- Destroy ----------
+
+  destroy() {
+    if (this._boundDragMove) {
+      document.removeEventListener("mousemove", this._boundDragMove);
+    }
+    if (this._boundDragEnd) {
+      document.removeEventListener("mouseup", this._boundDragEnd);
+      document.removeEventListener("touchmove", this._boundDragMove);
+      document.removeEventListener("touchend", this._boundDragEnd);
+    }
+    this.remove();
+  }
+};
