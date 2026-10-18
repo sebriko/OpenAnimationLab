@@ -253,6 +253,55 @@ if (typeof BoardBase === "undefined") {
         if (onEnd && child.onDragEnd) child.onDragEnd(onEnd);
       }
     }
+
+    _initKeyboard() {
+      this._keyboardListeners = { keydown: [], keyup: [] };
+      this._keysPressed = {};
+      this._boundKeyDown = (e) => {
+        const safeEvent = this._createSafeKeyEvent(e);
+        this._keysPressed[safeEvent.key] = true;
+        for (const cb of this._keyboardListeners.keydown) {
+          try { cb(safeEvent); } catch (err) { console.error("Error in keydown handler:", err); }
+        }
+        if (this._shouldPreventDefault(safeEvent.key)) e.preventDefault();
+      };
+      this._boundKeyUp = (e) => {
+        const safeEvent = this._createSafeKeyEvent(e);
+        delete this._keysPressed[safeEvent.key];
+        for (const cb of this._keyboardListeners.keyup) {
+          try { cb(safeEvent); } catch (err) { console.error("Error in keyup handler:", err); }
+        }
+      };
+      this._boundBlur = () => { this._keysPressed = {}; };
+      window.addEventListener("keydown", this._boundKeyDown);
+      window.addEventListener("keyup", this._boundKeyUp);
+      window.addEventListener("blur", this._boundBlur);
+    }
+
+    _createSafeKeyEvent(e) {
+      return { key: e.key, code: e.code, repeat: e.repeat, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, altKey: e.altKey, metaKey: e.metaKey };
+    }
+
+    _shouldPreventDefault(key) {
+      const preventKeys = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Tab"]);
+      return this._keyboardListeners.keydown.length > 0 && preventKeys.has(key);
+    }
+
+    _cleanupKeyboard() {
+      if (this._boundKeyDown) {
+        window.removeEventListener("keydown", this._boundKeyDown);
+        window.removeEventListener("keyup", this._boundKeyUp);
+        window.removeEventListener("blur", this._boundBlur);
+        this._boundKeyDown = null; this._boundKeyUp = null; this._boundBlur = null;
+      }
+      this._keyboardListeners = { keydown: [], keyup: [] };
+      this._keysPressed = {};
+    }
+
+    onKeyDown(callback) { if (typeof callback !== "function") return this; this._keyboardListeners.keydown.push(callback); return this; }
+    onKeyUp(callback) { if (typeof callback !== "function") return this; this._keyboardListeners.keyup.push(callback); return this; }
+    isKeyDown(key) { return !!this._keysPressed[key]; }
+    getKeysPressed() { return Object.assign({}, this._keysPressed); }
   }
   // Expose globally so the class declaration below can extend it
   window.BoardBase = _BoardBase;
@@ -349,6 +398,34 @@ class BoardSVG extends BoardBase {
           de: "Registriert einen globalen Mouse-Move-Handler auf dem Board",
         },
       },
+      onKeyDown: {
+        example: "onKeyDown(handler)",
+        info: {
+          en: "Registers a keyboard key-down handler. The callback receives a safe event object with key, code, repeat, ctrlKey, shiftKey, altKey, metaKey.",
+          de: "Registriert einen Tastatur-KeyDown-Handler. Der Callback erhält ein sicheres Event-Objekt mit key, code, repeat, ctrlKey, shiftKey, altKey, metaKey.",
+        },
+      },
+      onKeyUp: {
+        example: "onKeyUp(handler)",
+        info: {
+          en: "Registers a keyboard key-up handler. The callback receives a safe event object with key, code, repeat, ctrlKey, shiftKey, altKey, metaKey.",
+          de: "Registriert einen Tastatur-KeyUp-Handler. Der Callback erhält ein sicheres Event-Objekt mit key, code, repeat, ctrlKey, shiftKey, altKey, metaKey.",
+        },
+      },
+      isKeyDown: {
+        example: "isKeyDown('ArrowUp')",
+        info: {
+          en: "Returns true if the specified key is currently pressed",
+          de: "Gibt true zurück, wenn die angegebene Taste gerade gedrückt ist",
+        },
+      },
+      getKeysPressed: {
+        example: "getKeysPressed()",
+        info: {
+          en: "Returns an object with all currently pressed keys",
+          de: "Gibt ein Objekt mit allen aktuell gedrückten Tasten zurück",
+        },
+      },
     },
   };
 
@@ -377,6 +454,8 @@ class BoardSVG extends BoardBase {
     // legacy Board alias resolve to the same instance.
     BoardSVG[INSTANCE_KEY] = this;
     Board[INSTANCE_KEY] = this;
+
+    this._initKeyboard();
 
     this.prepareCanvasContainer();
     this.createPreloader();
@@ -787,6 +866,7 @@ class BoardSVG extends BoardBase {
   // ============================================================================
 
   destroy() {
+    this._cleanupKeyboard();
     this._stopTicker();
 
     if (this._boundResizeHandler) {

@@ -317,6 +317,103 @@ class BoardBase {
     }
   }
 
+  // ── Keyboard event support ───────────────────────────────────────────────
+
+  _initKeyboard() {
+    this._keyboardListeners = { keydown: [], keyup: [] };
+    this._keysPressed = {};
+
+    this._boundKeyDown = (e) => {
+      const safeEvent = this._createSafeKeyEvent(e);
+      this._keysPressed[safeEvent.key] = true;
+
+      for (const cb of this._keyboardListeners.keydown) {
+        try {
+          cb(safeEvent);
+        } catch (err) {
+          console.error("Error in keydown handler:", err);
+        }
+      }
+
+      if (this._shouldPreventDefault(safeEvent.key)) {
+        e.preventDefault();
+      }
+    };
+
+    this._boundKeyUp = (e) => {
+      const safeEvent = this._createSafeKeyEvent(e);
+      delete this._keysPressed[safeEvent.key];
+
+      for (const cb of this._keyboardListeners.keyup) {
+        try {
+          cb(safeEvent);
+        } catch (err) {
+          console.error("Error in keyup handler:", err);
+        }
+      }
+    };
+
+    this._boundBlur = () => {
+      this._keysPressed = {};
+    };
+
+    window.addEventListener("keydown", this._boundKeyDown);
+    window.addEventListener("keyup", this._boundKeyUp);
+    window.addEventListener("blur", this._boundBlur);
+  }
+
+  _createSafeKeyEvent(e) {
+    return {
+      key: e.key,
+      code: e.code,
+      repeat: e.repeat,
+      ctrlKey: e.ctrlKey,
+      shiftKey: e.shiftKey,
+      altKey: e.altKey,
+      metaKey: e.metaKey,
+    };
+  }
+
+  _shouldPreventDefault(key) {
+    const preventKeys = new Set([
+      "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Tab",
+    ]);
+    return this._keyboardListeners.keydown.length > 0 && preventKeys.has(key);
+  }
+
+  _cleanupKeyboard() {
+    if (this._boundKeyDown) {
+      window.removeEventListener("keydown", this._boundKeyDown);
+      window.removeEventListener("keyup", this._boundKeyUp);
+      window.removeEventListener("blur", this._boundBlur);
+      this._boundKeyDown = null;
+      this._boundKeyUp = null;
+      this._boundBlur = null;
+    }
+    this._keyboardListeners = { keydown: [], keyup: [] };
+    this._keysPressed = {};
+  }
+
+  onKeyDown(callback) {
+    if (typeof callback !== "function") return this;
+    this._keyboardListeners.keydown.push(callback);
+    return this;
+  }
+
+  onKeyUp(callback) {
+    if (typeof callback !== "function") return this;
+    this._keyboardListeners.keyup.push(callback);
+    return this;
+  }
+
+  isKeyDown(key) {
+    return !!this._keysPressed[key];
+  }
+
+  getKeysPressed() {
+    return Object.assign({}, this._keysPressed);
+  }
+
   // ── Global event listeners ────────────────────────────────────────────────
 
   addGlobalEventListener(eventType, callback) {

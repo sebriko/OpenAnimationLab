@@ -51,6 +51,8 @@ class Board extends BoardBase {
 
     Board[INSTANCE_KEY] = this;
 
+    this._initKeyboard();
+
     this.prepareCanvasContainer();
     // Additional Board-specific container setup
     if (this.canvasContainer) {
@@ -490,6 +492,7 @@ class Board extends BoardBase {
 
   destroy() {
     this.stopDrag();
+    this._cleanupKeyboard();
 
     if (this.maintenanceInterval) {
       clearInterval(this.maintenanceInterval);
