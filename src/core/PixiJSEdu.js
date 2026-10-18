@@ -8239,12 +8239,25 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
     }
   }
 
+  // Returns the opening <svg ...> tag so that attribute searches
+  // are restricted to the root element and do not accidentally
+  // match attributes on child elements like <rect> or <ellipse>.
+  _getSvgRootTag(svgString) {
+    const m = svgString.match(/<svg\b[^>]*>/);
+    return m ? m[0] : null;
+  }
+
   _extractOriginalDimensions(svgString) {
-    const widthMatch = svgString.match(
-      /width\s*=\s*["']?((?:0?)?\.\d+|\d+(?:\.\d+)?)["']?/,
+    // Only inspect the root <svg> tag – child elements may also
+    // carry width/height attributes (e.g. <rect>) which must not
+    // be confused with the document dimensions.
+    const svgTag = this._getSvgRootTag(svgString) || svgString;
+
+    const widthMatch = svgTag.match(
+      /\bwidth\s*=\s*["']?((?:0?)?\.\d+|\d+(?:\.\d+)?)["']?/,
     );
-    const heightMatch = svgString.match(
-      /height\s*=\s*["']?((?:0?)?\.\d+|\d+(?:\.\d+)?)["']?/,
+    const heightMatch = svgTag.match(
+      /\bheight\s*=\s*["']?((?:0?)?\.\d+|\d+(?:\.\d+)?)["']?/,
     );
 
     let width = null;
@@ -8263,7 +8276,7 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
     }
 
     if (!width || !height) {
-      const viewBoxMatch = svgString.match(
+      const viewBoxMatch = svgTag.match(
         /viewBox\s*=\s*["']?\s*((?:0?)?\.\d+|\d+(?:\.\d+)?)\s+((?:0?)?\.\d+|\d+(?:\.\d+)?)\s+((?:0?)?\.\d+|\d+(?:\.\d+)?)\s+((?:0?)?\.\d+|\d+(?:\.\d+)?)["']?/,
       );
       if (viewBoxMatch) {
@@ -8315,6 +8328,10 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
     return adjustedSvg;
   }
 
+  // Replaces or adds attributes exclusively on the root <svg> tag.
+  // The previous implementation used global includes()/replace() which
+  // could match width/height on child elements like <rect> or <ellipse>,
+  // leaving the root <svg> without explicit dimensions.
   _scaleSVGString(svgString, scaleX, scaleY) {
     if (!this._originalDimensions) {
       this._originalDimensions = this._extractOriginalDimensions(svgString);
@@ -8330,38 +8347,54 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
 
     let scaledSvg = svgString;
 
-    if (!scaledSvg.includes("xmlns=")) {
-      scaledSvg = scaledSvg.replace(
-        "<svg",
-        '<svg xmlns="http://www.w3.org/2000/svg"',
-      );
-    }
+    // Work only on the root <svg> opening tag
+    const svgTagMatch = scaledSvg.match(/<svg\b[^>]*>/);
+    if (svgTagMatch) {
+      let svgTag = svgTagMatch[0];
+      const tagStart = scaledSvg.indexOf(svgTag);
 
-    if (scaledSvg.includes("width=")) {
-      scaledSvg = scaledSvg.replace(
-        /width\s*=\s*["']?[^"'\s>]+["']?/,
-        'width="' + newWidth + '"',
-      );
-    } else {
-      scaledSvg = scaledSvg.replace("<svg", '<svg width="' + newWidth + '"');
-    }
+      // xmlns
+      if (!/\bxmlns\s*=/.test(svgTag)) {
+        svgTag = svgTag.replace(
+          "<svg",
+          '<svg xmlns="http://www.w3.org/2000/svg"',
+        );
+      }
 
-    if (scaledSvg.includes("height=")) {
-      scaledSvg = scaledSvg.replace(
-        /height\s*=\s*["']?[^"'\s>]+["']?/,
-        'height="' + newHeight + '"',
-      );
-    } else {
-      scaledSvg = scaledSvg.replace("<svg", '<svg height="' + newHeight + '"');
-    }
+      // width
+      if (/\bwidth\s*=/.test(svgTag)) {
+        svgTag = svgTag.replace(
+          /\bwidth\s*=\s*["']?[^"'\s>]+["']?/,
+          'width="' + newWidth + '"',
+        );
+      } else {
+        svgTag = svgTag.replace("<svg", '<svg width="' + newWidth + '"');
+      }
 
-    if (!scaledSvg.includes("viewBox=")) {
-      const viewBox =
-        "0 0 " +
-        this._originalDimensions.width +
-        " " +
-        this._originalDimensions.height;
-      scaledSvg = scaledSvg.replace("<svg", '<svg viewBox="' + viewBox + '"');
+      // height
+      if (/\bheight\s*=/.test(svgTag)) {
+        svgTag = svgTag.replace(
+          /\bheight\s*=\s*["']?[^"'\s>]+["']?/,
+          'height="' + newHeight + '"',
+        );
+      } else {
+        svgTag = svgTag.replace("<svg", '<svg height="' + newHeight + '"');
+      }
+
+      // viewBox
+      if (!/\bviewBox\s*=/.test(svgTag)) {
+        const viewBox =
+          "0 0 " +
+          this._originalDimensions.width +
+          " " +
+          this._originalDimensions.height;
+        svgTag = svgTag.replace("<svg", '<svg viewBox="' + viewBox + '"');
+      }
+
+      scaledSvg =
+        scaledSvg.substring(0, tagStart) +
+        svgTag +
+        scaledSvg.substring(tagStart + svgTagMatch[0].length);
     }
 
     scaledSvg = this._adjustStrokeWidths(
@@ -8381,28 +8414,40 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
 
     let preparedSvg = svgString;
 
-    if (!preparedSvg.includes("xmlns=")) {
-      preparedSvg = preparedSvg.replace(
-        "<svg",
-        '<svg xmlns="http://www.w3.org/2000/svg"',
-      );
-    }
+    // Work only on the root <svg> opening tag
+    const svgTagMatch = preparedSvg.match(/<svg\b[^>]*>/);
+    if (svgTagMatch) {
+      let svgTag = svgTagMatch[0];
+      const tagStart = preparedSvg.indexOf(svgTag);
 
-    if (!preparedSvg.includes("width=") || !preparedSvg.includes("height=")) {
-      const dimensions = this._extractOriginalDimensions(preparedSvg);
-
-      if (!preparedSvg.includes("width=")) {
-        preparedSvg = preparedSvg.replace(
+      if (!/\bxmlns\s*=/.test(svgTag)) {
+        svgTag = svgTag.replace(
           "<svg",
-          '<svg width="' + dimensions.width + '"',
+          '<svg xmlns="http://www.w3.org/2000/svg"',
         );
       }
-      if (!preparedSvg.includes("height=")) {
-        preparedSvg = preparedSvg.replace(
-          "<svg",
-          '<svg height="' + dimensions.height + '"',
-        );
+
+      if (!/\bwidth\s*=/.test(svgTag) || !/\bheight\s*=/.test(svgTag)) {
+        const dimensions = this._extractOriginalDimensions(preparedSvg);
+
+        if (!/\bwidth\s*=/.test(svgTag)) {
+          svgTag = svgTag.replace(
+            "<svg",
+            '<svg width="' + dimensions.width + '"',
+          );
+        }
+        if (!/\bheight\s*=/.test(svgTag)) {
+          svgTag = svgTag.replace(
+            "<svg",
+            '<svg height="' + dimensions.height + '"',
+          );
+        }
       }
+
+      preparedSvg =
+        preparedSvg.substring(0, tagStart) +
+        svgTag +
+        preparedSvg.substring(tagStart + svgTagMatch[0].length);
     }
 
     return preparedSvg;
