@@ -2663,21 +2663,113 @@ PixiJSEdu.LinePath = class LinePath extends PIXI.Container {
 
   _updateFill() {
     this.fillGraphics.clear();
+    if (this._holeSprite) {
+      this.segmentsContainer.removeChild(this._holeSprite);
+      this._holeSprite.destroy({ texture: true });
+      this._holeSprite = null;
+      this.fillGraphics.visible = true;
+    }
     if (this._fillColor !== null && this.points.length >= 3) {
       const [x0, y0] = this.points[0];
       const [xn, yn] = this.points[this.points.length - 1];
       if (x0 === xn && y0 === yn) {
-        this.fillGraphics.beginFill(this._fillColor);
-        this.fillGraphics.moveTo(x0, y0);
-        for (let i = 1; i < this.points.length; i++) {
-          const [x, y] = this.points[i];
-          this.fillGraphics.lineTo(x, y);
+        const contours = this._extractHoleContours();
+        if (contours) {
+          this._fillWithHoles(contours);
+        } else {
+          this.fillGraphics.beginFill(this._fillColor);
+          this.fillGraphics.moveTo(x0, y0);
+          for (let i = 1; i < this.points.length; i++) {
+            const [x, y] = this.points[i];
+            this.fillGraphics.lineTo(x, y);
+          }
+          this.fillGraphics.closePath();
+          this.fillGraphics.endFill();
         }
-        this.fillGraphics.closePath();
-        this.fillGraphics.endFill();
       }
     }
     this.segmentsContainer.setChildIndex(this.fillGraphics, 0);
+  }
+
+  _extractHoleContours() {
+    if (this.points.length < 6) return null;
+    const x0 = this.points[0][0];
+    const y0 = this.points[0][1];
+    const anchors = [0];
+    for (let i = 1; i < this.points.length; i++) {
+      if (this.points[i][0] === x0 && this.points[i][1] === y0) {
+        anchors.push(i);
+      }
+    }
+    if (anchors.length < 3) return null;
+    const outer = this.points.slice(anchors[0], anchors[1] + 1);
+    const holes = [];
+    for (let k = 1; k < anchors.length - 1; k++) {
+      const start = anchors[k] + 1;
+      const end = anchors[k + 1];
+      const holePoints = this.points.slice(start, end);
+      if (holePoints.length >= 2) {
+        const first = holePoints[0];
+        const last = holePoints[holePoints.length - 1];
+        if (first[0] === last[0] && first[1] === last[1]) {
+          holePoints.pop();
+        }
+      }
+      if (holePoints.length >= 3) {
+        holes.push(holePoints);
+      }
+    }
+    if (holes.length === 0) return null;
+    return { outer, holes };
+  }
+
+  _fillWithHoles(contours) {
+    this._fillWithHolesCanvas(contours);
+  }
+
+  _fillWithHolesCanvas(contours) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    const allContours = [contours.outer, ...contours.holes];
+    for (let c = 0; c < allContours.length; c++) {
+      for (let i = 0; i < allContours[c].length; i++) {
+        const px = allContours[c][i][0], py = allContours[c][i][1];
+        if (px < minX) minX = px;
+        if (py < minY) minY = py;
+        if (px > maxX) maxX = px;
+        if (py > maxY) maxY = py;
+      }
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(maxX - minX) + 2;
+    canvas.height = Math.ceil(maxY - minY) + 2;
+    const ctx = canvas.getContext("2d");
+    ctx.translate(-minX + 1, -minY + 1);
+    ctx.fillStyle = "#" + this._fillColor.toString(16).padStart(6, "0");
+    ctx.beginPath();
+    ctx.moveTo(contours.outer[0][0], contours.outer[0][1]);
+    for (let i = 1; i < contours.outer.length; i++) {
+      ctx.lineTo(contours.outer[i][0], contours.outer[i][1]);
+    }
+    ctx.closePath();
+    for (let h = 0; h < contours.holes.length; h++) {
+      const hole = contours.holes[h];
+      ctx.moveTo(hole[0][0], hole[0][1]);
+      for (let i = 1; i < hole.length; i++) {
+        ctx.lineTo(hole[i][0], hole[i][1]);
+      }
+      ctx.closePath();
+    }
+    ctx.fill("evenodd");
+    const texture = PIXI.Texture.from(canvas);
+    if (this._holeSprite) {
+      this.segmentsContainer.removeChild(this._holeSprite);
+      this._holeSprite.destroy({ texture: true });
+    }
+    this._holeSprite = new PIXI.Sprite(texture);
+    this._holeSprite.x = minX - 1;
+    this._holeSprite.y = minY - 1;
+    this.segmentsContainer.addChildAt(this._holeSprite, 0);
+    this.fillGraphics.visible = false;
   }
 
   getY(x) {
