@@ -5321,6 +5321,86 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
         },
         example: "onObjectSelected((event) => { console.log(event.value); })",
       },
+      addMesh: {
+        name: "addMesh",
+        info: {
+          en: "Adds a mesh from an array of triangles (with per-face colors) as a single object to the 3D scene",
+          de: "Fügt ein Mesh aus einem Array von Dreiecken (mit Farbe pro Fläche) als einzelnes Objekt zur 3D-Szene hinzu",
+        },
+        example: 'addMesh("Flügel", { triangles: [{vertices: [[0,0,0],[1,0,0],[0,1,0]], color: "#ff0000"}], edges: true })',
+      },
+      addSphere: {
+        name: "addSphere",
+        info: {
+          en: "Adds a sphere primitive to the 3D scene",
+          de: "Fügt eine Kugel als Grundobjekt zur 3D-Szene hinzu",
+        },
+        example: 'addSphere("MeineKugel", { color: "#ff0000", radius: 0.5, position: [0, 1, 0] })',
+      },
+      addTriangle: {
+        name: "addTriangle",
+        info: {
+          en: "Adds a triangle primitive to the 3D scene",
+          de: "Fügt ein Dreieck als Grundobjekt zur 3D-Szene hinzu",
+        },
+        example: 'addTriangle("MeinDreieck", { vertices: [[-1,0,0],[1,0,0],[0,1,0]], color: "#00ff00" })',
+      },
+      addCylinder: {
+        name: "addCylinder",
+        info: {
+          en: "Adds a cylinder primitive to the 3D scene",
+          de: "Fügt einen Zylinder als Grundobjekt zur 3D-Szene hinzu",
+        },
+        example: 'addCylinder("MeinZylinder", { radiusTop: 0.3, radiusBottom: 0.3, height: 2 })',
+      },
+      removeObject: {
+        name: "removeObject",
+        info: {
+          en: "Removes an object from the 3D scene by name",
+          de: "Entfernt ein Objekt anhand seines Namens aus der 3D-Szene",
+        },
+        example: 'removeObject("MeineKugel")',
+      },
+      setPosition: {
+        name: "setPosition",
+        info: {
+          en: "Sets the position of an object in the 3D scene",
+          de: "Setzt die Position eines Objekts in der 3D-Szene",
+        },
+        example: 'setPosition("MeineKugel", 1, 2, 3)',
+      },
+      setRotation: {
+        name: "setRotation",
+        info: {
+          en: "Sets the rotation of an object in the 3D scene (degrees)",
+          de: "Setzt die Rotation eines Objekts in der 3D-Szene (Grad)",
+        },
+        example: 'setRotation("MeineKugel", 0, 90, 0)',
+      },
+      setScale: {
+        name: "setScale",
+        info: {
+          en: "Sets the scale of an object in the 3D scene",
+          de: "Setzt die Skalierung eines Objekts in der 3D-Szene",
+        },
+        example: 'setScale("MeineKugel", 2, 2, 2)',
+      },
+      setVisible: {
+        name: "setVisible",
+        info: {
+          en: "Sets the visibility of an object in the 3D scene",
+          de: "Setzt die Sichtbarkeit eines Objekts in der 3D-Szene",
+        },
+        example: 'setVisible("MeineKugel", false)',
+      },
+      flush: {
+        name: "flush",
+        info: {
+          en: "Returns a Promise that resolves when all previously sent commands have been processed by the 3D editor",
+          de: "Gibt ein Promise zurück, das erfüllt wird, sobald alle zuvor gesendeten Befehle vom 3D-Editor verarbeitet wurden",
+        },
+        example: 'flush().then(() => { console.log("Aufbau fertig"); })',
+      },
     },
   };
 
@@ -5334,6 +5414,9 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     this._readyCallback = null;
     this._screenshotResolve = null;
     this._screenshotId = null;
+    this._isReady = false;
+    this._messageQueue = [];
+    this._pendingPings = {};
     this._boundMessageHandler = this._handleMessage.bind(this);
     HtmlSvgEdu.Model3D._instances.add(this);
 
@@ -5347,7 +5430,8 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     iframe.setAttribute("scrolling", "no");
     iframe.addEventListener("load", () => {
       if (window.logEvalMessage) window.logEvalMessage("[Model3D] iframe geladen: " + this._url, "log");
-      if (this._readyCallback) this._readyCallback();
+      // Ready-Callback wird NICHT hier ausgelöst – erst wenn der Editor
+      // sein 'ready'-postMessage sendet (nach vollständigem Szene-Load).
     });
     iframe.src = this._url;
     if (window.logEvalMessage) window.logEvalMessage("[Model3D] iframe src gesetzt: " + this._url, "log");
@@ -5359,8 +5443,22 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     const data = event.data;
     if (!data || data.type !== "sceneEditor") return;
     if (window.logEvalMessage) window.logEvalMessage("[Model3D] Nachricht empfangen: " + data.action, "log");
-    if (this._readyCallback && data.action === "ready") {
-      this._readyCallback();
+    if (data.action === "ready") {
+      this._isReady = true;
+      // Gepufferte Nachrichten absenden
+      for (const queued of this._messageQueue) {
+        this._element.contentWindow.postMessage(queued, "*");
+      }
+      this._messageQueue = [];
+      if (this._readyCallback) this._readyCallback();
+    }
+    if (data.action === "ping" && data.data && data.data.pingId) {
+      const resolve = this._pendingPings[data.data.pingId];
+      if (resolve) {
+        delete this._pendingPings[data.data.pingId];
+        resolve();
+      }
+      return;
     }
     if (data.action === "screenshotData" && data.data && data.data.screenshotId === this._screenshotId) {
       if (this._screenshotResolve) {
@@ -5379,8 +5477,10 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
   }
 
   _postMessage(payload) {
-    if (this._element && this._element.contentWindow) {
+    if (this._isReady && this._element && this._element.contentWindow) {
       this._element.contentWindow.postMessage(payload, "*");
+    } else {
+      this._messageQueue.push(payload);
     }
   }
 
@@ -5504,6 +5604,56 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
 
   onObjectSelected(callback) {
     this._objectSelectedCallback = callback;
+  }
+
+  addMesh(name, options = {}) {
+    this._postMessage({ action: "addMesh", name, options });
+  }
+
+  addSphere(name, options = {}) {
+    this._postMessage({ action: "addPrimitive", type: "sphere", name, options });
+  }
+
+  addTriangle(name, options = {}) {
+    this._postMessage({ action: "addPrimitive", type: "triangle", name, options });
+  }
+
+  addCylinder(name, options = {}) {
+    this._postMessage({ action: "addPrimitive", type: "cylinder", name, options });
+  }
+
+  removeObject(name) {
+    this._postMessage({ action: "removeObject", object: name });
+  }
+
+  setPosition(object, x, y, z) {
+    this._postMessage({ action: "setPosition", object, x, y, z });
+  }
+
+  setRotation(object, x, y, z) {
+    this._postMessage({ action: "setRotation", object, x, y, z });
+  }
+
+  setScale(object, x, y, z) {
+    this._postMessage({ action: "setScale", object, x, y, z });
+  }
+
+  setVisible(object, visible) {
+    this._postMessage({ action: "setProperty", object, property: "visible", value: visible });
+  }
+
+  /**
+   * Gibt ein Promise zurück, das erfüllt wird, sobald alle zuvor gesendeten
+   * Befehle vom 3D-Editor verarbeitet wurden. Nutzt intern einen Ping:
+   * postMessage ist geordnet, d.h. wenn der Ping zurückkommt, sind alle
+   * vorherigen Nachrichten bereits verarbeitet.
+   */
+  flush() {
+    return new Promise((resolve) => {
+      const pingId = "ping_" + Math.random().toString(36).slice(2);
+      this._pendingPings[pingId] = resolve;
+      this._postMessage({ action: "ping", pingId });
+    });
   }
 
   remove() {

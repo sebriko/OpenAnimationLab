@@ -641,9 +641,12 @@ async function publishH5P() {
   zip.file("h5p.json", JSON.stringify({
     title: tabName,
     language: "und",
-    mainLibrary: "OALAnimation",
+    mainLibrary: "H5P.OALAnimation",
+    license: "C",
+    authors: [],
+    embedTypes: ["iframe"],
     preloadedDependencies: [
-      { machineName: "OALAnimation", majorVersion: 1, minorVersion: 0 }
+      { machineName: "H5P.OALAnimation", majorVersion: 1, minorVersion: 0 }
     ]
   }, null, 2));
 
@@ -653,43 +656,58 @@ async function publishH5P() {
   }));
 
   // OALAnimation library
-  const libDir = "OALAnimation-1.0";
+  const libDir = "H5P.OALAnimation-1.0";
 
   zip.file(`${libDir}/library.json`, JSON.stringify({
     title: "OAL Animation",
     description: "Displays an Open Animation Lab animation inside an iframe.",
-    machineName: "OALAnimation",
+    machineName: "H5P.OALAnimation",
     majorVersion: 1,
     minorVersion: 0,
     patchVersion: 0,
     runnable: 1,
+    license: "MIT",
+    author: "Open Animation Lab",
+    coreApi: { majorVersion: 1, minorVersion: 6 },
+    embedTypes: ["iframe"],
     preloadedJs: [{ path: "oal-animation.js" }],
     preloadedCss: [{ path: "oal-animation.css" }]
   }, null, 2));
 
+  zip.file(`${libDir}/semantics.json`, JSON.stringify([
+    {
+      name: "htmlContent",
+      type: "text",
+      widget: "html",
+      label: "HTML Content",
+      description: "The HTML content of the animation"
+    }
+  ], null, 2));
+
   zip.file(`${libDir}/oal-animation.js`, `\
-H5P.OALAnimation = (function () {
-  function OALAnimation(params, contentId) {
-    this.htmlContent = params.htmlContent || "";
-    this.contentId = contentId;
+H5P.OALAnimation = (function ($) {
+  function C(options, id) {
+    this.options = $.extend(true, {}, { htmlContent: "" }, options);
+    this.id = id;
   }
 
-  OALAnimation.prototype.attach = function ($container) {
-    var wrapper = $container.get ? $container.get(0) : $container;
-    wrapper.classList.add("h5p-oal-animation");
+  C.prototype.attach = function ($container) {
+    $container.addClass("h5p-oal-animation");
 
     var iframe = document.createElement("iframe");
     iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
     iframe.style.width = "100%";
     iframe.style.height = "100%";
     iframe.style.border = "none";
-    iframe.srcdoc = this.htmlContent;
-    wrapper.innerHTML = "";
-    wrapper.appendChild(iframe);
+    iframe.srcdoc = this.options.htmlContent;
+    $container[0].innerHTML = "";
+    $container[0].appendChild(iframe);
+
+    this.trigger("resize");
   };
 
-  return OALAnimation;
-})();
+  return C;
+})(H5P.jQuery);
 `);
 
   zip.file(`${libDir}/oal-animation.css`, `\
