@@ -5442,7 +5442,6 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
   _handleMessage(event) {
     const data = event.data;
     if (!data || data.type !== "sceneEditor") return;
-    if (window.logEvalMessage) window.logEvalMessage("[Model3D] Nachricht empfangen: " + data.action, "log");
     if (data.action === "ready") {
       this._isReady = true;
       // Gepufferte Nachrichten absenden

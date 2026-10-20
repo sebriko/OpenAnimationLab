@@ -28,9 +28,6 @@ window.logEvalMessage = function (message, type = "log", lineNumber = null) {
     if (lineNumber && typeof addErrorMarker === "function") {
       addErrorMarker(lineNumber - 1, message);
     }
-    if (typeof window.openMessageWindow === "function") {
-      window.openMessageWindow();
-    }
   }
 
   if (!messageDisplayScheduled) {
