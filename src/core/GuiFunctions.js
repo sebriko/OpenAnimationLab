@@ -1,23 +1,133 @@
 /**
- * Shared onclone callback for html2canvas: waits for fonts and replaces
- * input/textarea elements with div clones so their values are captured.
+ * Shared onclone callback for html2canvas: prepares the cloned document
+ * so that GUI elements render correctly.
+ *
+ * 1) Syncs input/textarea values from the live document (cloneNode
+ *    does not copy the value *property*, only the attribute).
+ * 2) Simplifies NumericStepper containers: html2canvas 1.4.1 cannot
+ *    render display:flex or inline SVGs reliably, so we replace each
+ *    stepper with a plain div that shows the current value.
  */
 async function prepareClonedDocInputs(clonedDoc) {
   await document.fonts.ready;
   await new Promise((resolve) => setTimeout(resolve, 200));
 
-  const inputs = clonedDoc.querySelectorAll("input, textarea");
-  inputs.forEach((input) => {
-    if (input.value) {
-      const div = clonedDoc.createElement("div");
-      const computedStyle = window.getComputedStyle(input);
-      div.style.cssText = computedStyle.cssText;
-      div.style.pointerEvents = "none";
-      div.style.whiteSpace =
-        input.tagName === "TEXTAREA" ? "pre-wrap" : "nowrap";
-      div.textContent = input.value;
-      input.parentNode.replaceChild(div, input);
+  const originalOverlay = document.getElementById("pixi-ui-overlay");
+  if (!originalOverlay) return;
+  const clonedOverlay = clonedDoc.getElementById("pixi-ui-overlay");
+  if (!clonedOverlay) return;
+
+  // ── 1) Sync input values ─────────────────────────────────────────
+  const originalInputs = originalOverlay.querySelectorAll("input, textarea");
+  const clonedInputs = clonedOverlay.querySelectorAll("input, textarea");
+  clonedInputs.forEach((clonedInput, index) => {
+    const originalInput = originalInputs[index];
+    if (originalInput && originalInput.value) {
+      clonedInput.setAttribute("value", originalInput.value);
+      clonedInput.value = originalInput.value;
     }
+  });
+
+  // ── 2) Ensure transparent background for overlay layer ──────────
+  // html2canvas renders ancestor backgrounds behind the target element.
+  // Since the GUI overlay is composited ON TOP of the PixiJS canvas and
+  // Model3D layer, any opaque ancestor background would cover them.
+  // → Force all ancestors in the clone to be transparent.
+  clonedDoc.documentElement.style.background = "transparent";
+  clonedDoc.body.style.background = "transparent";
+  const clonedContainer = clonedDoc.getElementById("canvas-container");
+  if (clonedContainer) clonedContainer.style.background = "transparent";
+  const clonedPreview = clonedDoc.getElementById("preview");
+  if (clonedPreview) clonedPreview.style.background = "transparent";
+
+  // Remove Model3D iframes — they are composited as a separate layer
+  // and would otherwise show as opaque white rectangles.
+  const clonedIframes = [...clonedOverlay.querySelectorAll("iframe")];
+  clonedIframes.forEach((iframe) => iframe.parentNode.removeChild(iframe));
+
+  // ── 3) Make NumericStepper html2canvas-safe ─────────────────────
+  // html2canvas 1.4.1 can't render display:flex or inline SVGs.
+  // We rebuild each stepper as a simple table-like layout with
+  // Unicode arrows instead of SVG buttons.
+  const originalSteppers = originalOverlay.querySelectorAll(
+    ".pixi-numeric-stepper",
+  );
+  const clonedSteppers = clonedOverlay.querySelectorAll(
+    ".pixi-numeric-stepper",
+  );
+
+  clonedSteppers.forEach((clonedStepper, index) => {
+    const originalStepper = originalSteppers[index];
+    if (!originalStepper) return;
+
+    const originalInput = originalStepper.querySelector(".pixi-numeric-input");
+    if (!originalInput) return;
+
+    const stepperStyle = window.getComputedStyle(originalStepper);
+    const inputStyle = window.getComputedStyle(originalInput);
+    const stepperW = parseFloat(stepperStyle.width);
+    const stepperH = parseFloat(stepperStyle.height);
+    const btnW = Math.max(22, parseFloat(inputStyle.fontSize) * 1.2);
+
+    // Replace stepper contents with html2canvas-safe markup.
+    // Keep position:absolute + left/top from _applyPosition() —
+    // absolute also establishes a containing block for the children.
+    clonedStepper.innerHTML = "";
+    clonedStepper.style.display = "block";
+    clonedStepper.style.width = stepperW + "px";
+    clonedStepper.style.height = stepperH + "px";
+    clonedStepper.style.overflow = "hidden";
+
+    // Value area (left part)
+    const valueDiv = clonedDoc.createElement("div");
+    const valueLH = (stepperH - 2) + "px";   // minus border
+    valueDiv.style.cssText =
+      "position:absolute;left:0;top:0;" +
+      "width:" + (stepperW - btnW) + "px;" +
+      "height:" + stepperH + "px;" +
+      "border:1px solid #aaaaaa;" +
+      "background:" + inputStyle.backgroundColor + ";" +
+      "box-sizing:border-box;" +
+      "padding:0 " + inputStyle.paddingRight + " 0 " + inputStyle.paddingLeft + ";" +
+      "font-family:" + inputStyle.fontFamily + ";" +
+      "font-size:" + inputStyle.fontSize + ";" +
+      "color:" + inputStyle.color + ";" +
+      "line-height:" + valueLH + ";" +
+      "white-space:nowrap;overflow:hidden;";
+    valueDiv.textContent = originalInput.value;
+    clonedStepper.appendChild(valueDiv);
+
+    // Button area (right part) — two stacked arrow buttons
+    const btnH = stepperH / 2;
+    const btnLH = (btnH - 2) + "px";         // minus border
+    const btnBase =
+      "position:absolute;right:0;" +
+      "width:" + btnW + "px;" +
+      "height:" + btnH + "px;" +
+      "background:linear-gradient(to bottom,#fafafa,#efefef);" +
+      "border:1px solid #aaaaaa;" +
+      "box-sizing:border-box;" +
+      "text-align:center;" +
+      "line-height:" + btnLH + ";" +
+      "font-size:" + Math.floor(parseFloat(inputStyle.fontSize) * 0.55) + "px;" +
+      "color:#666;";
+
+    const upBtn = clonedDoc.createElement("div");
+    upBtn.style.cssText = btnBase + "top:0;border-top-right-radius:4px;";
+    // Flatten the triangle to match the original SVG aspect ratio (12×8)
+    const arrow = clonedDoc.createElement("span");
+    arrow.textContent = "\u25B2";
+    arrow.style.cssText = "display:inline-block;transform:scale(1.3) scaleY(0.65);position:relative;top:-1px;";
+    upBtn.appendChild(arrow);
+    clonedStepper.appendChild(upBtn);
+
+    const downBtn = clonedDoc.createElement("div");
+    downBtn.style.cssText = btnBase + "top:" + btnH + "px;border-bottom-right-radius:4px;";
+    const arrowDown = clonedDoc.createElement("span");
+    arrowDown.textContent = "\u25BC";
+    arrowDown.style.cssText = "display:inline-block;transform:scale(1.3) scaleY(0.65);position:relative;top:-1px;";
+    downBtn.appendChild(arrowDown);
+    clonedStepper.appendChild(downBtn);
   });
 }
 
@@ -1058,6 +1168,12 @@ async function takeScreenshotSVGWithModel3D(
       guiElement.style.transform = "none";
       guiElement.style.transformOrigin = "0 0";
 
+      // Canvas-Container temporär auf overflow:visible setzen, damit
+      // html2canvas alle Elemente im expandierten Overlay erfasst
+      const parentContainer = guiElement.parentElement;
+      const origOverflow = parentContainer ? parentContainer.style.overflow : "";
+      if (parentContainer) parentContainer.style.overflow = "visible";
+
       guiCanvas = await html2canvas(guiElement, {
         backgroundColor: null,
         scale: 1,
@@ -1071,6 +1187,7 @@ async function takeScreenshotSVGWithModel3D(
         onclone: prepareClonedDocInputs,
       });
 
+      if (parentContainer) parentContainer.style.overflow = origOverflow;
       guiElement.style.width = originalWidth;
       guiElement.style.height = originalHeight;
       guiElement.style.transform = originalTransform;
@@ -1092,8 +1209,8 @@ async function takeScreenshotSVGWithModel3D(
     ctx.imageSmoothingQuality = "high";
 
     if (svgCanvas) ctx.drawImage(svgCanvas, 0, 0, boardWidth, boardHeight);
-    drawModel3DImages(ctx, model3dImages);
     if (guiCanvas) ctx.drawImage(guiCanvas, 0, 0);
+    drawModel3DImages(ctx, model3dImages);
 
     ctx.globalCompositeOperation = "destination-over";
     ctx.fillStyle = "#ffffff";
@@ -1104,6 +1221,10 @@ async function takeScreenshotSVGWithModel3D(
   } catch (error) {
     console.error("Fehler beim SVG-Screenshot mit Model3D:", error);
   } finally {
+    if (guiElement) {
+      const parentContainer = guiElement.parentElement;
+      if (parentContainer) parentContainer.style.overflow = "";
+    }
     iframeElements.forEach((el) => (el.style.visibility = ""));
     mathJaxElements.forEach((el) => (el.style.display = ""));
     if (guiElement && originalTransform !== undefined) {
@@ -1159,8 +1280,9 @@ async function takeScreenshotPixi() {
   let originalTransform, originalOrigin, originalWidth, originalHeight;
 
   try {
-    // PixiJS-Canvas extrahieren
-    const pixiCanvas = app.renderer.extract.canvas(app.stage);
+    // PixiJS-Canvas extrahieren (PixiJS v8 kann ein Promise zurückgeben)
+    let pixiCanvas = app.renderer.extract.canvas(app.stage);
+    if (pixiCanvas instanceof Promise) pixiCanvas = await pixiCanvas;
 
     if (!guiElement) {
       // Kein Overlay vorhanden → nur PixiJS-Canvas speichern
@@ -1178,11 +1300,13 @@ async function takeScreenshotPixi() {
     const mathJaxElements = guiElement.querySelectorAll("mjx-assistive-mml");
     mathJaxElements.forEach((el) => (el.style.display = "none"));
 
-    // Model3D-Screenshots frühzeitig anfordern (parallel zu html2canvas)
+    // Model3D-Screenshots erfassen BEVOR iframes versteckt werden,
+    // da captureScreenshot() via postMessage mit dem iframe kommuniziert.
     const scaleFactor = pixiCanvas.width / boardWidth;
-    const model3dPromise = collectModel3DImages(scaleFactor);
+    const model3dImages = await collectModel3DImages(scaleFactor);
 
-    // iframes ausblenden, damit html2canvas korrekt rendert
+    // Erst NACH dem Capture die iframes ausblenden, damit html2canvas
+    // sie nicht als opake Fläche rendert (onclone setzt display:none).
     const iframeElements = [...guiElement.querySelectorAll("iframe")];
     iframeElements.forEach((el) => (el.style.visibility = "hidden"));
 
@@ -1199,6 +1323,12 @@ async function takeScreenshotPixi() {
     guiElement.style.height = boardHeight + "px";
     guiElement.style.transform = "none";
     guiElement.style.transformOrigin = "0 0";
+
+    // Canvas-Container temporär auf overflow:visible setzen, damit
+    // html2canvas alle Elemente im expandierten Overlay erfasst
+    const canvasContainer = guiElement.parentElement;
+    const originalOverflow = canvasContainer ? canvasContainer.style.overflow : "";
+    if (canvasContainer) canvasContainer.style.overflow = "visible";
 
     await document.fonts.ready;
 
@@ -1219,14 +1349,12 @@ async function takeScreenshotPixi() {
     });
 
     // Styles und iframes sofort wiederherstellen
+    if (canvasContainer) canvasContainer.style.overflow = originalOverflow;
     iframeElements.forEach((el) => (el.style.visibility = ""));
     guiElement.style.width = originalWidth;
     guiElement.style.height = originalHeight;
     guiElement.style.transform = originalTransform;
     guiElement.style.transformOrigin = originalOrigin;
-
-    // Model3D-Bilder abwarten
-    const model3dImages = await model3dPromise;
 
     // Finales Canvas erstellen
     const finalCanvas = document.createElement("canvas");
@@ -1237,14 +1365,15 @@ async function takeScreenshotPixi() {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
-    // Layer 1: PixiJS-Rendering
+    // Layer 1: PixiJS-Rendering (Hintergrund)
     ctx.drawImage(pixiCanvas, 0, 0);
 
-    // Layer 2: 3D-Modelle (zwischen PixiJS und GUI-Overlay)
-    drawModel3DImages(ctx, model3dImages);
-
-    // Layer 3: GUI-Overlay
+    // Layer 2: GUI-Overlay (Text, Buttons, Rahmen etc.)
     ctx.drawImage(guiCanvas, 0, 0, pixiCanvas.width, pixiCanvas.height);
+
+    // Layer 3: 3D-Modelle (obenauf, wie im Live-DOM wo das iframe
+    // spätere DOM-Elemente überdeckt — z.B. ein HtmlRectangle-Rahmen)
+    drawModel3DImages(ctx, model3dImages);
 
     // Download
     downloadCanvas(finalCanvas, `${tabName}.png`);
@@ -1256,6 +1385,8 @@ async function takeScreenshotPixi() {
 
     // Styles und iframes wiederherstellen falls noch nicht geschehen
     if (guiElement && originalTransform !== undefined) {
+      const canvasContainer = guiElement.parentElement;
+      if (canvasContainer) canvasContainer.style.overflow = "";
       const iframes = guiElement.querySelectorAll("iframe");
       iframes.forEach((el) => (el.style.visibility = ""));
       guiElement.style.width = originalWidth;
@@ -1269,7 +1400,8 @@ async function takeScreenshotPixi() {
 
     // Fallback: nur PixiJS-Canvas ohne GUI
     try {
-      const pixiCanvas = app.renderer.extract.canvas(app.stage);
+      let pixiCanvas = app.renderer.extract.canvas(app.stage);
+      if (pixiCanvas instanceof Promise) pixiCanvas = await pixiCanvas;
       downloadCanvas(pixiCanvas, `${tabName}.png`);
     } catch (fallbackError) {
       console.error(
