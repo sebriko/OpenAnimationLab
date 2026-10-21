@@ -3487,8 +3487,8 @@ HtmlSvgEdu.MathForm = class MathForm extends HtmlSvgEdu.Component {
 HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
   static serializationMap = {
     description: {
-      de: "Text-Element mit Formatierung",
-      en: "Text element with formatting",
+      de: "Text-Element mit Formatierung. Der Registrierungspunkt liegt links oben – dies muss bei der Positionierung (x, y) berücksichtigt werden.",
+      en: "Text element with formatting. The registration point is at the top-left corner – this must be considered when positioning (x, y).",
     },
     weblink: {
       de: "https://www.educational-animation.org",
