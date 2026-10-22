@@ -752,6 +752,9 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
         ).toString(),
       );
       textElement.setAttribute("dominant-baseline", "middle");
+      textElement.setAttribute("font-family", this._font);
+      textElement.setAttribute("font-size", this._fontSize + "px");
+      textElement.setAttribute("fill", this._cssTextColor);
       const parsedLine = this._parseHtmlTags(line);
       if (parsedLine.length === 1 && parsedLine[0].type === "normal") {
         textElement.textContent = parsedLine[0].text;
@@ -768,9 +771,11 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
           }
           if (part.type === "sub") {
             tspan.setAttribute("class", "checkbox-sub");
+            tspan.setAttribute("font-size", (this._fontSize * 0.85) + "px");
             tspan.setAttribute("dy", browserStyles.subDy);
           } else if (part.type === "sup") {
             tspan.setAttribute("class", "checkbox-sup");
+            tspan.setAttribute("font-size", (this._fontSize * 0.85) + "px");
             tspan.setAttribute("dy", browserStyles.supDy);
           } else {
             if (lineIndex > 0 || parsedLine.indexOf(part) > 0) {
@@ -1202,6 +1207,8 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
         ).toString(),
       );
       textElement.setAttribute("dominant-baseline", "middle");
+      textElement.setAttribute("font-family", this._font);
+      textElement.setAttribute("font-size", this._fontSize + "px");
       textElement.setAttribute("fill", this._cssTextColor);
 
       const parsedLine = this._parseHtmlTags(line);
@@ -1220,9 +1227,11 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
           }
           if (part.type === "sub") {
             tspan.setAttribute("class", "radiobutton-sub");
+            tspan.setAttribute("font-size", (this._fontSize * 0.85) + "px");
             tspan.setAttribute("dy", browserStyles.subDy);
           } else if (part.type === "sup") {
             tspan.setAttribute("class", "radiobutton-sup");
+            tspan.setAttribute("font-size", (this._fontSize * 0.85) + "px");
             tspan.setAttribute("dy", browserStyles.supDy);
           } else {
             if (lineIndex > 0 || parsedLine.indexOf(part) > 0) {
@@ -4064,6 +4073,15 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       textElement.setAttribute("y", baselineY.toString());
       textElement.setAttribute("text-anchor", textAnchor);
       textElement.setAttribute("dominant-baseline", "middle");
+      // Inline-Attribute als Fallback für Renderer, die SVG-<style>-Elemente
+      // nicht verarbeiten (z.B. html2canvas, SVG-als-Image-Serialisierung).
+      // Die <style>-Klassen bleiben für die normale Darstellung erhalten.
+      textElement.setAttribute("font-family", this._font);
+      textElement.setAttribute("font-size", this._fontSize + "px");
+      textElement.setAttribute("fill", this._cssTextColor);
+      if (this._letterSpacing) {
+        textElement.setAttribute("letter-spacing", this._letterSpacing + "px");
+      }
       const parsedLine = this._parseHtmlTags(line);
       if (parsedLine.length === 1 && parsedLine[0].type === "normal") {
         textElement.textContent = parsedLine[0].text;
@@ -4078,9 +4096,11 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
 
           if (part.type === "sub") {
             tspan.setAttribute("class", this._instanceId + "-sub");
+            tspan.setAttribute("font-size", (this._fontSize * 0.7) + "px"); // Inline-Fallback
             tspan.setAttribute("dy", (this._fontSize * 0.25).toString());
           } else if (part.type === "sup") {
             tspan.setAttribute("class", this._instanceId + "-sup");
+            tspan.setAttribute("font-size", (this._fontSize * 0.7) + "px"); // Inline-Fallback
             tspan.setAttribute("dy", (-this._fontSize * 0.35).toString());
           } else {
             if (index > 0) {

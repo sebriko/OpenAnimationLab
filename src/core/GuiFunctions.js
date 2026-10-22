@@ -129,6 +129,7 @@ async function prepareClonedDocInputs(clonedDoc) {
     downBtn.appendChild(arrowDown);
     clonedStepper.appendChild(downBtn);
   });
+
 }
 
 function saveCode() {
@@ -992,12 +993,18 @@ async function renderSVGToCanvas(svgElement, width, height) {
 /**
  * Screenshot für den SVG.js-Renderer.
  *
- * Ohne Model3D: bewährter Ansatz – html2canvas auf den gesamten
- * canvas-container, der SVG und Overlay enthält.
+ * Beide Pfade (mit und ohne Model3D) nutzen html2canvas auf den gesamten
+ * canvas-container. Das ist entscheidend: SVG und HTML-Overlay müssen
+ * ZUSAMMEN erfasst werden, weil html2canvas die SVG-<style>-Elemente
+ * innerhalb der Text-Klasse nur korrekt verarbeitet, wenn der gesamte
+ * DOM-Kontext erhalten bleibt. Ein separates Rendering von SVG (via
+ * XMLSerializer) und Overlay (via html2canvas) führte zu fehlerhafter
+ * Darstellung: Text mit <sub>/<sup> wurde in falscher Größe gerendert,
+ * und SplinePath-Kurven fehlten im Screenshot.
  *
- * Mit Model3D: Layer-Ansatz – SVG, 3D-Modelle und Overlay werden
- * separat erfasst und kombiniert, damit die iframes nicht vom
- * SVG-Hintergrund überdeckt werden.
+ * Mit Model3D werden die iframes vor html2canvas versteckt (sie würden
+ * sonst als weiße Rechtecke erscheinen) und die 3D-Inhalte separat
+ * erfasst und danach auf das Ergebnis composited.
  */
 async function takeScreenshotSVG() {
   const boardInstance =
@@ -1047,6 +1054,11 @@ async function takeScreenshotSVG() {
 /**
  * Bewährter SVG-Screenshot ohne Model3D.
  * Nutzt html2canvas auf den gesamten canvas-container.
+ *
+ * Dieser Ansatz ist der Referenz-Mechanismus: SVG und HTML-Overlay werden
+ * ZUSAMMEN erfasst, was zuverlässige Ergebnisse liefert. Der Model3D-Pfad
+ * (takeScreenshotSVGWithModel3D) nutzt denselben Mechanismus und ergänzt
+ * nur die 3D-Inhalte als separate Schicht.
  */
 async function takeScreenshotSVGClassic(
   canvasContainer,
@@ -1119,8 +1131,21 @@ async function takeScreenshotSVGClassic(
 
 /**
  * SVG-Screenshot mit Model3D-Unterstützung.
- * Erfasst SVG, 3D-Modelle und Overlay separat und kombiniert sie,
- * damit die iframes nicht vom SVG-Hintergrund überdeckt werden.
+ *
+ * WICHTIG – NICHT den Ansatz ändern, SVG und Overlay getrennt zu erfassen!
+ *
+ * Ein früherer Ansatz (v3.19.3) renderte drei separate Layer:
+ *   1. SVG via XMLSerializer → Image → Canvas
+ *   2. Overlay via html2canvas (expandiert auf Board-Größe, transform:none)
+ *   3. Model3D-iframes separat
+ * Das führte zu zwei Problemen:
+ *   - Text-Elemente mit <sub>/<sup> wurden von html2canvas ohne ihren
+ *     SVG-<style>-Kontext gerendert → riesige, falsch skalierte Schrift
+ *   - SplinePath-Kurven und andere SVG-Elemente fehlten teilweise
+ *
+ * Der aktuelle Ansatz nutzt html2canvas auf den GESAMTEN canvas-container
+ * (identisch mit takeScreenshotSVGClassic), und composited nur die
+ * Model3D-Bilder als separate Schicht darüber.
  */
 async function takeScreenshotSVGWithModel3D(
   canvasContainer,
@@ -1136,103 +1161,61 @@ async function takeScreenshotSVGWithModel3D(
     : [];
   mathJaxElements.forEach((el) => (el.style.display = "none"));
 
-  // Model3D-Screenshots starten, bevor iframes ausgeblendet werden
+  // Model3D-Screenshots starten, BEVOR iframes ausgeblendet werden.
+  // Scale = 1, weil das html2canvas-Ergebnis in Board-Dimensionen vorliegt.
   const model3dPromise = collectModel3DImages(1);
 
-  // SVG-Inhalt erfassen (parallel)
-  const svgElement = canvasContainer.querySelector("svg");
-  const svgPromise = svgElement
-    ? renderSVGToCanvas(svgElement, boardWidth, boardHeight)
-    : Promise.resolve(null);
-
-  // iframes ausblenden (nur für html2canvas auf dem Overlay)
+  // iframes ausblenden, damit html2canvas sie nicht als weiße Rechtecke rendert
   const iframeElements = guiElement
     ? [...guiElement.querySelectorAll("iframe")]
     : [];
   iframeElements.forEach((el) => (el.style.visibility = "hidden"));
 
-  let originalTransform, originalOrigin, originalWidth, originalHeight;
-
   try {
     await document.fonts.ready;
 
-    let guiCanvas = null;
-    if (guiElement) {
-      originalTransform = guiElement.style.transform || "";
-      originalOrigin = guiElement.style.transformOrigin || "";
-      originalWidth = guiElement.style.width;
-      originalHeight = guiElement.style.height;
-
-      guiElement.style.width = boardWidth + "px";
-      guiElement.style.height = boardHeight + "px";
-      guiElement.style.transform = "none";
-      guiElement.style.transformOrigin = "0 0";
-
-      // Canvas-Container temporär auf overflow:visible setzen, damit
-      // html2canvas alle Elemente im expandierten Overlay erfasst
-      const parentContainer = guiElement.parentElement;
-      const origOverflow = parentContainer ? parentContainer.style.overflow : "";
-      if (parentContainer) parentContainer.style.overflow = "visible";
-
-      guiCanvas = await html2canvas(guiElement, {
-        backgroundColor: null,
-        scale: 1,
-        width: boardWidth,
-        height: boardHeight,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        letterRendering: true,
-        foreignObjectRendering: false,
-        onclone: prepareClonedDocInputs,
-      });
-
-      if (parentContainer) parentContainer.style.overflow = origOverflow;
-      guiElement.style.width = originalWidth;
-      guiElement.style.height = originalHeight;
-      guiElement.style.transform = originalTransform;
-      guiElement.style.transformOrigin = originalOrigin;
-    }
+    // html2canvas auf den gesamten canvas-container (SVG + Overlay zusammen)
+    const resultCanvas = await html2canvas(canvasContainer, {
+      backgroundColor: "#ffffff",
+      scale: boardWidth / canvasContainer.offsetWidth,
+      width: canvasContainer.offsetWidth,
+      height: canvasContainer.offsetHeight,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      letterRendering: true,
+      foreignObjectRendering: false,
+      onclone: prepareClonedDocInputs,
+    });
 
     iframeElements.forEach((el) => (el.style.visibility = ""));
 
-    const [svgCanvas, model3dImages] = await Promise.all([
-      svgPromise,
-      model3dPromise,
-    ]);
+    const model3dImages = await model3dPromise;
 
-    const finalCanvas = document.createElement("canvas");
-    finalCanvas.width = boardWidth;
-    finalCanvas.height = boardHeight;
-    const ctx = finalCanvas.getContext("2d");
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
+    // Falls Model3D-Bilder vorhanden, auf das Ergebnis compositen
+    if (model3dImages.length > 0) {
+      const finalCanvas = document.createElement("canvas");
+      finalCanvas.width = resultCanvas.width;
+      finalCanvas.height = resultCanvas.height;
+      const ctx = finalCanvas.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
 
-    if (svgCanvas) ctx.drawImage(svgCanvas, 0, 0, boardWidth, boardHeight);
-    if (guiCanvas) ctx.drawImage(guiCanvas, 0, 0);
-    drawModel3DImages(ctx, model3dImages);
+      // Layer 1: html2canvas-Ergebnis (SVG + Overlay)
+      ctx.drawImage(resultCanvas, 0, 0);
 
-    ctx.globalCompositeOperation = "destination-over";
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, boardWidth, boardHeight);
-    ctx.globalCompositeOperation = "source-over";
+      // Layer 2: Model3D-Bilder obenauf
+      drawModel3DImages(ctx, model3dImages);
 
-    downloadCanvas(finalCanvas, `${tabName}.png`);
+      downloadCanvas(finalCanvas, `${tabName}.png`);
+    } else {
+      downloadCanvas(resultCanvas, `${tabName}.png`);
+    }
   } catch (error) {
     console.error("Fehler beim SVG-Screenshot mit Model3D:", error);
   } finally {
-    if (guiElement) {
-      const parentContainer = guiElement.parentElement;
-      if (parentContainer) parentContainer.style.overflow = "";
-    }
     iframeElements.forEach((el) => (el.style.visibility = ""));
     mathJaxElements.forEach((el) => (el.style.display = ""));
-    if (guiElement && originalTransform !== undefined) {
-      guiElement.style.width = originalWidth;
-      guiElement.style.height = originalHeight;
-      guiElement.style.transform = originalTransform;
-      guiElement.style.transformOrigin = originalOrigin;
-    }
   }
 }
 
