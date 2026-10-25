@@ -1132,7 +1132,8 @@ async function takeScreenshotSVGClassic(
 /**
  * SVG-Screenshot mit Model3D-Unterstützung.
  *
- * WICHTIG – NICHT den Ansatz ändern, SVG und Overlay getrennt zu erfassen!
+ * WICHTIG – NICHT den Ansatz ändern, SVG und Overlay in Layer 1 getrennt
+ * zu erfassen!
  *
  * Ein früherer Ansatz (v3.19.3) renderte drei separate Layer:
  *   1. SVG via XMLSerializer → Image → Canvas
@@ -1144,8 +1145,10 @@ async function takeScreenshotSVGClassic(
  *   - SplinePath-Kurven und andere SVG-Elemente fehlten teilweise
  *
  * Der aktuelle Ansatz nutzt html2canvas auf den GESAMTEN canvas-container
- * (identisch mit takeScreenshotSVGClassic), und composited nur die
- * Model3D-Bilder als separate Schicht darüber.
+ * (identisch mit takeScreenshotSVGClassic) als Basis, composited die
+ * Model3D-Bilder darüber, und rendert das GUI-Overlay als oberste Schicht,
+ * damit HTML-Elemente (HtmlRectangle, Text, Checkbox etc.) über dem
+ * 3D-Modell sichtbar bleiben – wie im Live-DOM.
  */
 async function takeScreenshotSVGWithModel3D(
   canvasContainer,
@@ -1194,6 +1197,47 @@ async function takeScreenshotSVGWithModel3D(
 
     // Falls Model3D-Bilder vorhanden, auf das Ergebnis compositen
     if (model3dImages.length > 0) {
+      // GUI-Overlay separat erfassen, damit es ÜBER den Model3D-Bildern liegt.
+      // Model3D-iframes können die volle Board-Fläche einnehmen und würden
+      // sonst die HTML-Elemente (HtmlRectangle, Text, Checkbox etc.) verdecken.
+      let guiCanvas = null;
+      if (guiElement) {
+        const originalTransform = guiElement.style.transform || "";
+        const originalOrigin = guiElement.style.transformOrigin || "";
+        const originalWidth = guiElement.style.width;
+        const originalHeight = guiElement.style.height;
+        const originalOverflow = canvasContainer ? canvasContainer.style.overflow : "";
+
+        guiElement.style.width = boardWidth + "px";
+        guiElement.style.height = boardHeight + "px";
+        guiElement.style.transform = "none";
+        guiElement.style.transformOrigin = "0 0";
+        if (canvasContainer) canvasContainer.style.overflow = "visible";
+
+        try {
+          guiCanvas = await html2canvas(guiElement, {
+            backgroundColor: null,
+            scale: resultCanvas.width / boardWidth,
+            width: boardWidth,
+            height: boardHeight,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            letterRendering: true,
+            foreignObjectRendering: false,
+            onclone: prepareClonedDocInputs,
+          });
+        } catch (e) {
+          console.warn("[Screenshot] GUI-Overlay-Capture fehlgeschlagen:", e);
+        }
+
+        if (canvasContainer) canvasContainer.style.overflow = originalOverflow;
+        guiElement.style.width = originalWidth;
+        guiElement.style.height = originalHeight;
+        guiElement.style.transform = originalTransform;
+        guiElement.style.transformOrigin = originalOrigin;
+      }
+
       const finalCanvas = document.createElement("canvas");
       finalCanvas.width = resultCanvas.width;
       finalCanvas.height = resultCanvas.height;
@@ -1201,11 +1245,25 @@ async function takeScreenshotSVGWithModel3D(
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
+      // ── WICHTIG: Layer-Reihenfolge nicht ändern! ──────────────────
+      // Model3D-iframes können die gesamte Board-Fläche (z.B. 1280×720)
+      // einnehmen. Wenn Model3D als oberstes Layer gezeichnet wird,
+      // verdeckt es alle HTML-Overlay-Elemente (HtmlRectangle, Text,
+      // Checkbox etc.). Deshalb MUSS das GUI-Overlay als letztes Layer
+      // gezeichnet werden, damit es – wie im Live-DOM – über dem
+      // 3D-Modell sichtbar bleibt. (Fix aus v3.19.6)
+      // ─────────────────────────────────────────────────────────────
+
       // Layer 1: html2canvas-Ergebnis (SVG + Overlay)
       ctx.drawImage(resultCanvas, 0, 0);
 
-      // Layer 2: Model3D-Bilder obenauf
+      // Layer 2: Model3D-Bilder
       drawModel3DImages(ctx, model3dImages);
+
+      // Layer 3: GUI-Overlay obenauf
+      if (guiCanvas) {
+        ctx.drawImage(guiCanvas, 0, 0, finalCanvas.width, finalCanvas.height);
+      }
 
       downloadCanvas(finalCanvas, `${tabName}.png`);
     } else {
@@ -1348,15 +1406,20 @@ async function takeScreenshotPixi() {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
+    // ── WICHTIG: Layer-Reihenfolge nicht ändern! ────────────────
+    // Model3D-iframes können die gesamte Board-Fläche einnehmen.
+    // GUI-Overlay MUSS als letztes Layer gezeichnet werden, damit
+    // HTML-Elemente über dem 3D-Modell sichtbar bleiben. (v3.19.6)
+    // ───────────────────────────────────────────────────────────
+
     // Layer 1: PixiJS-Rendering (Hintergrund)
     ctx.drawImage(pixiCanvas, 0, 0);
 
-    // Layer 2: GUI-Overlay (Text, Buttons, Rahmen etc.)
-    ctx.drawImage(guiCanvas, 0, 0, pixiCanvas.width, pixiCanvas.height);
-
-    // Layer 3: 3D-Modelle (obenauf, wie im Live-DOM wo das iframe
-    // spätere DOM-Elemente überdeckt — z.B. ein HtmlRectangle-Rahmen)
+    // Layer 2: 3D-Modelle
     drawModel3DImages(ctx, model3dImages);
+
+    // Layer 3: GUI-Overlay obenauf (Text, Buttons, Rahmen etc.)
+    ctx.drawImage(guiCanvas, 0, 0, pixiCanvas.width, pixiCanvas.height);
 
     // Download
     downloadCanvas(finalCanvas, `${tabName}.png`);
