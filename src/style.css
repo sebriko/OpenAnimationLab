@@ -213,6 +213,20 @@ textarea,
   color: var(--error-color);
 }
 
+/* Tab drag-and-drop reordering */
+.tab-sortable-ghost {
+  opacity: 0.4;
+}
+
+.tab-sortable-chosen {
+  cursor: grabbing;
+}
+
+.tab-sortable-drag {
+  opacity: 0.9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 /* ==============================================
    APP TITLE - NEUE POSITIONIERUNG
    ============================================== */

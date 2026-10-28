@@ -318,6 +318,41 @@ function createTabElement(tabName) {
   return newTab;
 }
 
+let tabSortableInstance = null;
+
+function initTabSortable() {
+  const tabsContainer = document.querySelector(".tabs");
+  if (!tabsContainer || typeof Sortable === "undefined") return;
+
+  if (tabSortableInstance) {
+    tabSortableInstance.destroy();
+  }
+
+  tabSortableInstance = Sortable.create(tabsContainer, {
+    animation: 150,
+    draggable: ".tab",
+    filter: ".plus-tab",
+    ghostClass: "tab-sortable-ghost",
+    chosenClass: "tab-sortable-chosen",
+    dragClass: "tab-sortable-drag",
+    direction: "horizontal",
+    onEnd: function () {
+      // Re-attach click handlers since DOM reorder may affect them
+      tabsContainer.querySelectorAll(".tab").forEach((tabEl) => {
+        const tabName = tabEl.getAttribute("data-tab");
+        tabEl.onclick = () => switchTab(tabName);
+        const closeBtn = tabEl.querySelector(".close-tab");
+        if (closeBtn) {
+          closeBtn.onclick = (event) => {
+            event.stopPropagation();
+            closeTab(tabName);
+          };
+        }
+      });
+    },
+  });
+}
+
 function createPreviewContainer(tabName) {
   const previewContainer = document.createElement("div");
   previewContainer.id = "preview-" + tabName;
@@ -1358,6 +1393,7 @@ function createTemplateItem(template, tabName) {
 
 document.addEventListener("DOMContentLoaded", () => {
   monitorTemplatesLoading();
+  initTabSortable();
 });
 
 if (

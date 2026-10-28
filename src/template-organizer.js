@@ -913,7 +913,9 @@ if (typeof Sortable === "undefined") {
   const script = document.createElement("script");
   script.src =
     "https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js";
-  script.onload = () => {};
+  script.onload = () => {
+    if (typeof initTabSortable === "function") initTabSortable();
+  };
   document.head.appendChild(script);
 }
 
