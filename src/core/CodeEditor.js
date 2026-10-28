@@ -1918,6 +1918,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         window.contentMarks.push(mark);
       }
+
+      // Refresh editor so scrollbar reflects collapsed content size
+      setTimeout(() => editor.refresh(), 0);
     });
 
     editor.on("changes", () => {
