@@ -730,9 +730,9 @@ async function publishH5P() {
     .pixi-button:active { background:#ddd; }
     .pixi-button.active { border-color:#228b22; background:#e8f5e8; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async><\/script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
   ${rendererScripts}
-  <script>window.exportMode=true;<\/script>
+  <script>window.exportMode=true;</script>
 </head>
 <body>
   <div id="preview"><div id="loading-overlay"></div></div>
@@ -741,7 +741,7 @@ async function publishH5P() {
     ${rendererAlias}
     ${jsCode}
     ${postLoadCode}
-  <\/script>
+  </script>
 </body>
 </html>`;
 
