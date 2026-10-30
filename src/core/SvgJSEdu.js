@@ -5847,28 +5847,51 @@ SvgJSEdu.PointLabel = class PointLabel extends SvgJSElement {
 
   _parseHTMLText(htmlText) {
     const segments = [];
-    const regex = /<(sub|sup)>(.*?)<\/\1>/g;
+    const tagRegex = /<\/?(\w+)>/g;
     let lastIndex = 0;
+    let bold = false;
+    let italic = false;
+    let type = "normal";
+    const typeStack = [];
     let match;
 
-    while ((match = regex.exec(htmlText)) !== null) {
+    while ((match = tagRegex.exec(htmlText)) !== null) {
       if (match.index > lastIndex) {
         segments.push({
           text: htmlText.substring(lastIndex, match.index),
-          type: "normal",
+          type: type,
+          bold: bold,
+          italic: italic,
         });
       }
-      segments.push({
-        text: match[2],
-        type: match[1],
-      });
-      lastIndex = regex.lastIndex;
+
+      const isClosing = match[0].startsWith("</");
+      const tagName = match[1].toLowerCase();
+
+      if (!isClosing) {
+        if (tagName === "b") bold = true;
+        else if (tagName === "i") italic = true;
+        else if (tagName === "sub" || tagName === "sup") {
+          typeStack.push(type);
+          type = tagName;
+        }
+      } else {
+        if (tagName === "b") bold = false;
+        else if (tagName === "i") italic = false;
+        else if (tagName === "sub" || tagName === "sup") {
+          type = typeStack.pop() || "normal";
+        }
+      }
+
+      lastIndex = tagRegex.lastIndex;
     }
 
     if (lastIndex < htmlText.length) {
       segments.push({
         text: htmlText.substring(lastIndex),
-        type: "normal",
+        type: type,
+        bold: bold,
+        italic: italic,
       });
     }
 
@@ -5896,6 +5919,8 @@ SvgJSEdu.PointLabel = class PointLabel extends SvgJSElement {
         const tspan = add.tspan(segment.text).font({
           family: self._fontFamily,
           size: size,
+          weight: segment.bold ? "bold" : "normal",
+          style: segment.italic ? "italic" : "normal",
         });
 
         if (segment.type === "sub") {
@@ -6272,28 +6297,51 @@ SvgJSEdu.LineLabel = class LineLabel extends SvgJSElement {
 
   _parseHTMLText(htmlText) {
     const segments = [];
-    const regex = /<(sub|sup)>(.*?)<\/\1>/g;
+    const tagRegex = /<\/?(\w+)>/g;
     let lastIndex = 0;
+    let bold = false;
+    let italic = false;
+    let type = "normal";
+    const typeStack = [];
     let match;
 
-    while ((match = regex.exec(htmlText)) !== null) {
+    while ((match = tagRegex.exec(htmlText)) !== null) {
       if (match.index > lastIndex) {
         segments.push({
           text: htmlText.substring(lastIndex, match.index),
-          type: "normal",
+          type: type,
+          bold: bold,
+          italic: italic,
         });
       }
-      segments.push({
-        text: match[2],
-        type: match[1],
-      });
-      lastIndex = regex.lastIndex;
+
+      const isClosing = match[0].startsWith("</");
+      const tagName = match[1].toLowerCase();
+
+      if (!isClosing) {
+        if (tagName === "b") bold = true;
+        else if (tagName === "i") italic = true;
+        else if (tagName === "sub" || tagName === "sup") {
+          typeStack.push(type);
+          type = tagName;
+        }
+      } else {
+        if (tagName === "b") bold = false;
+        else if (tagName === "i") italic = false;
+        else if (tagName === "sub" || tagName === "sup") {
+          type = typeStack.pop() || "normal";
+        }
+      }
+
+      lastIndex = tagRegex.lastIndex;
     }
 
     if (lastIndex < htmlText.length) {
       segments.push({
         text: htmlText.substring(lastIndex),
-        type: "normal",
+        type: type,
+        bold: bold,
+        italic: italic,
       });
     }
 
@@ -6325,6 +6373,8 @@ SvgJSEdu.LineLabel = class LineLabel extends SvgJSElement {
         const tspan = add.tspan(segment.text).font({
           family: self._fontFamily,
           size: size,
+          weight: segment.bold ? "bold" : "normal",
+          style: segment.italic ? "italic" : "normal",
         });
 
         if (segment.type === "sub") {

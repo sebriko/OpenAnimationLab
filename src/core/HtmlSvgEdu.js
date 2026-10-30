@@ -5437,6 +5437,8 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     this._isReady = false;
     this._messageQueue = [];
     this._pendingPings = {};
+    this._batchQueue = null;          // null = kein Batch aktiv, [] = Sammelmodus
+    this._batchFlushId = 0;           // RAF-ID für automatisches Flush
     this._boundMessageHandler = this._handleMessage.bind(this);
     HtmlSvgEdu.Model3D._instances.add(this);
 
@@ -5469,6 +5471,8 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
         this._element.contentWindow.postMessage(queued, "*");
       }
       this._messageQueue = [];
+      // Batch-Modus automatisch aktivieren für optimale Performance
+      this.enableBatching();
       if (this._readyCallback) this._readyCallback();
     }
     if (data.action === "ping" && data.data && data.data.pingId) {
@@ -5646,15 +5650,70 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
   }
 
   setPosition(object, x, y, z) {
-    this._postMessage({ action: "setPosition", object, x, y, z });
+    const cmd = { action: "setPosition", object, x, y, z };
+    if (this._batchQueue) {
+      this._batchQueue.push(cmd);
+      this._scheduleBatchFlush();
+    } else {
+      this._postMessage(cmd);
+    }
   }
 
   setRotation(object, x, y, z) {
-    this._postMessage({ action: "setRotation", object, x, y, z });
+    const cmd = { action: "setRotation", object, x, y, z };
+    if (this._batchQueue) {
+      this._batchQueue.push(cmd);
+      this._scheduleBatchFlush();
+    } else {
+      this._postMessage(cmd);
+    }
   }
 
   setScale(object, x, y, z) {
-    this._postMessage({ action: "setScale", object, x, y, z });
+    const cmd = { action: "setScale", object, x, y, z };
+    if (this._batchQueue) {
+      this._batchQueue.push(cmd);
+      this._scheduleBatchFlush();
+    } else {
+      this._postMessage(cmd);
+    }
+  }
+
+  /**
+   * Aktiviert den Batch-Modus: Nachfolgende setPosition/setRotation/setScale-
+   * Aufrufe werden gesammelt und am Ende des aktuellen Frames als ein einziger
+   * postMessage-Aufruf verschickt. Das reduziert den Overhead drastisch.
+   * Kann auch manuell mit flushBatch() ausgelöst werden.
+   */
+  enableBatching() {
+    if (!this._batchQueue) this._batchQueue = [];
+  }
+
+  disableBatching() {
+    if (this._batchQueue && this._batchQueue.length) this.flushBatch();
+    this._batchQueue = null;
+    if (this._batchFlushId) {
+      cancelAnimationFrame(this._batchFlushId);
+      this._batchFlushId = 0;
+    }
+  }
+
+  flushBatch() {
+    if (!this._batchQueue || !this._batchQueue.length) return;
+    this._postMessage({ action: "batch", commands: this._batchQueue });
+    this._batchQueue = [];
+    if (this._batchFlushId) {
+      cancelAnimationFrame(this._batchFlushId);
+      this._batchFlushId = 0;
+    }
+  }
+
+  _scheduleBatchFlush() {
+    if (this._batchFlushId) return;
+    this._batchFlushId = requestAnimationFrame(() => {
+      this._batchFlushId = 0;
+      this.flushBatch();
+    });
   }
 
   setVisible(object, visible) {

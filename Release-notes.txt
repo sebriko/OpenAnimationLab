@@ -67,3 +67,4 @@
 3.19.8 (2026-10-28) Tabs per Drag-and-Drop verschiebbar – Reihenfolge der geöffneten Tabs kann jetzt mit der Maus geändert werden
 3.19.9 (2026-10-29) Bugfix: H5P-Export erzeugte weiße Seite – doppeltes Escaping von </script> in content.json behoben (String.raw bewahrte Backslash wörtlich, JSON.stringify verdoppelte ihn)
 3.19.10 (2026-10-31) Bugfix: HTML- und H5P-Export setzten immer lang="de" – die Sprache der Animation wird jetzt ermittelt (Angabe „// lang: en“ im Code, sonst aus Texten und Kommentaren, sonst Oberflächensprache); H5P-Metadaten enthalten die Sprache statt „und“
+3.19.11 (2026-10-31) PointLabel und LineLabel unterstützen jetzt die Tags b und i (fett/kursiv), auch kombiniert und verschachtelt mit sub/sup (PixiJSEdu und SvgJSEdu); Model3D: setPosition(), setRotation() und setScale() werden pro Frame gesammelt und als ein Batch an die 3D-Szene geschickt (automatisch nach Bereitschaft aktiv; enableBatching(), disableBatching(), flushBatch())

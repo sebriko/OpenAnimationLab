@@ -5513,30 +5513,51 @@ PixiJSEdu.PointLabel = class PointLabel extends PIXI.Container {
 
   _parseHTMLText(htmlText) {
     const segments = [];
-    const regex = /<(sub|sup)>(.*?)<\/\1>/g;
+    const tagRegex = /<\/?(\w+)>/g;
     let lastIndex = 0;
+    let bold = false;
+    let italic = false;
+    let type = "normal";
+    const typeStack = [];
     let match;
 
-    while ((match = regex.exec(htmlText)) !== null) {
+    while ((match = tagRegex.exec(htmlText)) !== null) {
       if (match.index > lastIndex) {
         segments.push({
           text: htmlText.substring(lastIndex, match.index),
-          type: "normal",
+          type: type,
+          bold: bold,
+          italic: italic,
         });
       }
 
-      segments.push({
-        text: match[2],
-        type: match[1],
-      });
+      const isClosing = match[0].startsWith("</");
+      const tagName = match[1].toLowerCase();
 
-      lastIndex = regex.lastIndex;
+      if (!isClosing) {
+        if (tagName === "b") bold = true;
+        else if (tagName === "i") italic = true;
+        else if (tagName === "sub" || tagName === "sup") {
+          typeStack.push(type);
+          type = tagName;
+        }
+      } else {
+        if (tagName === "b") bold = false;
+        else if (tagName === "i") italic = false;
+        else if (tagName === "sub" || tagName === "sup") {
+          type = typeStack.pop() || "normal";
+        }
+      }
+
+      lastIndex = tagRegex.lastIndex;
     }
 
     if (lastIndex < htmlText.length) {
       segments.push({
         text: htmlText.substring(lastIndex),
-        type: "normal",
+        type: type,
+        bold: bold,
+        italic: italic,
       });
     }
 
@@ -5558,6 +5579,8 @@ PixiJSEdu.PointLabel = class PointLabel extends PIXI.Container {
         fontSize: fontSize,
         fill: this._textColor,
         align: "center",
+        fontWeight: segment.bold ? "bold" : "normal",
+        fontStyle: segment.italic ? "italic" : "normal",
       });
 
       textObj.x = currentX;
@@ -5940,30 +5963,51 @@ PixiJSEdu.LineLabel = class LineLabel extends PIXI.Container {
 
   _parseHTMLText(htmlText) {
     const segments = [];
-    const regex = /<(sub|sup)>(.*?)<\/\1>/g;
+    const tagRegex = /<\/?(\w+)>/g;
     let lastIndex = 0;
+    let bold = false;
+    let italic = false;
+    let type = "normal";
+    const typeStack = [];
     let match;
 
-    while ((match = regex.exec(htmlText)) !== null) {
+    while ((match = tagRegex.exec(htmlText)) !== null) {
       if (match.index > lastIndex) {
         segments.push({
           text: htmlText.substring(lastIndex, match.index),
-          type: "normal",
+          type: type,
+          bold: bold,
+          italic: italic,
         });
       }
 
-      segments.push({
-        text: match[2],
-        type: match[1],
-      });
+      const isClosing = match[0].startsWith("</");
+      const tagName = match[1].toLowerCase();
 
-      lastIndex = regex.lastIndex;
+      if (!isClosing) {
+        if (tagName === "b") bold = true;
+        else if (tagName === "i") italic = true;
+        else if (tagName === "sub" || tagName === "sup") {
+          typeStack.push(type);
+          type = tagName;
+        }
+      } else {
+        if (tagName === "b") bold = false;
+        else if (tagName === "i") italic = false;
+        else if (tagName === "sub" || tagName === "sup") {
+          type = typeStack.pop() || "normal";
+        }
+      }
+
+      lastIndex = tagRegex.lastIndex;
     }
 
     if (lastIndex < htmlText.length) {
       segments.push({
         text: htmlText.substring(lastIndex),
-        type: "normal",
+        type: type,
+        bold: bold,
+        italic: italic,
       });
     }
 
@@ -5985,6 +6029,8 @@ PixiJSEdu.LineLabel = class LineLabel extends PIXI.Container {
         fontSize: fontSize,
         fill: this._textColor,
         align: "center",
+        fontWeight: segment.bold ? "bold" : "normal",
+        fontStyle: segment.italic ? "italic" : "normal",
       });
 
       textObj.x = currentX;
