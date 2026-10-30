@@ -149,6 +149,62 @@ function saveCode() {
   link.click(); // Der Download wird ausgelöst
 }
 
+/**
+ * Ermittelt die Sprache einer Animation für das lang-Attribut des Exports (K-002).
+ * Reihenfolge:
+ *   1. ausdrückliche Angabe im Code, z. B.  // lang: en
+ *   2. Texte und Kommentare im Code (typische deutsche/englische Wörter, Umlaute)
+ *   3. aktuelle Oberflächensprache des Tools
+ *   4. "de"
+ * @param {string} code - JavaScript-Code der Animation
+ * @returns {string} zweistelliger Sprachcode, z. B. "de" oder "en"
+ */
+function detectAnimationLanguage(code) {
+  const source = String(code || "");
+
+  // 1. Ausdrückliche Angabe: // lang: en  (auch "language: en")
+  const marker = source.match(/^[ \t]*\/\/[ \t]*lang(?:uage)?[ \t]*[:=][ \t]*([a-z]{2})\b/im);
+  if (marker) return marker[1].toLowerCase();
+
+  // 2. Nur Texte (Strings) und Kommentare auswerten – keine Bezeichner/Schlüsselwörter
+  const pieces =
+    source.match(/\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g) || [];
+  const text = pieces
+    .filter((p) => !/Created with Open Animation Lab|Open Source|MIT License/i.test(p))
+    .join(" ")
+    .toLowerCase();
+
+  const deWords = ["der", "die", "das", "und", "ist", "nicht", "mit", "für", "auf", "ein", "eine",
+    "einen", "den", "dem", "des", "wird", "werden", "sich", "von", "oder", "auch", "zum", "zur",
+    "bei", "nach", "über", "wenn", "durch", "beim", "sind", "kann", "abschnitt", "objekte",
+    "funktionen", "variablen", "konstanten", "elemente", "punkte", "winkel", "licht", "zeichnen",
+    "berechnen", "aktualisieren", "anzeigen", "ausblenden", "erstellen", "geschwindigkeit"];
+  const enWords = ["the", "and", "is", "not", "with", "of", "to", "for", "on", "an", "are",
+    "this", "that", "from", "by", "be", "can", "when", "through", "will", "which", "if", "section",
+    "objects", "functions", "variables", "constants", "elements", "points", "angle", "light", "draw",
+    "calculate", "update", "show", "hide", "create", "created", "speed"];
+  const words = text.match(/[a-zäöüß]+/g) || [];
+  const deSet = new Set(deWords);
+  const enSet = new Set(enWords);
+  let de = (text.match(/[äöüß]/g) || []).length;
+  let en = 0;
+  for (const w of words) {
+    if (deSet.has(w)) de++;
+    else if (enSet.has(w)) en++;
+  }
+  if (de >= 3 && de >= 2 * en) return "de";
+  if (en >= 3 && en >= 2 * de) return "en";
+
+  // 3. Oberflächensprache
+  if (typeof window !== "undefined" && window.i18n && typeof window.i18n.getCurrentLanguage === "function") {
+    const ui = window.i18n.getCurrentLanguage();
+    if (/^[a-z]{2}$/.test(ui)) return ui;
+  }
+
+  // 4. Standard
+  return "de";
+}
+
 async function publishCode() {
   // Tab-Name ermitteln (wie bei saveCode)
   const activeTab = document.querySelector(".tab.active");
@@ -156,6 +212,9 @@ async function publishCode() {
   tabName = tabName.slice(0, -1).trim(); // Entfernt das "x" am Ende
 
   let jsCode = editor.getValue();
+
+  // Sprache der Animation für <html lang> (K-002)
+  const animationLang = detectAnimationLanguage(jsCode);
 
   jsCode = jsCode.replace(/\\(?![\\'"`])/g, "\\\\");
 
@@ -254,7 +313,7 @@ async function publishCode() {
 
   const htmlTemplate = String.raw`
 <!DOCTYPE html>
-<html lang="de">
+<html lang="%%LANG%%">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -605,6 +664,7 @@ input:checked + .pixi-toggle-slider:before {
 </html>`;
 
   let htmlContent = htmlTemplate
+    .replace("%%LANG%%", () => animationLang)
     .replace("%%RENDERER_SCRIPTS%%", () => rendererScripts)
     .replace("%%RENDERER_ALIAS%%", () => rendererAlias)
     .replace("%%JSCODE_PLACEHOLDER%%", () => jsCode)
@@ -653,6 +713,7 @@ async function publishH5P() {
   tabName = tabName.slice(0, -1).trim();
 
   let jsCode = editor.getValue();
+  const animationLang = detectAnimationLanguage(jsCode); // K-002
   jsCode = jsCode.replace(/\\(?![\\'"`])/g, "\\\\");
   jsCode = replacer(jsCode);
 
@@ -714,7 +775,7 @@ async function publishH5P() {
   }
 
   const htmlContent = String.raw`<!DOCTYPE html>
-<html lang="de">
+<html lang="${animationLang}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -751,7 +812,7 @@ async function publishH5P() {
   // h5p.json – package metadata
   zip.file("h5p.json", JSON.stringify({
     title: tabName,
-    language: "und",
+    language: animationLang,
     mainLibrary: "H5P.OALAnimation",
     license: "C",
     authors: [],

@@ -66,3 +66,4 @@
 3.19.7 (2026-10-28) Bugfix: Scrollbalken im Code-Editor spiegelte bei eingeklappten Inhalten (SVG, Base64, X3D) noch die volle Codelänge wider statt die tatsächliche visuelle Höhe
 3.19.8 (2026-10-28) Tabs per Drag-and-Drop verschiebbar – Reihenfolge der geöffneten Tabs kann jetzt mit der Maus geändert werden
 3.19.9 (2026-10-29) Bugfix: H5P-Export erzeugte weiße Seite – doppeltes Escaping von </script> in content.json behoben (String.raw bewahrte Backslash wörtlich, JSON.stringify verdoppelte ihn)
+3.19.10 (2026-10-31) Bugfix: HTML- und H5P-Export setzten immer lang="de" – die Sprache der Animation wird jetzt ermittelt (Angabe „// lang: en“ im Code, sonst aus Texten und Kommentaren, sonst Oberflächensprache); H5P-Metadaten enthalten die Sprache statt „und“
