@@ -1092,7 +1092,7 @@ async function takeScreenshotSVG() {
   // Tab-Name für Dateinamen
   const activeTab = document.querySelector(".tab.active");
   const tabName = activeTab
-    ? activeTab.textContent.trim().slice(0, -1)
+    ? activeTab.textContent.trim().slice(0, -1).trim()
     : "screenshot";
 
   if (hasModel3DInstances()) {
@@ -1372,7 +1372,7 @@ async function takeScreenshotPixi() {
   // Tab-Name für Dateinamen
   const activeTab = document.querySelector(".tab.active");
   const tabName = activeTab
-    ? activeTab.textContent.trim().slice(0, -1)
+    ? activeTab.textContent.trim().slice(0, -1).trim()
     : "screenshot";
 
   // UI-Overlay Element finden
@@ -1554,7 +1554,7 @@ async function takeScreenshotWithHtml2Canvas() {
   const pixiCanvas = app.renderer.extract.canvas(app.stage);
   const activeTab = document.querySelector(".tab.active");
   const tabName = activeTab
-    ? activeTab.textContent.trim().slice(0, -1)
+    ? activeTab.textContent.trim().slice(0, -1).trim()
     : "screenshot";
 
   const guiElement = document.getElementById("pixi-ui-overlay");
@@ -1652,7 +1652,50 @@ async function prepareForHtml2Canvas(element) {
 /**
  * Download-Funktion
  */
+/**
+ * K-004: html2canvas rundet die Höhe mitunter um 1 px auf (z. B. 1280×721).
+ * Weicht das Bild nur um bis zu 2 px von der Board-Größe ab, wird es auf die
+ * exakte Board-Größe gebracht (überstehende Pixel abschneiden, fehlende
+ * durch Skalieren auffüllen). Größere Abweichungen (z. B. hohe Auflösung)
+ * bleiben unverändert.
+ */
+function fitCanvasToBoardSize(canvas) {
+  let board = null;
+  try {
+    board =
+      typeof BoardSVG !== "undefined" && BoardSVG.getInstance
+        ? BoardSVG.getInstance()
+        : typeof Board !== "undefined" && Board.getInstance
+          ? Board.getInstance()
+          : null;
+  } catch (e) {
+    board = null;
+  }
+  if (!board || !board.width || !board.height) return canvas;
+
+  const w = Math.round(board.width);
+  const h = Math.round(board.height);
+  const dw = canvas.width - w;
+  const dh = canvas.height - h;
+  if ((dw === 0 && dh === 0) || Math.abs(dw) > 2 || Math.abs(dh) > 2) {
+    return canvas;
+  }
+
+  const fitted = document.createElement("canvas");
+  fitted.width = w;
+  fitted.height = h;
+  const ctx = fitted.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  // Breite/Höhe: zu groß → abschneiden, zu klein → strecken
+  const sw = dw > 0 ? w : canvas.width;
+  const sh = dh > 0 ? h : canvas.height;
+  ctx.drawImage(canvas, 0, 0, sw, sh, 0, 0, w, h);
+  return fitted;
+}
+
 function downloadCanvas(canvas, filename) {
+  canvas = fitCanvasToBoardSize(canvas);
   canvas.toBlob(
     (blob) => {
       const link = document.createElement("a");

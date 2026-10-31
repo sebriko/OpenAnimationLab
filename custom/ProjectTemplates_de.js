@@ -3,7 +3,7 @@ const projectTemplates = {
     {
       name: "General",
       description:
-        "Das 16:9-Format hat sich in vielen Zusammenhang als das beste herausgellt. Hinweis: Animationen werden unabhängig von der ursprünglich eingestellten Pixelwert optimal skaliert.",
+        "Das 16:9-Format hat sich in vielen Zusammenhängen als das beste herausgestellt. Hinweis: Animationen werden unabhängig von den ursprünglich eingestellten Pixelwerten optimal skaliert.",
       templates: [
         {
           image: "blank.png",

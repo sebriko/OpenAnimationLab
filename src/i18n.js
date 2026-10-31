@@ -639,9 +639,24 @@ class I18nManager {
   }
 
   initializeLanguage() {
+    // K-001: Dieselbe Reihenfolge wie die Vorlagen-Auswahl in index.html
+    // (URL-Parameter ?lang= > localStorage > Cookie > Browsersprache),
+    // damit Oberfläche und Vorlagen immer dieselbe Sprache haben.
+    const urlLanguage = new URLSearchParams(window.location.search).get("lang");
+    const detectedLanguage = window.__detectedLanguage;
     const savedLanguage = this.getCookie("language");
 
-    if (savedLanguage && this.supportedLanguages.includes(savedLanguage)) {
+    if (urlLanguage && this.supportedLanguages.includes(urlLanguage)) {
+      this.currentLanguage = urlLanguage;
+    } else if (
+      detectedLanguage &&
+      this.supportedLanguages.includes(detectedLanguage)
+    ) {
+      this.currentLanguage = detectedLanguage;
+    } else if (
+      savedLanguage &&
+      this.supportedLanguages.includes(savedLanguage)
+    ) {
       this.currentLanguage = savedLanguage;
     } else {
       const browserLang = navigator.language.substring(0, 2);
