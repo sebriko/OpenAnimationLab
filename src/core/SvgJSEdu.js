@@ -5588,8 +5588,8 @@ SvgJSEdu.PointLabel = class PointLabel extends SvgJSElement {
       label: {
         name: "label",
         info: {
-          en: "Text to display as label (supports <sub> and <sup> tags)",
-          de: "Text der als Beschriftung angezeigt wird (unterstützt <sub> und <sup> Tags)",
+          en: "Text to display as label (supports <b>, <i>, <sub> and <sup> tags, also combined and nested)",
+          de: "Text, der als Beschriftung angezeigt wird (unterstützt die Tags <b>, <i>, <sub> und <sup>, auch kombiniert und verschachtelt)",
         },
       },
       offsetX: {
@@ -5678,10 +5678,10 @@ SvgJSEdu.PointLabel = class PointLabel extends SvgJSElement {
     },
     methods: {
       setText: {
-        example: 'setText("H<sub>2</sub>O")',
+        example: 'setText("<b>F</b><sub>res</sub> = <i>m</i> · <i>a</i>")',
         info: {
-          en: "Changes the text of the label (supports <sub> and <sup> tags)",
-          de: "Ändert den Text der Beschriftung (unterstützt <sub> und <sup> Tags)",
+          en: "Changes the text of the label (supports <b>, <i>, <sub> and <sup> tags)",
+          de: "Ändert den Text der Beschriftung (unterstützt die Tags <b>, <i>, <sub> und <sup>)",
         },
       },
       setTextColor: {
@@ -6085,8 +6085,8 @@ SvgJSEdu.LineLabel = class LineLabel extends SvgJSElement {
       label: {
         name: "label",
         info: {
-          en: "Text to display as label (supports <sub> and <sup> tags)",
-          de: "Text der als Beschriftung angezeigt wird (unterstützt <sub> und <sup> Tags)",
+          en: "Text to display as label (supports <b>, <i>, <sub> and <sup> tags, also combined and nested)",
+          de: "Text, der als Beschriftung angezeigt wird (unterstützt die Tags <b>, <i>, <sub> und <sup>, auch kombiniert und verschachtelt)",
         },
       },
       distance: {
@@ -6168,10 +6168,10 @@ SvgJSEdu.LineLabel = class LineLabel extends SvgJSElement {
     },
     methods: {
       setText: {
-        example: 'setText("H<sub>2</sub>O")',
+        example: 'setText("<b>F</b><sub>res</sub> = <i>m</i> · <i>a</i>")',
         info: {
-          en: "Changes the text of the label (supports <sub> and <sup> tags)",
-          de: "Ändert den Text der Beschriftung (unterstützt <sub> und <sup> Tags)",
+          en: "Changes the text of the label (supports <b>, <i>, <sub> and <sup> tags)",
+          de: "Ändert den Text der Beschriftung (unterstützt die Tags <b>, <i>, <sub> und <sup>)",
         },
       },
       setTextColor: {

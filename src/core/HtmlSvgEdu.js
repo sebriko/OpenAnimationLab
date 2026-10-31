@@ -181,6 +181,46 @@ HtmlSvgEdu.Component = class Component {
     }
     return parts;
   }
+  // Zerlegt Text in Abschnitte mit Formatierung: <b> (fett), <i> (kursiv),
+  // <sub>, <sup> – auch kombiniert und verschachtelt. Andere Zeichen (z. B. "<")
+  // bleiben normaler Text. Mit "state" werden offene Tags an die nächste Zeile
+  // weitergegeben (z. B. bei Zeilenumbruch innerhalb von <b>…</b>).
+  _parseFormattedText(text, state) {
+    const st = state || { bold: 0, italic: 0, typeStack: [] };
+    const segments = [];
+    const tagRegex = /<(\/?)(b|i|sub|sup)>/gi;
+    let lastIndex = 0;
+    let match;
+    const pushText = (t) => {
+      if (!t) return;
+      segments.push({
+        text: t,
+        type: st.typeStack.length
+          ? st.typeStack[st.typeStack.length - 1]
+          : "normal",
+        bold: st.bold > 0,
+        italic: st.italic > 0,
+      });
+    };
+    while ((match = tagRegex.exec(text)) !== null) {
+      pushText(text.substring(lastIndex, match.index));
+      const closing = match[1] === "/";
+      const tag = match[2].toLowerCase();
+      if (tag === "b") {
+        st.bold = closing ? Math.max(0, st.bold - 1) : st.bold + 1;
+      } else if (tag === "i") {
+        st.italic = closing ? Math.max(0, st.italic - 1) : st.italic + 1;
+      } else if (closing) {
+        const pos = st.typeStack.lastIndexOf(tag);
+        if (pos >= 0) st.typeStack.splice(pos, 1);
+      } else {
+        st.typeStack.push(tag);
+      }
+      lastIndex = tagRegex.lastIndex;
+    }
+    pushText(text.substring(lastIndex));
+    return segments;
+  }
   _calculateTextDimensions() {
     const lines = this._label.split("\\n");
     let maxLineWidth = 0;
@@ -3509,8 +3549,8 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       text: {
         name: "text",
         info: {
-          en: "Text content to display (\\n for line break, <sub></sub> and <sup></sup> for subscript/superscript possible)",
-          de: "Anzuzeigender Textinhalt (\\n für Zeilenwechsel, <sub></sub> und <sup></sup> für tiefgestellt/hochgestellt möglich)",
+          en: "Text content to display (\\n for line break; <b></b> bold, <i></i> italic, <sub></sub> subscript, <sup></sup> superscript – also combined and nested)",
+          de: "Anzuzeigender Textinhalt (\\n für Zeilenwechsel; <b></b> fett, <i></i> kursiv, <sub></sub> tiefgestellt, <sup></sup> hochgestellt – auch kombiniert und verschachtelt)",
         },
       },
       font: {
@@ -3588,11 +3628,11 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       setText: {
         name: "setText",
         info: {
-          en: "Changes the text content",
-          de: "Ändert den Textinhalt",
+          en: "Changes the text content (supports <b>, <i>, <sub> and <sup> tags)",
+          de: "Ändert den Textinhalt (unterstützt die Tags <b>, <i>, <sub> und <sup>)",
         },
         example:
-          'setText("New text with <sub>subscript</sub> and <sup>superscript</sup>")',
+          'setText("<b>Note:</b> H<sub>2</sub>O is <i>water</i>, x<sup>2</sup> is a square")',
       },
       setFont: {
         name: "setFont",
@@ -3705,8 +3745,9 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     const lines = this._text.split("\\n");
     let maxLineWidth = 0;
     let totalHeight = 0;
+    const formatState = { bold: 0, italic: 0, typeStack: [] };
     lines.forEach((line) => {
-      const parsedLine = this._parseHtmlTags(line);
+      const parsedLine = this._parseFormattedText(line, formatState);
       let lineWidth = 0;
       let lineHeight = this._fontSize;
       parsedLine.forEach((part) => {
@@ -3719,6 +3760,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
           charWidth = part.text.length * (this._fontSize * 0.6);
           partHeight = this._fontSize;
         }
+        if (part.bold) charWidth *= HtmlSvgEdu.Text.BOLD_WIDTH_FACTOR;
         lineWidth += charWidth;
         lineHeight = Math.max(lineHeight, partHeight);
       });
@@ -3768,10 +3810,20 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
   }
   _estimateTextWidth(text) {
     const plainText = text.replace(/<[^>]+>/g, "");
-    return (
+    let width =
       plainText.length * (this._fontSize * 0.6) +
-      Math.max(0, plainText.length - 1) * this._letterSpacing
-    );
+      Math.max(0, plainText.length - 1) * this._letterSpacing;
+    if (/<b>/i.test(text)) {
+      // Fett gesetzte Abschnitte sind etwas breiter
+      this._parseFormattedText(text).forEach((part) => {
+        if (part.bold) {
+          const len = part.text.replace(/<[^>]+>/g, "").length;
+          width +=
+            len * this._fontSize * 0.6 * (HtmlSvgEdu.Text.BOLD_WIDTH_FACTOR - 1);
+        }
+      });
+    }
+    return width;
   }
   _measureTextWidth(text) {
     const plainText = text.replace(/<[^>]+>/g, "");
@@ -3782,6 +3834,22 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     const ctx = HtmlSvgEdu.Text._measureCtx;
     ctx.font = this._fontSize + "px " + this._font;
     let width = ctx.measureText(plainText).width;
+    if (/<(b|i)>/i.test(text)) {
+      // Fett/kursiv gesetzte Abschnitte mit ihrer eigenen Schrift nachmessen
+      this._parseFormattedText(text).forEach((part) => {
+        if (!part.bold && !part.italic) return;
+        const partText = part.text.replace(/<[^>]+>/g, "");
+        ctx.font = this._fontSize + "px " + this._font;
+        const normalWidth = ctx.measureText(partText).width;
+        ctx.font =
+          (part.italic ? "italic " : "") +
+          (part.bold ? "bold " : "") +
+          this._fontSize +
+          "px " +
+          this._font;
+        width += ctx.measureText(partText).width - normalWidth;
+      });
+    }
     if (this._letterSpacing && plainText.length > 1) {
       width += (plainText.length - 1) * this._letterSpacing;
     }
@@ -4046,6 +4114,14 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       this._wrappedLines !== null
         ? 0
         : svgHeight / 2 - totalTextHeight / 2;
+    // Offene Tags (z. B. <b> über einen Zeilenumbruch hinweg) gelten weiter
+    const formatState = { bold: 0, italic: 0, typeStack: [] };
+    const baselineOffset = (type) =>
+      type === "sub"
+        ? this._fontSize * 0.25
+        : type === "sup"
+          ? -this._fontSize * 0.35
+          : 0;
     lines.forEach((line, lineIndex) => {
       const textElement = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -4082,11 +4158,17 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       if (this._letterSpacing) {
         textElement.setAttribute("letter-spacing", this._letterSpacing + "px");
       }
-      const parsedLine = this._parseHtmlTags(line);
-      if (parsedLine.length === 1 && parsedLine[0].type === "normal") {
-        textElement.textContent = parsedLine[0].text;
+      const parsedLine = this._parseFormattedText(line, formatState);
+      if (
+        parsedLine.length === 0 ||
+        (parsedLine.length === 1 &&
+          parsedLine[0].type === "normal" &&
+          !parsedLine[0].bold &&
+          !parsedLine[0].italic)
+      ) {
+        textElement.textContent = parsedLine.length ? parsedLine[0].text : "";
       } else {
-        let currentX = 0;
+        let prevOffset = 0;
         parsedLine.forEach((part, index) => {
           const tspan = document.createElementNS(
             "http://www.w3.org/2000/svg",
@@ -4097,21 +4179,19 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
           if (part.type === "sub") {
             tspan.setAttribute("class", this._instanceId + "-sub");
             tspan.setAttribute("font-size", (this._fontSize * 0.7) + "px"); // Inline-Fallback
-            tspan.setAttribute("dy", (this._fontSize * 0.25).toString());
           } else if (part.type === "sup") {
             tspan.setAttribute("class", this._instanceId + "-sup");
             tspan.setAttribute("font-size", (this._fontSize * 0.7) + "px"); // Inline-Fallback
-            tspan.setAttribute("dy", (-this._fontSize * 0.35).toString());
-          } else {
-            if (index > 0) {
-              const prevPart = parsedLine[index - 1];
-              if (prevPart.type === "sub") {
-                tspan.setAttribute("dy", (-this._fontSize * 0.25).toString());
-              } else if (prevPart.type === "sup") {
-                tspan.setAttribute("dy", (this._fontSize * 0.35).toString());
-              }
-            }
           }
+          // Grundlinie relativ zum vorherigen Abschnitt verschieben
+          const offset = baselineOffset(part.type);
+          if (offset !== prevOffset) {
+            tspan.setAttribute("dy", (offset - prevOffset).toString());
+          }
+          prevOffset = offset;
+
+          if (part.bold) tspan.setAttribute("font-weight", "bold");
+          if (part.italic) tspan.setAttribute("font-style", "italic");
 
           if (
             index > 0 &&
@@ -4205,6 +4285,9 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     }
   }
 };
+
+// Fett gesetzte Zeichen sind in Arial im Mittel etwa 10 % breiter
+HtmlSvgEdu.Text.BOLD_WIDTH_FACTOR = 1.1;
 
 HtmlSvgEdu.Preloader = class Preloader extends HtmlSvgEdu.Component {
   static serializationMap = {
@@ -5412,6 +5495,30 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
           de: "Setzt die Sichtbarkeit eines Objekts in der 3D-Szene",
         },
         example: 'setVisible("MeineKugel", false)',
+      },
+      enableBatching: {
+        name: "enableBatching",
+        info: {
+          en: "Collects setPosition(), setRotation() and setScale() calls and sends them to the 3D scene once per frame as one message (faster). Switched on automatically as soon as the scene is ready",
+          de: "Sammelt Aufrufe von setPosition(), setRotation() und setScale() und schickt sie einmal pro Frame als eine Nachricht an die 3D-Szene (schneller). Wird automatisch eingeschaltet, sobald die Szene bereit ist",
+        },
+        example: "enableBatching()",
+      },
+      disableBatching: {
+        name: "disableBatching",
+        info: {
+          en: "Switches batching off: sends collected commands immediately, then every call is sent on its own",
+          de: "Schaltet das Sammeln aus: Gesammelte Befehle werden sofort geschickt, danach jeder Aufruf einzeln",
+        },
+        example: "disableBatching()",
+      },
+      flushBatch: {
+        name: "flushBatch",
+        info: {
+          en: "Sends the collected commands immediately instead of at the end of the frame",
+          de: "Schickt die gesammelten Befehle sofort statt erst am Ende des Frames",
+        },
+        example: "flushBatch()",
       },
       flush: {
         name: "flush",
