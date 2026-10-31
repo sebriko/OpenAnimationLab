@@ -170,7 +170,7 @@
 
     <script>
         window.APP_CONFIG = {
-            version: "3.19.17",
+            version: "3.19.18",
             build: "2026-10-31",
             status: "Release",
           };
@@ -231,6 +231,7 @@
                 <div class="publish-menu" id="publishMenu">
                     <button onclick="publishCode(); closePublishMenu();" data-i18n="publish_html">HTML</button>
                     <button onclick="publishCodeOffline(); closePublishMenu();" data-i18n="publish_html_offline">HTML (offline)</button>
+                    <button onclick="publishCodeObfuscated(); closePublishMenu();" data-i18n="publish_html_obfuscated">HTML (obfuscated)</button>
                     <button onclick="publishH5P(); closePublishMenu();" data-i18n="publish_h5p">H5P</button>
                 </div>
             </div>

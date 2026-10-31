@@ -740,6 +740,134 @@ async function publishCodeOffline() {
   downloadExportHtml(offlineHtml, `${tabName} (offline).html`);
 }
 
+// HTML (obfuscated): wie der HTML-Export, aber der eingebettete Animations-
+// Code wird verkuerzt (terser) und verschleiert (javascript-obfuscator), damit
+// er ueber "Quelltext anzeigen" nicht mehr lesbar ist (F-011, 3.19.18).
+// WICHTIG: Das ist Verschleierung, kein Kopierschutz – der Browser fuehrt den
+// Code aus, also laesst er sich mit Aufwand ruecklesbar machen.
+// Die Bibliotheken (zusammen ca. 2,5 MB) werden nur bei Bedarf geladen.
+const OBFUSCATION_OPTIONS = {
+  seed: 1,
+  compact: true,
+  simplify: true,
+  stringArray: true,
+  stringArrayThreshold: 0.75,
+  stringArrayEncoding: ["base64"],
+  renameGlobals: false,
+  identifierNamesGenerator: "mangled",
+  controlFlowFlattening: false,
+  deadCodeInjection: false,
+  numbersToExpressions: false,
+  transformObjectKeys: false,
+  selfDefending: false,
+  debugProtection: false,
+  unicodeEscapeSequence: false,
+};
+
+let _obfuscationLibsPromise = null;
+function loadObfuscationLibs() {
+  if (_obfuscationLibsPromise) return _obfuscationLibsPromise;
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const el = document.createElement("script");
+      el.src = src;
+      el.onload = () => resolve();
+      el.onerror = () => reject(new Error(src));
+      document.head.appendChild(el);
+    });
+  }
+  _obfuscationLibsPromise = (async () => {
+    if (typeof Terser === "undefined") {
+      await loadScript("lib/terser/5.31.6/bundle.min.js");
+    }
+    if (typeof JavaScriptObfuscator === "undefined") {
+      await loadScript("lib/javascript-obfuscator/4.1.1/index.browser.js");
+    }
+  })().catch((error) => {
+    _obfuscationLibsPromise = null; // erneuter Versuch beim naechsten Klick
+    throw error;
+  });
+  return _obfuscationLibsPromise;
+}
+
+function obfuscationAlert(message) {
+  const lang =
+    window.i18n && typeof window.i18n.getCurrentLanguage === "function"
+      ? window.i18n.getCurrentLanguage()
+      : "de";
+  alert(
+    lang === "en"
+      ? "Obfuscated export failed: " + message + "."
+      : "Obfuscated-Export fehlgeschlagen: " + message + "."
+  );
+}
+
+async function publishCodeObfuscated() {
+  const { htmlContent, tabName } = await buildExportHtml();
+
+  try {
+    await loadObfuscationLibs();
+  } catch (error) {
+    console.error("Obfuscated-Export: Bibliothek nicht geladen:", error);
+    obfuscationAlert(
+      (window.i18n && window.i18n.getCurrentLanguage() === "en"
+        ? "a required library could not be loaded ("
+        : "eine benoetigte Bibliothek konnte nicht geladen werden (") +
+        error.message +
+        ")"
+    );
+    return;
+  }
+
+  // Nur den Inline-Block mit dem Animations-Code verarbeiten (die externen
+  // Bibliotheks- und Kernskripte bleiben unveraendert).
+  const scriptBlock = /<script>([\s\S]*?)<\/script>/g;
+  let target = null;
+  let match;
+  while ((match = scriptBlock.exec(htmlContent))) {
+    if (match[1].includes("Created with Open Animation Lab")) target = match;
+  }
+  if (!target) {
+    // Kein Block gefunden: unveraenderte HTML ausgeben (kein Datenverlust).
+    downloadExportHtml(htmlContent, `${tabName} (obfuscated).html`);
+    return;
+  }
+
+  let processed;
+  try {
+    const minified = await Terser.minify(target[1], {
+      compress: { passes: 2 },
+      mangle: true,
+      format: { comments: false },
+    });
+    if (minified.error) throw minified.error;
+    const obfuscated = JavaScriptObfuscator.obfuscate(
+      minified.code,
+      OBFUSCATION_OPTIONS
+    ).getObfuscatedCode();
+    // "</script" im Code darf das Script-Element nicht beenden
+    processed = obfuscated.replace(/<\/script/gi, "<\\/script");
+  } catch (error) {
+    console.error("Obfuscated-Export fehlgeschlagen:", error);
+    obfuscationAlert(
+      (window.i18n && window.i18n.getCurrentLanguage() === "en"
+        ? "the code could not be processed ("
+        : "der Code konnte nicht verarbeitet werden (") +
+        (error && error.message ? error.message : error) +
+        ")"
+    );
+    return;
+  }
+
+  const obfuscatedInner =
+    "\n    // Created with Open Animation Lab (obfuscated)\n" + processed + "\n";
+  const obfuscatedHtml = htmlContent.replace(
+    target[0],
+    () => "<script>" + obfuscatedInner + "<\/script>"
+  );
+  downloadExportHtml(obfuscatedHtml, `${tabName} (obfuscated).html`);
+}
+
 // ── Publish Dropdown Helpers ──
 
 function togglePublishMenu(event) {
