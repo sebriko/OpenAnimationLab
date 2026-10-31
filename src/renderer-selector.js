@@ -73,7 +73,7 @@
     if (changed && autoRerun) {
       if (type === "svg" && typeof SVG === "undefined") {
         console.error(
-          'SVG.js is not loaded. Make sure <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.5/svg.min.js"></script> is included in index.html.',
+          'SVG.js is not loaded. Make sure <script src="lib/svg.js/3.2.5/svg.min.js"></script> is included in index.html.',
         );
         if (typeof window.logEvalMessage === "function") {
           window.logEvalMessage(

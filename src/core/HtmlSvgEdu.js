@@ -417,11 +417,26 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
     this._element.style.height = this._height + "px";
     this._element.style.fontFamily = this._font;
     this._element.style.fontSize = this._fontSize + "px";
+    this._applyCentering();
     if (this._toggleMode && this._active) {
       this._element.classList.add("active");
     } else {
       this._element.classList.remove("active");
     }
+  }
+  // Beschriftung exakt mittig, auch bei sehr kleinen Buttons:
+  // Flex-Zentrierung (bleibt mittig, wenn der Text übersteht) und Innenabstand,
+  // der bei kleinen Buttons schrumpft (sonst wird der Button größer als angegeben
+  // und der Text rutscht nach rechts unten). Große Buttons bleiben unverändert.
+  _applyCentering() {
+    if (!this._element) return;
+    const style = this._element.style;
+    style.display = "inline-flex";
+    style.alignItems = "center";
+    style.justifyContent = "center";
+    const padV = Math.max(0, Math.min(8, (this._height - 2 - this._fontSize) / 2));
+    const padH = Math.max(0, Math.min(10, (this._width - 2 - this._fontSize) / 2));
+    style.padding = padV + "px " + padH + "px";
   }
   _setupEvents() {
     if (!this._element) return;
@@ -455,6 +470,7 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
     this._fontSize = fontSize;
     if (this._element) {
       this._element.style.fontSize = fontSize + "px";
+      this._applyCentering();
     }
   }
   setToggleMode(toggleMode, active) {
@@ -3960,20 +3976,77 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     return lines.length > 0 ? lines : [""];
   }
   _findHyphenPoint(word, maxWidth) {
+    if (/<\/?(b|i|sub|sup)>/i.test(word)) {
+      return this._findHyphenPointFormatted(word, maxWidth);
+    }
     if (this._hyphenLang) {
       const browserPoint = this._findBrowserHyphenPoint(word, maxWidth);
       if (browserPoint > 0) return browserPoint;
     }
-    // Fallback: vowel-based heuristic
+    return this._findHeuristicHyphenPoint(word, maxWidth);
+  }
+  // Trennstelle in einem Wort mit Tags (<b>, <i>, <sub>, <sup>): Die Trennstelle
+  // wird nur im sichtbaren Text gesucht und dann in den Rohtext umgerechnet,
+  // damit kein Tag zerschnitten wird (vorher z. B. "<b-" + ">Präsentationen").
+  // Schließende Tags direkt hinter der Trennstelle bleiben in der ersten Zeile,
+  // öffnende Tags wandern mit dem Rest in die nächste Zeile.
+  _findHyphenPointFormatted(word, maxWidth) {
+    const tagRegex = /^<\/?(b|i|sub|sup)>/i;
+    const closingRegex = /^<\/(b|i|sub|sup)>/i;
+    let plain = "";
+    const after = []; // after[k] = Rohtext-Index direkt hinter dem (k+1)-ten sichtbaren Zeichen
+    let i = 0;
+    while (i < word.length) {
+      const tag = word[i] === "<" ? word.substring(i).match(tagRegex) : null;
+      if (tag) {
+        i += tag[0].length;
+        continue;
+      }
+      plain += word[i];
+      i++;
+      after.push(i);
+    }
+    const toRaw = (k) => {
+      let r = after[k - 1];
+      let m;
+      while ((m = word.substring(r).match(closingRegex))) {
+        r += m[0].length;
+      }
+      return r;
+    };
+    if (plain.length < 3) return -1;
     const measure = this._hyphenate
       ? (t) => this._measureTextWidth(t)
       : (t) => this._estimateTextWidth(t);
+    const fits = (k) => measure(word.substring(0, toRaw(k)) + "-") <= maxWidth;
+    let k = -1;
+    if (this._hyphenLang) {
+      // Schriftschnitt des ersten sichtbaren Abschnitts (meist ist das ganze Wort fett/kursiv)
+      const first = this._parseFormattedText(word).find((p) => p.text) || {};
+      const browserPoint = this._findBrowserHyphenPoint(plain, maxWidth, first);
+      if (browserPoint > 0 && browserPoint < plain.length && fits(browserPoint)) {
+        k = browserPoint;
+      }
+    }
+    if (k < 0) {
+      k = this._findHeuristicHyphenPoint(plain, maxWidth, fits);
+    }
+    if (k < 1 || k >= plain.length) return -1;
+    return toRaw(k);
+  }
+  // Fallback: vowel-based heuristic
+  _findHeuristicHyphenPoint(word, maxWidth, fits) {
+    const measure = this._hyphenate
+      ? (t) => this._measureTextWidth(t)
+      : (t) => this._estimateTextWidth(t);
+    const prefixFits =
+      fits || ((n) => measure(word.substring(0, n) + "-") <= maxWidth);
     const vowels = "aeiouäöüAEIOUÄÖÜ";
     const isVowel = (c) => vowels.includes(c);
     let bestSyllablePos = -1;
     let lastFitPos = -1;
     for (let i = 2; i < word.length - 1; i++) {
-      if (measure(word.substring(0, i) + "-") > maxWidth) break;
+      if (!prefixFits(i)) break;
       lastFitPos = i;
       if (i >= 2 && i < word.length - 2) {
         if (!isVowel(word[i - 1]) && isVowel(word[i])) {
@@ -3991,7 +4064,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     const splitPos = bestSyllablePos > 0 ? bestSyllablePos : lastFitPos;
     return splitPos > 0 ? splitPos : Math.max(2, Math.floor(word.length / 2));
   }
-  _findBrowserHyphenPoint(word, maxWidth) {
+  _findBrowserHyphenPoint(word, maxWidth, style) {
     const div = document.createElement("div");
     div.style.position = "absolute";
     div.style.visibility = "hidden";
@@ -4002,6 +4075,8 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     div.style.fontFamily = this._font;
     div.style.fontSize = this._fontSize + "px";
     div.style.letterSpacing = this._letterSpacing + "px";
+    if (style && style.bold) div.style.fontWeight = "bold";
+    if (style && style.italic) div.style.fontStyle = "italic";
     div.style.lineHeight = this._fontSize * this._lineHeightFactor + "px";
     div.style.hyphens = "auto";
     div.style.webkitHyphens = "auto";

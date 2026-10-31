@@ -232,7 +232,7 @@ async function publishCode() {
   if (renderer === "svg") {
     // SVG.js Renderer
     rendererScripts = `
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.5/svg.min.js"><\/script>
+  <script src="https://www.educational-animation.org/oal/lib/svg.js/3.2.5/svg.min.js"><\/script>
   
     <script src="https://www.educational-animation.org/oal/src/core/SvgJSEdu.js"><\/script>
   
@@ -265,7 +265,7 @@ async function publishCode() {
   } else {
     // PixiJS Renderer (Standard)
     rendererScripts = `
-  <script src="https://pixijs.download/release/pixi.js"><\/script>
+  <script src="https://www.educational-animation.org/oal/lib/pixi/8.22.0/pixi.min.js"><\/script>
   
     <script src="https://www.educational-animation.org/oal/src/core/PixiJSEdu.js"><\/script>
   
@@ -629,7 +629,7 @@ input:checked + .pixi-toggle-slider:before {
 
   </style>
   
-      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+      <script src="https://www.educational-animation.org/oal/lib/mathjax/3.2.2/tex-svg.js" async></script>
   
   %%RENDERER_SCRIPTS%%
   
@@ -727,7 +727,7 @@ async function publishH5P() {
 
   if (renderer === "svg") {
     rendererScripts = `
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.5/svg.min.js"><\/script>
+  <script src="https://www.educational-animation.org/oal/lib/svg.js/3.2.5/svg.min.js"><\/script>
     <script src="https://www.educational-animation.org/oal/src/core/SvgJSEdu.js"><\/script>
     <script src="https://www.educational-animation.org/oal/src/core/HtmlSvgEdu.js"><\/script>
     <script src="https://www.educational-animation.org/oal/src/core/BoardBase.js"><\/script>
@@ -745,7 +745,7 @@ async function publishH5P() {
     requestAnimationFrame(removeOverlay);`;
   } else {
     rendererScripts = `
-  <script src="https://pixijs.download/release/pixi.js"><\/script>
+  <script src="https://www.educational-animation.org/oal/lib/pixi/8.22.0/pixi.min.js"><\/script>
     <script src="https://www.educational-animation.org/oal/src/core/PixiJSEdu.js"><\/script>
     <script src="https://www.educational-animation.org/oal/src/core/HtmlSvgEdu.js"><\/script>
     <script src="https://www.educational-animation.org/oal/src/core/Board.js"><\/script>`;
@@ -791,7 +791,7 @@ async function publishH5P() {
     .pixi-button:active { background:#ddd; }
     .pixi-button.active { border-color:#228b22; background:#e8f5e8; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+  <script src="https://www.educational-animation.org/oal/lib/mathjax/3.2.2/tex-svg.js" async></script>
   ${rendererScripts}
   <script>window.exportMode=true;</script>
 </head>
