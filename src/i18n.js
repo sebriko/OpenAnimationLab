@@ -33,6 +33,10 @@ class I18nManager {
         en: "Export as HTML",
         de: "Als HTML exportieren",
       },
+      publish_html_offline: {
+        en: "Export as HTML (offline)",
+        de: "Als HTML (offline) exportieren",
+      },
       publish_h5p: {
         en: "Export as H5P",
         de: "Als H5P exportieren",

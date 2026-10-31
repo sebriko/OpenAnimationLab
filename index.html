@@ -104,7 +104,7 @@
 
 
     <!-- External Libraries -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="lib/material-icons/1.13.12/material-icons.css" rel="stylesheet" />
     <script type="module">
         import { optimize } from "https://cdn.jsdelivr.net/npm/svgo@3.0.2/dist/svgo.browser.js"; window.svgoOptimize = optimize;
     </script>
@@ -170,7 +170,7 @@
 
     <script>
         window.APP_CONFIG = {
-            version: "3.19.16",
+            version: "3.19.17",
             build: "2026-10-31",
             status: "Release",
           };
@@ -230,6 +230,7 @@
                 </button>
                 <div class="publish-menu" id="publishMenu">
                     <button onclick="publishCode(); closePublishMenu();" data-i18n="publish_html">HTML</button>
+                    <button onclick="publishCodeOffline(); closePublishMenu();" data-i18n="publish_html_offline">HTML (offline)</button>
                     <button onclick="publishH5P(); closePublishMenu();" data-i18n="publish_h5p">H5P</button>
                 </div>
             </div>

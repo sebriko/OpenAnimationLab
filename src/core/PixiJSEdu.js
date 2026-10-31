@@ -272,7 +272,7 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
       setRotationPoint: {
         example: "setRotationPoint(25, 25)",
         info: {
-          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the origin of the element)",
           de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
@@ -726,7 +726,7 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
       setRotationPoint: {
         example: "setRotationPoint(50, 50)",
         info: {
-          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the origin of the element)",
           de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
@@ -1222,7 +1222,7 @@ PixiJSEdu.Circle = class Circle extends PixiJSElement {
       setRotationPoint: {
         example: "setRotationPoint(0, 0)",
         info: {
-          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the origin of the element)",
           de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
@@ -1561,7 +1561,7 @@ PixiJSEdu.Ellipse = class Ellipse extends PixiJSElement {
       setRotationPoint: {
         example: "setRotationPoint(0, 0)",
         info: {
-          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the origin of the element)",
           de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
@@ -1915,7 +1915,7 @@ PixiJSEdu.Polygon = class Polygon extends PixiJSElement {
       setRotationPoint: {
         example: "setRotationPoint(0, 0)",
         info: {
-          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the origin of the element)",
           de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
@@ -7770,7 +7770,7 @@ PixiJSEdu.SimpleSVG = class SimpleSVG extends PIXI.Container {
       setRotationPoint: {
         example: "setRotationPoint(0, 0)",
         info: {
-          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the origin of the element)",
           de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
@@ -8939,8 +8939,8 @@ PixiJSEdu.Timer = class Timer extends PIXI.Container {
         example:
           'addKeyframeAnimation(myObject, "alpha", [{time: 0, value: 0}, {time: 0.5, value: 1}, {time: 1, value: 0}])',
         info: {
-          en: "Adds a keyframe animation. Parameters: target object, property name as string, array of keyframes [{time: 0-1, value: number}]",
-          de: "Fügt eine Keyframe-Animation hinzu. Parameter: Zielobjekt, Eigenschaftsname als String, Array von Keyframes [{time: 0-1, value: Zahl}]",
+          en: "Adds a keyframe animation. Parameters: target object, property name as string, list of keyframes, each with time (0 to 1) and value (see example)",
+          de: "Fügt eine Keyframe-Animation hinzu. Parameter: Zielobjekt, Eigenschaftsname als String, Liste von Keyframes mit jeweils time (0 bis 1) und value (siehe Beispiel)",
         },
       },
       setEasing: {
@@ -8962,8 +8962,8 @@ PixiJSEdu.Timer = class Timer extends PIXI.Container {
         example:
           'onUpdate(handleProgress);\nfunction handleProgress() { console.log("Progress"); }',
         info: {
-          en: "Registers a callback function that is called on every frame",
-          de: "Registriert eine Callback-Funktion, die bei jedem Frame aufgerufen wird",
+          en: "Registers a callback function that is called on every frame and receives the progress (0 to 1). With an endless timer the progress always stays 0 – use getElapsedTime() instead",
+          de: "Registriert eine Callback-Funktion, die bei jedem Frame aufgerufen wird und den Fortschritt (0 bis 1) erhält. Beim Endlos-Timer bleibt der Fortschritt immer 0 – dann getElapsedTime() verwenden",
         },
       },
       setProgress: {
@@ -8971,6 +8971,62 @@ PixiJSEdu.Timer = class Timer extends PIXI.Container {
         info: {
           en: "Sets the animation progress directly (0.0 to 1.0)",
           de: "Setzt den Fortschritt der Animation direkt (0.0 bis 1.0)",
+        },
+      },
+      getProgress: {
+        example: "getProgress()",
+        info: {
+          en: "Returns the current progress from 0 to 1 (with an endless timer always 0)",
+          de: "Gibt den aktuellen Fortschritt von 0 bis 1 zurück (beim Endlos-Timer immer 0)",
+        },
+      },
+      getElapsedTime: {
+        example: "getElapsedTime()",
+        info: {
+          en: "Returns the elapsed time in milliseconds since the start. Ideal for endless timers",
+          de: "Gibt die seit dem Start vergangene Zeit in Millisekunden zurück. Ideal für Endlos-Timer",
+        },
+      },
+      getRemainingTime: {
+        example: "getRemainingTime()",
+        info: {
+          en: "Returns the remaining time in milliseconds (with an endless timer Infinity)",
+          de: "Gibt die verbleibende Zeit in Millisekunden zurück (beim Endlos-Timer Infinity)",
+        },
+      },
+      isRunning: {
+        example: "isRunning()",
+        info: {
+          en: "Returns true while the timer is running and not paused",
+          de: "Gibt true zurück, solange der Timer läuft und nicht pausiert ist",
+        },
+      },
+      isPaused: {
+        example: "isPaused()",
+        info: {
+          en: "Returns true while the timer is paused",
+          de: "Gibt true zurück, solange der Timer pausiert ist",
+        },
+      },
+      setDuration: {
+        example: "setDuration(3000)",
+        info: {
+          en: "Changes the duration in milliseconds (null = endless)",
+          de: "Ändert die Dauer in Millisekunden (null = endlos)",
+        },
+      },
+      setLoop: {
+        example: "setLoop(true)",
+        info: {
+          en: "Switches repetition on or off (true/false)",
+          de: "Schaltet die Wiederholung ein oder aus (true/false)",
+        },
+      },
+      clearAnimations: {
+        example: "clearAnimations()",
+        info: {
+          en: "Removes all animations and keyframe animations added to the timer",
+          de: "Entfernt alle hinzugefügten Animationen und Keyframe-Animationen",
         },
       },
     },

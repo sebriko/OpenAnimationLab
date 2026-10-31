@@ -205,7 +205,8 @@ function detectAnimationLanguage(code) {
   return "de";
 }
 
-async function publishCode() {
+// Baut die Export-HTML (gemeinsam für "HTML" und "HTML (offline)")
+async function buildExportHtml() {
   // Tab-Name ermitteln (wie bei saveCode)
   const activeTab = document.querySelector(".tab.active");
   let tabName = activeTab ? activeTab.textContent.trim() : "animation";
@@ -271,6 +272,8 @@ async function publishCode() {
   
     <script src="https://www.educational-animation.org/oal/src/core/HtmlSvgEdu.js"><\/script>
   
+    <script src="https://www.educational-animation.org/oal/src/core/BoardBase.js"><\/script>
+
     <script src="https://www.educational-animation.org/oal/src/core/Board.js"><\/script>`;
 
     rendererAlias = "";
@@ -670,14 +673,71 @@ input:checked + .pixi-toggle-slider:before {
     .replace("%%JSCODE_PLACEHOLDER%%", () => jsCode)
     .replace("%%POST_LOAD_CODE%%", () => postLoadCode);
 
+  return { htmlContent, tabName };
+}
+
+function downloadExportHtml(htmlContent, fileName) {
   const blob = new Blob([htmlContent], { type: "text/html" });
 
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `${tabName}.html`; // Verwendet jetzt den Tab-Namen
+  link.download = fileName;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+async function publishCode() {
+  const { htmlContent, tabName } = await buildExportHtml();
+  downloadExportHtml(htmlContent, `${tabName}.html`); // Verwendet den Tab-Namen
+}
+
+// HTML (offline): alle Skripte vom eigenen Server werden in die Datei
+// eingebettet – die Animation läuft danach ohne Internet (F-001, 3.19.17).
+// MathJax (ca. 2 MB) nur, wenn der Code MathForm verwendet.
+async function publishCodeOffline() {
+  const { htmlContent, tabName } = await buildExportHtml();
+  const usesMath = /\bMathForm\b/.test(editor.getValue());
+  const scriptTag =
+    /<script src="https:\/\/www\.educational-animation\.org\/oal\/([^"]+)"( async)?><\/script>/g;
+  const sources = {};
+  try {
+    for (const match of htmlContent.matchAll(scriptTag)) {
+      const path = match[1];
+      if (path in sources) continue;
+      if (path.startsWith("lib/mathjax/") && !usesMath) {
+        sources[path] = null;
+        continue;
+      }
+      // Relativ zum Open Animation Lab laden (eigener Server)
+      const response = await fetch(path, { cache: "no-cache" });
+      if (!response.ok) throw new Error(`${path} (${response.status})`);
+      sources[path] = await response.text();
+    }
+  } catch (error) {
+    console.error("Offline-Export fehlgeschlagen:", error);
+    const lang =
+      window.i18n && typeof window.i18n.getCurrentLanguage === "function"
+        ? window.i18n.getCurrentLanguage()
+        : "de";
+    alert(
+      lang === "en"
+        ? "Offline export failed: a script could not be loaded (" + error.message + ")."
+        : "Offline-Export fehlgeschlagen: Ein Skript konnte nicht geladen werden (" + error.message + ")."
+    );
+    return;
+  }
+  const offlineHtml = htmlContent.replace(scriptTag, (tag, path) => {
+    const code = sources[path];
+    if (code === null) return "";
+    // "</script" im eingebetteten Code darf das Script-Element nicht beenden
+    return (
+      "<script>/* " + path + " */\n" +
+      code.replace(/<\/script/gi, "<\\/script") +
+      "\n<\/script>"
+    );
+  });
+  downloadExportHtml(offlineHtml, `${tabName} (offline).html`);
 }
 
 // ── Publish Dropdown Helpers ──
@@ -748,6 +808,8 @@ async function publishH5P() {
   <script src="https://www.educational-animation.org/oal/lib/pixi/8.22.0/pixi.min.js"><\/script>
     <script src="https://www.educational-animation.org/oal/src/core/PixiJSEdu.js"><\/script>
     <script src="https://www.educational-animation.org/oal/src/core/HtmlSvgEdu.js"><\/script>
+    <script src="https://www.educational-animation.org/oal/src/core/BoardBase.js"><\/script>
+
     <script src="https://www.educational-animation.org/oal/src/core/Board.js"><\/script>`;
     rendererAlias = "";
     postLoadCode = `
