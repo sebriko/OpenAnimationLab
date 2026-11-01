@@ -630,6 +630,32 @@ input:checked + .pixi-toggle-slider:before {
   transform-origin: top left;
 }
 
+/* Hinweis "Gerät quer halten" – nur im Hochformat auf schmalen Bildschirmen (F-007, 3.19.21) */
+#oal-rotate-hint {
+  display: none;
+}
+
+@media (orientation: portrait) and (max-width: 700px) {
+  #oal-rotate-hint {
+    display: block;
+    position: fixed;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    width: max-content;
+    max-width: 90vw;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid #cccccc;
+    border-radius: 14px;
+    padding: 4px 12px;
+    font: 14px/1.3 Arial, sans-serif;
+    color: #555555;
+    text-align: center;
+  }
+}
+
   </style>
   
       <script src="https://www.educational-animation.org/oal/lib/mathjax/3.2.2/tex-svg.js" async></script>
@@ -645,6 +671,8 @@ input:checked + .pixi-toggle-slider:before {
   
 </head>
 <body>
+
+  <div id="oal-rotate-hint" role="note">%%ROTATE_HINT%%</div>
 
   <div id="preview">
     <div id="loading-overlay"></div>
@@ -668,6 +696,11 @@ input:checked + .pixi-toggle-slider:before {
 
   let htmlContent = htmlTemplate
     .replace("%%LANG%%", () => animationLang)
+    .replace("%%ROTATE_HINT%%", () =>
+      animationLang === "de"
+        ? "\u21bb Gerät quer halten – dann wird alles größer"
+        : "\u21bb Turn your device sideways for a bigger view"
+    )
     .replace("%%RENDERER_SCRIPTS%%", () => rendererScripts)
     .replace("%%RENDERER_ALIAS%%", () => rendererAlias)
     .replace("%%JSCODE_PLACEHOLDER%%", () => jsCode)
