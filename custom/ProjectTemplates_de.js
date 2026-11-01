@@ -20,7 +20,7 @@ let board = new Board(1280, 720);`,
       templates: [
         {
           image: "rectangle.png",
-          title: "Rectangle",
+          title: "Rechteck (Rectangle)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -31,7 +31,7 @@ myRect.setBorder(0x333333, 1);`,
         },
         {
           image: "circle.png",
-          title: "Circle",
+          title: "Kreis (Circle)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -42,7 +42,7 @@ myCircle.setBorder(0x333333, 1);`,
         },
         {
           image: "triangle.png",
-          title: "Polygon",
+          title: "Vieleck (Polygon)",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -56,7 +56,7 @@ triangle.y = 420;`,
         },
         {
           image: "example4.png",
-          title: "SplinePath",
+          title: "Glatte Kurve (SplinePath)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -72,7 +72,7 @@ let spline = new SplinePath(points, 0xff0000, 2);`,
         },
         {
           image: "lineCurve.png",
-          title: "LinePath",
+          title: "Linienzug (LinePath)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -88,7 +88,7 @@ let linePath = new LinePath(points, 0xff0000, 3);`,
         },
         {
           image: "line.png",
-          title: "Line",
+          title: "Linie (Line)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -105,7 +105,7 @@ myLine.y = 0;`,
       templates: [
         {
           image: "button.png",
-          title: "Button",
+          title: "Knopf (Button)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -115,7 +115,7 @@ myButton.y = 30;`,
         },
         {
           image: "checkbox.png",
-          title: "Checkbox",
+          title: "Kontrollkästchen (Checkbox)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -125,7 +125,7 @@ myCheckbox.y = 100;`,
         },
         {
           image: "stepper.png",
-          title: "Stepper",
+          title: "Zahlenfeld (NumericStepper)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -135,7 +135,7 @@ myStepper.y = 100;`,
         },
         {
           image: "buttonSlider.png",
-          title: "ButtonSlider",
+          title: "Schieberegler (ButtonSlider)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -150,7 +150,7 @@ mySlider.y = 100;`,
         },
         {
           image: "radiobutton.png",
-          title: "RadioButton",
+          title: "Optionsfeld (RadioButton)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -166,7 +166,7 @@ myRadioButton2.y = 150;`,
         },
 		{
           image: "dropdown.png",
-          title: "Dropdown",
+          title: "Auswahlliste (Dropdown)",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -207,7 +207,7 @@ myText3.y = 200;`,
         },
         {
           image: "paramtable.png",
-          title: "ParameterTable",
+          title: "Wertetabelle (ParameterTable)",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -252,7 +252,7 @@ paramTable.setValue("Temperatur", 25.0);
       templates: [
         {
           image: "coordinateSystem.png",
-          title: "Coordinate System",
+          title: "Koordinatensystem (CoordinateSystem)",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -269,7 +269,7 @@ myRuler.y = 350;`,
         },
         {
           image: "arrow.png",
-          title: "Arrow",
+          title: "Pfeil (Arrow)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -279,7 +279,7 @@ myArrow.y = 0;`,
         },
         {
           image: "mathForm.png",
-          title: "MathForm",
+          title: "Formel (MathForm)",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -324,7 +324,7 @@ board.addChild(linePath);`,
         },
         {
           image: "bezier.png",
-          title: "BezierPath",
+          title: "Bézierkurve (BezierPath)",
           code: `// Created with Open Animation Lab
 let board = new Board(1280, 720);
 
@@ -411,7 +411,7 @@ endKontroll.onDrag(function() {
         },
         {
           image: "angleLabel.png",
-          title: "Winkelmarkierung",
+          title: "Winkelmarkierung (AngleLabel)",
           code: `// Demo: AngleLabel zwischen zwei Pfeilen
 let board = new Board(800, 600);
 
@@ -503,7 +503,7 @@ const angleLabel2 = new AngleLabel(
         },
         {
           image: "line-label.png",
-          title: "Linienbezeichnung",
+          title: "Linienbeschriftung (LineLabel)",
           code: `// Created with Open Animation Lab
 let board = new Board(1280, 720);
 
@@ -574,7 +574,7 @@ updateLine();
         },
         {
           image: "parallelogram.png",
-          title: "Parallelogram",
+          title: "Parallelogramm (Parallelogram)",
           code: `// Created with Open Animation Lab
 		  
 let board = new Board(1280, 720);
@@ -618,7 +618,7 @@ let resultantArrow = new Arrow(
         },
         {
           image: "point-label.png",
-          title: "Point label",
+          title: "Punktbeschriftung (PointLabel)",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -650,7 +650,7 @@ label2.setFontSize(26);
       templates: [
         {
           image: "guitar.png",
-          title: "SVG example",
+          title: "SVG-Bild (SimpleSVG)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
   
@@ -666,7 +666,7 @@ mySVG.y = 100;
         },
         {
           image: "png.png",
-          title: "PNG example",
+          title: "PNG-Bild (SimplePNG)",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -686,7 +686,7 @@ myPNG.y = 300;`,
       templates: [
         {
           image: "grouping.png",
-          title: "Grouping",
+          title: "Gruppieren (Group)",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -707,7 +707,7 @@ myGroup.visible = true;`,
         },
         {
           image: "mask.png",
-          title: "Masking von Gruppen",
+          title: "Gruppen maskieren",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -734,7 +734,7 @@ myWindow.setBorder(0x333333, 1);`,
         },
         {
           image: "sub.png",
-          title: "Tief-/Hochgestellte Label",
+          title: "Tief- und hochgestellte Beschriftungen",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -801,7 +801,7 @@ function handleProgress() {
 
         {
           image: "click.png",
-          title: "Click event",
+          title: "Klick-Ereignis",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -887,7 +887,7 @@ mySlider.y = 100;`,
         },
         {
           image: "visibility.png",
-          title: "Objekte un/sichtbar machen",
+          title: "Objekte ein- und ausblenden",
           code: `// Created with Open Animation Lab\n
 let board = new Board(1280, 720);
 
@@ -975,7 +975,7 @@ myCircle.setBorder(0x333333, 1);`,
         },
         {
           image: "formulars.png",
-          title: "Math Formulars",
+          title: "Mehrere Formeln",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -1067,7 +1067,7 @@ mySlider.onChange(e => {
         },
         {
           image: "drag-drop.png",
-          title: "Drag&Drop",
+          title: "Ziehen und Ablegen (Drag & Drop)",
           code: `// Created with Open Animation Lab
 
 let board = new Board(1280, 720);
@@ -1094,7 +1094,7 @@ myCircle.onDrag(interaktivity);
         },
         {
           image: "slider-types.png",
-          title: "Slider-Typen",
+          title: "Reglertypen",
           code: `// Created with Open Animation Lab
 let board = new Board(1280, 720);
 

@@ -481,15 +481,18 @@ function extractLineFromStack(err, wrapperLineCount, lineMap) {
 
     if (match) {
       const rawLine = parseInt(match[1]);
-      // Subtract the wrapper lines to get the line within the transformed user code
+      // Subtract the wrapper lines to get the line within the transformed user code.
+      // rawLine is 1-based, so transformedLine is 1-based as well (K-026, 3.19.22:
+      // before, it was used as a 0-based index and the message was 1–2 lines too low).
       const transformedLine = rawLine - wrapperLineCount;
-      if (transformedLine < 0) continue;
+      if (transformedLine < 1) continue;
 
-      // Map back through injectNames to get the original user code line (1-based)
-      if (lineMap && transformedLine < lineMap.length) {
-        return lineMap[transformedLine] + 1;
+      // Map back through injectNames (lineMap is 0-based) to the original user code line (1-based)
+      const index = transformedLine - 1;
+      if (lineMap && index < lineMap.length) {
+        return lineMap[index] + 1;
       }
-      return transformedLine + 1;
+      return transformedLine;
     }
   }
   return null;
@@ -1535,6 +1538,10 @@ document.addEventListener("DOMContentLoaded", () => {
     : "neat";
 
   editor = CodeMirror.fromTextArea(textarea, {
+    // Name des Codefensters für Vorlesesoftware (B-011, 3.19.22)
+    screenReaderLabel: window.i18n
+      ? window.i18n.translate("code_editor_label")
+      : "Code",
     mode: "javascript",
     theme: initialTheme,
     lineNumbers: true,

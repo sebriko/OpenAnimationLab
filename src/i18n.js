@@ -267,6 +267,14 @@ class I18nManager {
         en: "Close",
         de: "Schließen",
       },
+      publish_more: {
+        en: "More export formats",
+        de: "Weitere Exportformate",
+      },
+      code_editor_label: {
+        en: "JavaScript code",
+        de: "JavaScript-Code",
+      },
 
       // JavaScript code placeholders
       js_placeholder: {
@@ -770,6 +778,28 @@ class I18nManager {
       const key = element.getAttribute("data-i18n-title");
       element.title = this.translate(key);
     });
+
+    // Barrierefreiheit (B-011, 3.19.22): Sprache der Seite und Namen der
+    // Symbolknöpfe für Vorlesesoftware (sonst: "info", "save", "arrow_drop_down")
+    document.documentElement.lang = this.currentLanguage;
+    document.querySelectorAll(".material-icons").forEach((icon) => {
+      icon.setAttribute("aria-hidden", "true");
+      const control = icon.closest("button, label");
+      if (!control) return;
+      const ownText = control.textContent.replace(icon.textContent, "").trim();
+      if (ownText) return;
+      const iconName = icon.textContent.trim();
+      const label =
+        control.title ||
+        (iconName === "close" ? this.translate("close") : "") ||
+        (iconName === "arrow_drop_down" ? this.translate("publish_more") : "");
+      if (label) control.setAttribute("aria-label", label);
+    });
+    if (window.editor && typeof window.editor.getInputField === "function") {
+      window.editor
+        .getInputField()
+        .setAttribute("aria-label", this.translate("code_editor_label"));
+    }
 
     document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
       const key = element.getAttribute("data-i18n-placeholder");

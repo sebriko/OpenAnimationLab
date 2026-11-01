@@ -2346,7 +2346,7 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
       de: "https://www.educational-animation.org",
       en: "https://www.educational-animation.org",
     },
-    example: "let mySlider = new ButtonSlider(0, 100, 50, 1, 20, 200);",
+    example: "let mySlider = new ButtonSlider(0, 100, 50, 1, 40, 200);",
     constructor: {
       min: {
         name: "min",
@@ -2379,8 +2379,8 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
       height: {
         name: "height",
         info: {
-          en: "Height of the button in pixels",
-          de: "Höhe des Buttons in Pixeln",
+          en: "Height of the button in pixels (recommended: 40, easy to use with a finger)",
+          de: "Höhe des Buttons in Pixeln (empfohlen: 40, gut mit dem Finger bedienbar)",
         },
       },
       trackLength: {

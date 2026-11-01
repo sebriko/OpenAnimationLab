@@ -319,7 +319,7 @@ async function buildExportHtml() {
 <html lang="%%LANG%%">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Animation</title>
   
   <style>
@@ -330,6 +330,7 @@ async function buildExportHtml() {
   position: relative;
   border: none;
   background-color: #ffffff;
+  touch-action: manipulation; /* Doppeltipp zoomt nicht, Zwei-Finger-Zoom bleibt erlaubt (B-010, 3.19.22) */
 }
 
 /* Overlay zum Verstecken des schwarzen Rechtecks */
@@ -1005,10 +1006,10 @@ async function publishH5P() {
 <html lang="${animationLang}">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${tabName}</title>
   <style>
-    #preview { width:100%; height:100vh; overflow:hidden; position:relative; border:none; background:#fff; }
+    #preview { width:100%; height:100vh; overflow:hidden; position:relative; border:none; background:#fff; touch-action:manipulation; }
     #loading-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:9999; pointer-events:none; transition:opacity .2s ease-out; }
     body { margin:0; padding:0; overflow:hidden; background:#fff; }
     #pixi-ui-overlay { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
