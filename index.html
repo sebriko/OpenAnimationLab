@@ -170,7 +170,7 @@
 
     <script>
         window.APP_CONFIG = {
-            version: "3.19.23",
+            version: "3.19.24",
             build: "2026-10-31",
             status: "Release",
           };
@@ -223,16 +223,16 @@
             </label>
             <input type="file" id="loadFile" onchange="loadCode(event)" />
             <div class="publish-dropdown">
-                <button class="regular-button publish-main-btn" onclick="publishCode()" data-i18n-title="publish_animation" data-i18n="publish">
+                <button class="regular-button publish-main-btn" onclick="exportWithTitle(publishCode)" data-i18n-title="publish_animation" data-i18n="publish">
                     Publish
                 </button><button class="regular-button publish-arrow-btn" onclick="togglePublishMenu(event)" data-i18n-title="publish_more">
                     <span class="material-icons" style="font-size:16px">arrow_drop_down</span>
                 </button>
                 <div class="publish-menu" id="publishMenu">
-                    <button onclick="publishCode(); closePublishMenu();" data-i18n="publish_html">HTML</button>
-                    <button onclick="publishCodeOffline(); closePublishMenu();" data-i18n="publish_html_offline">HTML (offline)</button>
-                    <button onclick="publishCodeObfuscated(); closePublishMenu();" data-i18n="publish_html_obfuscated">HTML (obfuscated)</button>
-                    <button onclick="publishH5P(); closePublishMenu();" data-i18n="publish_h5p">H5P</button>
+                    <button onclick="exportWithTitle(publishCode)" data-i18n="publish_html">HTML</button>
+                    <button onclick="exportWithTitle(publishCodeOffline)" data-i18n="publish_html_offline">HTML (offline)</button>
+                    <button onclick="exportWithTitle(publishCodeObfuscated)" data-i18n="publish_html_obfuscated">HTML (obfuscated)</button>
+                    <button onclick="exportWithTitle(publishH5P)" data-i18n="publish_h5p">H5P</button>
                 </div>
             </div>
             <button class="show-button active" id="theme-toggle" onclick="" data-i18n-title="theme_toggle">

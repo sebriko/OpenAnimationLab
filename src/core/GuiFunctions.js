@@ -205,8 +205,10 @@ function detectAnimationLanguage(code) {
   return "de";
 }
 
-// Baut die Export-HTML (gemeinsam für "HTML" und "HTML (offline)")
-async function buildExportHtml() {
+// Baut die Export-HTML (gemeinsam für "HTML", "HTML (offline)" und
+// "HTML (obfuscated)"). exportTitle = Titel für <title> (E-004, 3.19.24);
+// ohne Angabe bleibt es bei "Animation" (byte-identisch zu älteren Exporten).
+async function buildExportHtml(exportTitle) {
   // Tab-Name ermitteln (wie bei saveCode)
   const activeTab = document.querySelector(".tab.active");
   let tabName = activeTab ? activeTab.textContent.trim() : "animation";
@@ -320,7 +322,7 @@ async function buildExportHtml() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Animation</title>
+  <title>%%TITLE%%</title>
   
   <style>
 #preview {
@@ -697,6 +699,7 @@ input:checked + .pixi-toggle-slider:before {
 
   let htmlContent = htmlTemplate
     .replace("%%LANG%%", () => animationLang)
+    .replace("%%TITLE%%", () => escapeExportTitle(exportTitle || "Animation"))
     .replace("%%ROTATE_HINT%%", () =>
       animationLang === "de"
         ? "\u21bb Gerät quer halten – dann wird alles größer"
@@ -721,16 +724,16 @@ function downloadExportHtml(htmlContent, fileName) {
   document.body.removeChild(link);
 }
 
-async function publishCode() {
-  const { htmlContent, tabName } = await buildExportHtml();
+async function publishCode(exportTitle) {
+  const { htmlContent, tabName } = await buildExportHtml(exportTitle);
   downloadExportHtml(htmlContent, `${tabName}.html`); // Verwendet den Tab-Namen
 }
 
 // HTML (offline): alle Skripte vom eigenen Server werden in die Datei
 // eingebettet – die Animation läuft danach ohne Internet (F-001, 3.19.17).
 // MathJax (ca. 2 MB) nur, wenn der Code MathForm verwendet.
-async function publishCodeOffline() {
-  const { htmlContent, tabName } = await buildExportHtml();
+async function publishCodeOffline(exportTitle) {
+  const { htmlContent, tabName } = await buildExportHtml(exportTitle);
   const usesMath = /\bMathForm\b/.test(editor.getValue());
   const scriptTag =
     /<script src="https:\/\/www\.educational-animation\.org\/oal\/([^"]+)"( async)?><\/script>/g;
@@ -840,8 +843,8 @@ function obfuscationAlert(message) {
   );
 }
 
-async function publishCodeObfuscated() {
-  const { htmlContent, tabName } = await buildExportHtml();
+async function publishCodeObfuscated(exportTitle) {
+  const { htmlContent, tabName } = await buildExportHtml(exportTitle);
 
   try {
     await loadObfuscationLibs();
@@ -906,6 +909,116 @@ async function publishCodeObfuscated() {
   downloadExportHtml(obfuscatedHtml, `${tabName} (obfuscated).html`);
 }
 
+// ── Titel der exportierten Animation (E-004, 3.19.24) ──
+// Vor jedem Export fragt ein kleines Fenster nach dem Titel. Er steht im
+// Browser-Tab und in Lesezeichen, Vorlesesoftware sagt ihn an, und
+// Suchmaschinen zeigen ihn. Vorschlag: der zuletzt gewählte Titel dieses Tabs,
+// sonst der Tab-Name (nicht "Tab 1" usw.). Leer = "Animation" wie bisher.
+// Der Code der Animation wird dabei nicht verändert.
+const _exportTitles = new WeakMap(); // Tab-Element -> zuletzt gewählter Titel
+
+function escapeExportTitle(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function exportTitleText(key) {
+  const en =
+    window.i18n &&
+    typeof window.i18n.getCurrentLanguage === "function" &&
+    window.i18n.getCurrentLanguage() === "en";
+  const texts = {
+    heading: ["Titel der Animation", "Title of the animation"],
+    hint: [
+      "Erscheint im Browser-Tab und in Lesezeichen und wird von Vorlesesoftware angesagt.",
+      "Shown in the browser tab and in bookmarks, and read out by screen readers.",
+    ],
+    placeholder: ["z. B. Kurbelgetriebe", "e.g. Crank mechanism"],
+    export: ["Exportieren", "Export"],
+    cancel: ["Abbrechen", "Cancel"],
+  };
+  return texts[key][en ? 1 : 0];
+}
+
+function askExportTitle() {
+  const activeTab = document.querySelector(".tab.active");
+  let tabName = activeTab ? activeTab.textContent.trim() : "";
+  tabName = tabName.slice(0, -1).trim(); // Entfernt das "x" am Ende
+  let suggestion = activeTab ? _exportTitles.get(activeTab) : undefined;
+  if (suggestion === undefined) {
+    suggestion = /^(tab\s*\d*|untitled|animation)$/i.test(tabName) ? "" : tabName;
+  }
+
+  // Ohne <dialog>-Unterstützung (sehr alte Browser): einfache Abfrage
+  if (typeof HTMLDialogElement !== "function") {
+    const answer = window.prompt(exportTitleText("heading"), suggestion);
+    if (answer === null) return Promise.resolve(null);
+    if (activeTab) _exportTitles.set(activeTab, answer.trim());
+    return Promise.resolve(answer.trim());
+  }
+
+  return new Promise((resolve) => {
+    const dark = document.body.getAttribute("data-theme") === "dark";
+    const dialog = document.createElement("dialog");
+    dialog.className = "export-title-dialog";
+    dialog.setAttribute("aria-labelledby", "exportTitleHeading");
+    dialog.style.cssText =
+      "border:1px solid " + (dark ? "#555" : "#ccc") + ";border-radius:10px;" +
+      "padding:20px 24px;width:min(440px,90vw);font-family:Arial,sans-serif;" +
+      "background:" + (dark ? "#2b2b2b" : "#fff") + ";color:" + (dark ? "#eee" : "#333") + ";" +
+      "box-shadow:0 8px 30px rgba(0,0,0,.25)";
+    dialog.innerHTML =
+      '<form method="dialog">' +
+      '<h3 id="exportTitleHeading" style="margin:0 0 12px;font-size:18px"></h3>' +
+      '<input type="text" id="exportTitleInput" maxlength="120" autocomplete="off" ' +
+      'style="width:100%;box-sizing:border-box;font-size:16px;padding:8px 10px;border-radius:6px;' +
+      "border:1px solid " + (dark ? "#666" : "#aaa") + ";background:" + (dark ? "#1e1e1e" : "#fff") +
+      ';color:inherit" aria-describedby="exportTitleHint">' +
+      '<p id="exportTitleHint" style="margin:8px 0 16px;font-size:13px;opacity:.75"></p>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+      '<button type="button" class="regular-button" value="cancel"></button>' +
+      '<button type="submit" class="regular-button" value="ok"></button>' +
+      "</div></form>";
+    dialog.querySelector("h3").textContent = exportTitleText("heading");
+    dialog.querySelector("#exportTitleHint").textContent = exportTitleText("hint");
+    const input = dialog.querySelector("input");
+    input.value = suggestion;
+    input.placeholder = exportTitleText("placeholder");
+    input.setAttribute("aria-label", exportTitleText("heading"));
+    const [cancelButton, okButton] = dialog.querySelectorAll("button");
+    cancelButton.textContent = exportTitleText("cancel");
+    okButton.textContent = exportTitleText("export");
+
+    let result = null;
+    cancelButton.addEventListener("click", () => dialog.close());
+    dialog.querySelector("form").addEventListener("submit", () => {
+      result = input.value.trim();
+    });
+    dialog.addEventListener("close", () => {
+      dialog.remove();
+      if (result !== null && activeTab) _exportTitles.set(activeTab, result);
+      resolve(result);
+    });
+
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    input.focus();
+    input.select();
+  });
+}
+
+// Aufruf aus den Menüpunkten: erst Titel abfragen, dann exportieren.
+// Abbrechen = kein Export.
+async function exportWithTitle(exportFunction) {
+  if (typeof closePublishMenu === "function") closePublishMenu();
+  const title = await askExportTitle();
+  if (title === null) return;
+  await exportFunction(title);
+}
+
 // ── Publish Dropdown Helpers ──
 
 function togglePublishMenu(event) {
@@ -932,11 +1045,13 @@ function closePublishMenu() {
 
 // ── H5P Export ──
 
-async function publishH5P() {
+async function publishH5P(exportTitle) {
   // Tab-Name ermitteln (wie bei publishCode)
   const activeTab = document.querySelector(".tab.active");
   let tabName = activeTab ? activeTab.textContent.trim() : "animation";
   tabName = tabName.slice(0, -1).trim();
+  // Titel für <title> und h5p.json (E-004); ohne Angabe wie bisher der Tab-Name
+  const h5pTitle = exportTitle || tabName;
 
   let jsCode = editor.getValue();
   const animationLang = detectAnimationLanguage(jsCode); // K-002
@@ -1007,7 +1122,7 @@ async function publishH5P() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${tabName}</title>
+  <title>${escapeExportTitle(h5pTitle)}</title>
   <style>
     #preview { width:100%; height:100vh; overflow:hidden; position:relative; border:none; background:#fff; touch-action:manipulation; }
     #loading-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:9999; pointer-events:none; transition:opacity .2s ease-out; }
@@ -1039,7 +1154,7 @@ async function publishH5P() {
 
   // h5p.json – package metadata
   zip.file("h5p.json", JSON.stringify({
-    title: tabName,
+    title: h5pTitle,
     language: animationLang,
     mainLibrary: "H5P.OALAnimation",
     license: "C",
