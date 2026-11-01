@@ -752,7 +752,11 @@ const OBFUSCATION_OPTIONS = {
   simplify: true,
   stringArray: true,
   stringArrayThreshold: 0.75,
-  stringArrayEncoding: ["base64"],
+  // Keine Kodierung (frueher "base64"): base64 wird bei jedem Stringzugriff
+  // neu dekodiert und machte grosse Spiele bis zu 20-mal langsamer beim Start
+  // (All Connected?: 7-9 s statt 0,4 s, K-025). Die Strings bleiben trotzdem
+  // im verschobenen String-Array versteckt.
+  stringArrayEncoding: [],
   renameGlobals: false,
   identifierNamesGenerator: "mangled",
   controlFlowFlattening: false,
