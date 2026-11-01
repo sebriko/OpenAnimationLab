@@ -154,8 +154,8 @@ class I18nManager {
         de: "Suche schließen",
       },
       search_function: {
-        en: "Search function in editor",
-        de: "Suchfunktion im Editor",
+        en: "Search function in the code editor",
+        de: "Suchfunktion im Code-Editor",
       },
       enter_search_term: {
         en: "Enter search term",
@@ -424,8 +424,8 @@ class I18nManager {
         de: "Zweck",
       },
       purpose_text: {
-        en: "Interactive JavaScript editor for creating educational animations and interactive learning content",
-        de: "Interaktiver JavaScript-Editor für die Erstellung von Bildungsanimationen und interaktiven Lerninhalten",
+        en: "Open Animation Lab – interactive JavaScript tool for creating educational animations and interactive learning content",
+        de: "Open Animation Lab – interaktives JavaScript-Werkzeug für die Erstellung von Bildungsanimationen und interaktiven Lerninhalten",
       },
       license: {
         en: "License",
@@ -440,8 +440,8 @@ class I18nManager {
         de: "Unterstützung & Feedback",
       },
       help_improve: {
-        en: "Help us improve the editor:",
-        de: "Hilf uns dabei, den Editor zu verbessern:",
+        en: "Help us improve the Open Animation Lab:",
+        de: "Hilf uns dabei, das Open Animation Lab zu verbessern:",
       },
       support_me: {
         en: "Support me",

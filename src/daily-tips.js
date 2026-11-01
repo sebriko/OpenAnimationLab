@@ -10,7 +10,7 @@
           paragraphs: [
             "Mit Strg+Enter können Sie nach einer Codeänderung die Animation sofort aktualisieren",
             "Mit Strg+S können Sie Ihren Code schnell speichern.",
-            "Strg+F öffnet die Suchfunktion im Editor.",
+            "Strg+F öffnet die Suchfunktion im Code-Editor.",
             "Strg+B fügt alle Klasseninformationen des aktuellen Codes in die Zwischenablage ein (für KI-Prompts)",
           ],
           image: null,
@@ -69,7 +69,7 @@
           id: 7,
           title: "Code-Fehler finden",
           paragraphs: [
-            "Der Editor zeigt Syntaxfehler direkt in der Zeile an.",
+            "Der Code-Editor zeigt Syntaxfehler direkt in der Zeile an.",
             "Nutzen Sie die Konsole für Debug-Ausgaben mit console.log().",
             "Die Nachrichtenfunktion zeigt alle Ausgaben übersichtlich an.",
           ],
@@ -85,7 +85,7 @@
           paragraphs: [
             "Press Ctrl+Enter to instantly update the animation after a code change.",
             "Press Ctrl+S to quickly save your code.",
-            "Ctrl+F opens the search function in the editor.",
+            "Ctrl+F opens the search function in the code editor.",
             "Ctrl+B copies all class information of the current code to the clipboard (for AI prompts).",
           ],
           image: null,
@@ -144,7 +144,7 @@
           id: 7,
           title: "Find Code Errors",
           paragraphs: [
-            "The editor shows syntax errors directly in the line.",
+            "The code editor shows syntax errors directly in the line.",
             "Use the console for debug output with console.log().",
             "The message function displays all outputs clearly.",
           ],
@@ -528,7 +528,7 @@
           id: 1,
           title: "Willkommen beim Open Animation Lab!",
           paragraphs: [
-            "Dieser Editor ermöglicht es Ihnen, interaktive Animationen zu erstellen.",
+            "Mit dem Open Animation Lab können Sie interaktive Animationen erstellen.",
             "Nutzen Sie die Projektvorlagen für einen schnellen Start.",
           ],
           image: null,

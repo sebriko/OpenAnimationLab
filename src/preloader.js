@@ -13,12 +13,12 @@ window.PreloaderManager = {
 
   translations: {
     subtitle: {
-      en: "Open-Source Editor for Educational Animations",
-      de: "Open-Source-Editor für didaktische Animationen",
+      en: "Open-Source Tool for Educational Animations",
+      de: "Open-Source-Werkzeug für didaktische Animationen",
     },
     initializing: {
-      en: "Initializing Editor...",
-      de: "Initialisiere Editor...",
+      en: "Starting Open Animation Lab...",
+      de: "Starte Open Animation Lab...",
     },
     loadingComponents: {
       en: "Loading Components...",
