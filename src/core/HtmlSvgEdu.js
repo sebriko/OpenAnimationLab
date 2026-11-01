@@ -122,10 +122,22 @@ HtmlSvgEdu.Component = class Component {
   get y() {
     return this._y;
   }
+  // Sichtbarkeit: Beim Ausblenden wird die bisherige display-Angabe gemerkt
+  // und beim Einblenden wiederhergestellt. Bis 3.19.22 wurde beim Einblenden
+  // immer "block" gesetzt – das zerstörte das Flex-Layout von NumericStepper
+  // (Pfeil-Knöpfe verschwanden), ButtonSlider und Button (Beschriftung nicht
+  // mehr mittig), sobald visible gesetzt wurde (K-027).
   set visible(value) {
     this._visible = value;
-    if (this._element) {
-      this._element.style.display = this._visible ? "block" : "none";
+    if (!this._element) return;
+    const style = this._element.style;
+    if (this._visible) {
+      if (style.display === "none") {
+        style.display = this._displayBeforeHide || "";
+      }
+    } else if (style.display !== "none") {
+      this._displayBeforeHide = style.display;
+      style.display = "none";
     }
   }
   get visible() {
@@ -2268,16 +2280,7 @@ HtmlSvgEdu.Dropdown = class Dropdown extends HtmlSvgEdu.Component {
     return this._y;
   }
 
-  set visible(value) {
-    this._visible = value;
-    if (this._element) {
-      this._element.style.display = this._visible ? "block" : "none";
-    }
-  }
-
-  get visible() {
-    return this._visible;
-  }
+  // visible: wie Component (merkt und erneuert die display-Angabe, K-027)
 
   set selectedIndex(value) {
     if (value >= 0 && value < this._options.length) {
