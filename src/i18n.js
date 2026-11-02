@@ -49,6 +49,10 @@ class I18nManager {
         en: "Run Code",
         de: "Code ausführen",
       },
+      safe_code_blocked: {
+        en: "‘{word}’ is blocked in the Open Animation Lab for security reasons – the code was not run. Blocked words: {list}. This also applies to names of variables and properties. For mouse and keyboard, use board.onMouseDown, board.onMouseUp, board.onMouseMove, board.onKeyDown and board.onKeyUp.",
+        de: "„{word}“ ist im Open Animation Lab aus Sicherheitsgründen gesperrt – der Code wurde nicht ausgeführt. Gesperrt sind: {list}. Das gilt auch für Namen von Variablen und Eigenschaften. Für Maus und Tastatur gibt es board.onMouseDown, board.onMouseUp, board.onMouseMove, board.onKeyDown und board.onKeyUp.",
+      },
       search: {
         en: "Search",
         de: "Suchen",
