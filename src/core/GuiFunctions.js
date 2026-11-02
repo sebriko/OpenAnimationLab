@@ -713,6 +713,20 @@ input:checked + .pixi-toggle-slider:before {
   return { htmlContent, tabName };
 }
 
+// Dateiname des Exports (3.20.2): der eingegebene Titel, sonst wie bisher der
+// Tab-Name. Zeichen, die Windows oder macOS in Dateinamen nicht erlauben,
+// werden durch Leerzeichen ersetzt.
+function exportFileBase(exportTitle, tabName) {
+  const fromTitle = String(exportTitle || "")
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^\.+|\.+$/g, "")
+    .slice(0, 100)
+    .trim();
+  return fromTitle || tabName;
+}
+
 function downloadExportHtml(htmlContent, fileName) {
   const blob = new Blob([htmlContent], { type: "text/html" });
 
@@ -753,7 +767,8 @@ async function publishCode(exportTitle) {
   const { htmlContent, tabName } = await buildExportHtml(exportTitle);
   const finalHtml = await protectExportHtml(htmlContent);
   if (finalHtml === null) return;
-  downloadExportHtml(finalHtml, `${tabName}.html`); // Verwendet den Tab-Namen
+  // Dateiname: Titel, sonst Tab-Name (3.20.2)
+  downloadExportHtml(finalHtml, `${exportFileBase(exportTitle, tabName)}.html`);
 }
 
 // Frühere Bezeichnung (3.19.18–3.19.24) – bleibt für vorhandene Aufrufe und
@@ -810,7 +825,10 @@ async function publishCodeOffline(exportTitle) {
   if (protectedHtml === null) return;
   const offlineHtml = await embedExportScripts(protectedHtml);
   if (offlineHtml === null) return;
-  downloadExportHtml(offlineHtml, `${tabName} (offline).html`);
+  downloadExportHtml(
+    offlineHtml,
+    `${exportFileBase(exportTitle, tabName)} (offline).html`
+  );
 }
 
 const OBFUSCATION_OPTIONS = {
@@ -917,7 +935,10 @@ async function protectExportHtml(htmlContent) {
   }
 
   const protectedInner =
-    "\n    // Created with Open Animation Lab\n" + processed + "\n";
+    "\n    // Created with Open Animation Lab\n" +
+    exportLicenseComment() +
+    processed +
+    "\n";
   return htmlContent.replace(
     target[0],
     () => "<script>" + protectedInner + "<\/script>"
@@ -931,6 +952,23 @@ async function protectExportHtml(htmlContent) {
 // sonst der Tab-Name (nicht "Tab 1" usw.). Leer = "Animation" wie bisher.
 // Der Code der Animation wird dabei nicht verändert.
 const _exportTitles = new WeakMap(); // Tab-Element -> zuletzt gewählter Titel
+
+// ── Lizenzhinweis im Export (3.20.2) ──
+// Optionales zweites Feld im Titelfenster. Der Text steht als Kommentarzeile
+// direkt unter "// Created with Open Animation Lab" im Code der exportierten
+// Datei (Kommentare im Animations-Code selbst entfernt das Verkürzen).
+// Leer = keine Zeile (Export byte-identisch zu 3.20.1).
+const _exportLicenses = new WeakMap(); // Tab-Element -> zuletzt gewählter Hinweis
+let _lastExportLicense = ""; // Vorschlag für neue Tabs
+let _currentExportLicense = ""; // gilt nur während eines Exports
+
+function exportLicenseComment() {
+  const text = String(_currentExportLicense || "")
+    .replace(/[\r\n\u2028\u2029]+/g, " ")
+    .trim()
+    .replace(/<\/script/gi, "<\\/script");
+  return text ? "    // " + text + "\n" : "";
+}
 
 function escapeExportTitle(text) {
   return String(text)
@@ -948,8 +986,14 @@ function exportTitleText(key) {
   const texts = {
     heading: ["Titel der Animation", "Title of the animation"],
     hint: [
-      "Erscheint im Browser-Tab und in Lesezeichen und wird von Vorlesesoftware angesagt.",
-      "Shown in the browser tab and in bookmarks, and read out by screen readers.",
+      "Seitentitel der exportierten Datei (<title>): Er steht im Browser-Tab und in Lesezeichen und wird von Vorlesesoftware angesagt. Er ist auch der Dateiname; bleibt das Feld leer, heißt die Datei wie der Tab.",
+      "Page title of the exported file (<title>): shown in the browser tab and in bookmarks, and read out by screen readers. It is also used as the file name; if left empty, the file is named after the tab.",
+    ],
+    licenseLabel: ["Lizenzhinweis (optional)", "Licence notice (optional)"],
+    licensePlaceholder: ["z. B. © Ihr Name – CC BY 4.0", "e.g. © Your name – CC BY 4.0"],
+    licenseHint: [
+      "Steht als Kommentarzeile im Code der exportierten Datei. Leer = keine Zeile.",
+      "Added as a comment line to the code of the exported file. Empty = no line.",
     ],
     placeholder: ["z. B. Kurbelgetriebe", "e.g. Crank mechanism"],
     export: ["Exportieren", "Export"],
@@ -966,13 +1010,15 @@ function askExportTitle() {
   if (suggestion === undefined) {
     suggestion = /^(tab\s*\d*|untitled|animation)$/i.test(tabName) ? "" : tabName;
   }
+  let licenseSuggestion = activeTab ? _exportLicenses.get(activeTab) : undefined;
+  if (licenseSuggestion === undefined) licenseSuggestion = _lastExportLicense;
 
   // Ohne <dialog>-Unterstützung (sehr alte Browser): einfache Abfrage
   if (typeof HTMLDialogElement !== "function") {
     const answer = window.prompt(exportTitleText("heading"), suggestion);
     if (answer === null) return Promise.resolve(null);
     if (activeTab) _exportTitles.set(activeTab, answer.trim());
-    return Promise.resolve(answer.trim());
+    return Promise.resolve({ title: answer.trim(), license: licenseSuggestion });
   }
 
   return new Promise((resolve) => {
@@ -993,16 +1039,27 @@ function askExportTitle() {
       "border:1px solid " + (dark ? "#666" : "#aaa") + ";background:" + (dark ? "#1e1e1e" : "#fff") +
       ';color:inherit" aria-describedby="exportTitleHint">' +
       '<p id="exportTitleHint" style="margin:8px 0 16px;font-size:13px;opacity:.75"></p>' +
+      '<label for="exportLicenseInput" id="exportLicenseLabel" style="display:block;margin:0 0 6px;font-size:14px;font-weight:bold"></label>' +
+      '<input type="text" id="exportLicenseInput" maxlength="200" autocomplete="off" ' +
+      'style="width:100%;box-sizing:border-box;font-size:15px;padding:7px 10px;border-radius:6px;' +
+      "border:1px solid " + (dark ? "#666" : "#aaa") + ";background:" + (dark ? "#1e1e1e" : "#fff") +
+      ';color:inherit" aria-describedby="exportLicenseHint">' +
+      '<p id="exportLicenseHint" style="margin:8px 0 16px;font-size:13px;opacity:.75"></p>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
       '<button type="button" class="regular-button" value="cancel"></button>' +
       '<button type="submit" class="regular-button" value="ok"></button>' +
       "</div></form>";
     dialog.querySelector("h3").textContent = exportTitleText("heading");
     dialog.querySelector("#exportTitleHint").textContent = exportTitleText("hint");
-    const input = dialog.querySelector("input");
+    const input = dialog.querySelector("#exportTitleInput");
     input.value = suggestion;
     input.placeholder = exportTitleText("placeholder");
     input.setAttribute("aria-label", exportTitleText("heading"));
+    dialog.querySelector("#exportLicenseLabel").textContent = exportTitleText("licenseLabel");
+    dialog.querySelector("#exportLicenseHint").textContent = exportTitleText("licenseHint");
+    const licenseInput = dialog.querySelector("#exportLicenseInput");
+    licenseInput.value = licenseSuggestion;
+    licenseInput.placeholder = exportTitleText("licensePlaceholder");
     const [cancelButton, okButton] = dialog.querySelectorAll("button");
     cancelButton.textContent = exportTitleText("cancel");
     okButton.textContent = exportTitleText("export");
@@ -1010,11 +1067,17 @@ function askExportTitle() {
     let result = null;
     cancelButton.addEventListener("click", () => dialog.close());
     dialog.querySelector("form").addEventListener("submit", () => {
-      result = input.value.trim();
+      result = { title: input.value.trim(), license: licenseInput.value.trim() };
     });
     dialog.addEventListener("close", () => {
       dialog.remove();
-      if (result !== null && activeTab) _exportTitles.set(activeTab, result);
+      if (result !== null) {
+        if (activeTab) {
+          _exportTitles.set(activeTab, result.title);
+          _exportLicenses.set(activeTab, result.license);
+        }
+        _lastExportLicense = result.license;
+      }
       resolve(result);
     });
 
@@ -1025,13 +1088,18 @@ function askExportTitle() {
   });
 }
 
-// Aufruf aus den Menüpunkten: erst Titel abfragen, dann exportieren.
-// Abbrechen = kein Export.
+// Aufruf aus den Menüpunkten: erst Titel (und optional Lizenzhinweis)
+// abfragen, dann exportieren. Abbrechen = kein Export.
 async function exportWithTitle(exportFunction) {
   if (typeof closePublishMenu === "function") closePublishMenu();
-  const title = await askExportTitle();
-  if (title === null) return;
-  await exportFunction(title);
+  const answer = await askExportTitle();
+  if (answer === null) return;
+  _currentExportLicense = answer.license;
+  try {
+    await exportFunction(answer.title);
+  } finally {
+    _currentExportLicense = "";
+  }
 }
 
 // ── Publish Dropdown Helpers ──
@@ -1280,7 +1348,8 @@ H5P.OALAnimation = (function ($) {
   });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = offline ? `${tabName} (offline).h5p` : `${tabName}.h5p`;
+  const fileBase = exportFileBase(exportTitle, tabName); // 3.20.2
+  link.download = offline ? `${fileBase} (offline).h5p` : `${fileBase}.h5p`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
