@@ -37,13 +37,13 @@ class I18nManager {
         en: "Export as HTML (offline)",
         de: "Als HTML (offline) exportieren",
       },
-      publish_html_obfuscated: {
-        en: "Export as HTML (obfuscated)",
-        de: "Als HTML (obfuscated) exportieren",
-      },
       publish_h5p: {
         en: "Export as H5P",
         de: "Als H5P exportieren",
+      },
+      publish_h5p_offline: {
+        en: "Export as H5P (offline)",
+        de: "Als H5P (offline) exportieren",
       },
       run_code: {
         en: "Run Code",

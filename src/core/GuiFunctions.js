@@ -724,16 +724,49 @@ function downloadExportHtml(htmlContent, fileName) {
   document.body.removeChild(link);
 }
 
-async function publishCode(exportTitle) {
-  const { htmlContent, tabName } = await buildExportHtml(exportTitle);
-  downloadExportHtml(htmlContent, `${tabName}.html`); // Verwendet den Tab-Namen
+// ── Veröffentlichen (E-007, 3.20.0) ──
+// Jeder Export wird verkürzt (terser) und verschleiert (javascript-obfuscator):
+// HTML, HTML (offline), H5P und H5P (offline). Das ist der Standard und wird
+// in der Oberfläche nicht eigens genannt (bis 3.19.24 eigener Menüpunkt
+// "HTML (obfuscated)", F-011). Verarbeitet wird nur der eingebettete
+// Animations-Code; Bibliotheken und Kernskripte bleiben unverändert.
+// WICHTIG: Das ist Verschleierung, kein Kopierschutz – der Browser führt den
+// Code aus, also lässt er sich mit Aufwand rücklesbar machen.
+// Die beiden Bibliotheken (zusammen ca. 2,5 MB) werden nur beim Export
+// geladen und nie in eine Animation eingebettet.
+
+function exportUiLang() {
+  return window.i18n && typeof window.i18n.getCurrentLanguage === "function"
+    ? window.i18n.getCurrentLanguage()
+    : "de";
 }
 
-// HTML (offline): alle Skripte vom eigenen Server werden in die Datei
-// eingebettet – die Animation läuft danach ohne Internet (F-001, 3.19.17).
-// MathJax (ca. 2 MB) nur, wenn der Code MathForm verwendet.
-async function publishCodeOffline(exportTitle) {
+function exportAlert(messageDe, messageEn) {
+  alert(
+    exportUiLang() === "en"
+      ? "Export failed: " + messageEn + "."
+      : "Export fehlgeschlagen: " + messageDe + "."
+  );
+}
+
+async function publishCode(exportTitle) {
   const { htmlContent, tabName } = await buildExportHtml(exportTitle);
+  const finalHtml = await protectExportHtml(htmlContent);
+  if (finalHtml === null) return;
+  downloadExportHtml(finalHtml, `${tabName}.html`); // Verwendet den Tab-Namen
+}
+
+// Frühere Bezeichnung (3.19.18–3.19.24) – bleibt für vorhandene Aufrufe und
+// Hilfsskripte erhalten; liefert jetzt denselben Export wie publishCode().
+async function publishCodeObfuscated(exportTitle) {
+  return publishCode(exportTitle);
+}
+
+// Offline: alle Skripte vom eigenen Server werden in die Datei eingebettet –
+// die Animation läuft danach ohne Internet (F-001, 3.19.17; auch für H5P
+// seit 3.20.0). MathJax (ca. 2 MB) nur, wenn der Code MathForm verwendet.
+// Rückgabe: HTML mit eingebetteten Skripten oder null bei einem Fehler.
+async function embedExportScripts(htmlContent) {
   const usesMath = /\bMathForm\b/.test(editor.getValue());
   const scriptTag =
     /<script src="https:\/\/www\.educational-animation\.org\/oal\/([^"]+)"( async)?><\/script>/g;
@@ -753,18 +786,13 @@ async function publishCodeOffline(exportTitle) {
     }
   } catch (error) {
     console.error("Offline-Export fehlgeschlagen:", error);
-    const lang =
-      window.i18n && typeof window.i18n.getCurrentLanguage === "function"
-        ? window.i18n.getCurrentLanguage()
-        : "de";
-    alert(
-      lang === "en"
-        ? "Offline export failed: a script could not be loaded (" + error.message + ")."
-        : "Offline-Export fehlgeschlagen: Ein Skript konnte nicht geladen werden (" + error.message + ")."
+    exportAlert(
+      "Ein Skript konnte nicht geladen werden (" + error.message + ")",
+      "a script could not be loaded (" + error.message + ")"
     );
-    return;
+    return null;
   }
-  const offlineHtml = htmlContent.replace(scriptTag, (tag, path) => {
+  return htmlContent.replace(scriptTag, (tag, path) => {
     const code = sources[path];
     if (code === null) return "";
     // "</script" im eingebetteten Code darf das Script-Element nicht beenden
@@ -774,15 +802,17 @@ async function publishCodeOffline(exportTitle) {
       "\n<\/script>"
     );
   });
+}
+
+async function publishCodeOffline(exportTitle) {
+  const { htmlContent, tabName } = await buildExportHtml(exportTitle);
+  const protectedHtml = await protectExportHtml(htmlContent);
+  if (protectedHtml === null) return;
+  const offlineHtml = await embedExportScripts(protectedHtml);
+  if (offlineHtml === null) return;
   downloadExportHtml(offlineHtml, `${tabName} (offline).html`);
 }
 
-// HTML (obfuscated): wie der HTML-Export, aber der eingebettete Animations-
-// Code wird verkuerzt (terser) und verschleiert (javascript-obfuscator), damit
-// er ueber "Quelltext anzeigen" nicht mehr lesbar ist (F-011, 3.19.18).
-// WICHTIG: Das ist Verschleierung, kein Kopierschutz – der Browser fuehrt den
-// Code aus, also laesst er sich mit Aufwand ruecklesbar machen.
-// Die Bibliotheken (zusammen ca. 2,5 MB) werden nur bei Bedarf geladen.
 const OBFUSCATION_OPTIONS = {
   seed: 1,
   compact: true,
@@ -831,37 +861,11 @@ function loadObfuscationLibs() {
   return _obfuscationLibsPromise;
 }
 
-function obfuscationAlert(message) {
-  const lang =
-    window.i18n && typeof window.i18n.getCurrentLanguage === "function"
-      ? window.i18n.getCurrentLanguage()
-      : "de";
-  alert(
-    lang === "en"
-      ? "Obfuscated export failed: " + message + "."
-      : "Obfuscated-Export fehlgeschlagen: " + message + "."
-  );
-}
-
-async function publishCodeObfuscated(exportTitle) {
-  const { htmlContent, tabName } = await buildExportHtml(exportTitle);
-
-  try {
-    await loadObfuscationLibs();
-  } catch (error) {
-    console.error("Obfuscated-Export: Bibliothek nicht geladen:", error);
-    obfuscationAlert(
-      (window.i18n && window.i18n.getCurrentLanguage() === "en"
-        ? "a required library could not be loaded ("
-        : "eine benoetigte Bibliothek konnte nicht geladen werden (") +
-        error.message +
-        ")"
-    );
-    return;
-  }
-
-  // Nur den Inline-Block mit dem Animations-Code verarbeiten (die externen
-  // Bibliotheks- und Kernskripte bleiben unveraendert).
+// Verkürzt und verschleiert den Inline-Block mit dem Animations-Code
+// (erkannt am Kommentar "Created with Open Animation Lab").
+// Rückgabe: fertige HTML oder null bei einem Fehler (dann kein Export –
+// unverschleierter Code wird nie ausgegeben).
+async function protectExportHtml(htmlContent) {
   const scriptBlock = /<script>([\s\S]*?)<\/script>/g;
   let target = null;
   let match;
@@ -869,9 +873,23 @@ async function publishCodeObfuscated(exportTitle) {
     if (match[1].includes("Created with Open Animation Lab")) target = match;
   }
   if (!target) {
-    // Kein Block gefunden: unveraenderte HTML ausgeben (kein Datenverlust).
-    downloadExportHtml(htmlContent, `${tabName} (obfuscated).html`);
-    return;
+    console.error("Export: Block mit dem Animations-Code nicht gefunden.");
+    exportAlert(
+      "Der Animations-Code wurde in der Vorlage nicht gefunden",
+      "the animation code was not found in the template"
+    );
+    return null;
+  }
+
+  try {
+    await loadObfuscationLibs();
+  } catch (error) {
+    console.error("Export: Bibliothek nicht geladen:", error);
+    exportAlert(
+      "Eine benötigte Bibliothek konnte nicht geladen werden (" + error.message + ")",
+      "a required library could not be loaded (" + error.message + ")"
+    );
+    return null;
   }
 
   let processed;
@@ -889,24 +907,21 @@ async function publishCodeObfuscated(exportTitle) {
     // "</script" im Code darf das Script-Element nicht beenden
     processed = obfuscated.replace(/<\/script/gi, "<\\/script");
   } catch (error) {
-    console.error("Obfuscated-Export fehlgeschlagen:", error);
-    obfuscationAlert(
-      (window.i18n && window.i18n.getCurrentLanguage() === "en"
-        ? "the code could not be processed ("
-        : "der Code konnte nicht verarbeitet werden (") +
-        (error && error.message ? error.message : error) +
-        ")"
+    console.error("Export: Code nicht verarbeitet:", error);
+    const detail = error && error.message ? error.message : String(error);
+    exportAlert(
+      "Der Code konnte nicht verarbeitet werden (" + detail + ")",
+      "the code could not be processed (" + detail + ")"
     );
-    return;
+    return null;
   }
 
-  const obfuscatedInner =
-    "\n    // Created with Open Animation Lab (obfuscated)\n" + processed + "\n";
-  const obfuscatedHtml = htmlContent.replace(
+  const protectedInner =
+    "\n    // Created with Open Animation Lab\n" + processed + "\n";
+  return htmlContent.replace(
     target[0],
-    () => "<script>" + obfuscatedInner + "<\/script>"
+    () => "<script>" + protectedInner + "<\/script>"
   );
-  downloadExportHtml(obfuscatedHtml, `${tabName} (obfuscated).html`);
 }
 
 // ── Titel der exportierten Animation (E-004, 3.19.24) ──
@@ -1044,8 +1059,16 @@ function closePublishMenu() {
 }
 
 // ── H5P Export ──
+// H5P lädt die Skripte wie der HTML-Export vom eigenen Server;
+// H5P (offline) bettet sie ein (E-007, 3.20.0). Der Animations-Code wird in
+// beiden Fällen verkürzt und verschleiert (protectExportHtml).
 
-async function publishH5P(exportTitle) {
+async function publishH5POffline(exportTitle) {
+  return publishH5P(exportTitle, { offline: true });
+}
+
+async function publishH5P(exportTitle, options = {}) {
+  const offline = options.offline === true;
   // Tab-Name ermitteln (wie bei publishCode)
   const activeTab = document.querySelector(".tab.active");
   let tabName = activeTab ? activeTab.textContent.trim() : "animation";
@@ -1117,7 +1140,7 @@ async function publishH5P(exportTitle) {
     requestAnimationFrame(removeOverlay);`;
   }
 
-  const htmlContent = String.raw`<!DOCTYPE html>
+  const rawHtmlContent = String.raw`<!DOCTYPE html>
 <html lang="${animationLang}">
 <head>
   <meta charset="UTF-8">
@@ -1142,12 +1165,21 @@ async function publishH5P(exportTitle) {
   <div id="preview"><div id="loading-overlay"></div></div>
   <div id="canvas-container"></div>
   <script>
+    // Created with Open Animation Lab
     ${rendererAlias}
     ${jsCode}
     ${postLoadCode}
   </script>
 </body>
 </html>`;
+
+  // Verkürzen/verschleiern, bei Offline zusätzlich Skripte einbetten
+  let htmlContent = await protectExportHtml(rawHtmlContent);
+  if (htmlContent === null) return;
+  if (offline) {
+    htmlContent = await embedExportScripts(htmlContent);
+    if (htmlContent === null) return;
+  }
 
   // ── Build H5P ZIP ──
   const zip = new JSZip();
@@ -1239,10 +1271,16 @@ H5P.OALAnimation = (function ($) {
 `);
 
   // Generate and download
-  const blob = await zip.generateAsync({ type: "blob" });
+  // Komprimiert (DEFLATE): hält vor allem H5P (offline) klein – wichtig für
+  // die Upload-Grenzen der Lernsysteme (E-007, 3.20.0)
+  const blob = await zip.generateAsync({
+    type: "blob",
+    compression: "DEFLATE",
+    compressionOptions: { level: 9 },
+  });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `${tabName}.h5p`;
+  link.download = offline ? `${tabName} (offline).h5p` : `${tabName}.h5p`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
