@@ -271,6 +271,26 @@ class I18nManager {
         en: "Close",
         de: "Schließen",
       },
+      back_to_code: {
+        en: "Back to code",
+        de: "Zurück zum Code",
+      },
+      back_to_code_hint: {
+        en: "Close the form without applying changes and return to the code",
+        de: "Formular ohne Übernehmen schließen und zurück zum Code",
+      },
+      file_selected: {
+        en: "Selected:",
+        de: "Ausgewählt:",
+      },
+      switch_renderer: {
+        en: "Switch display (SVG/PixiJS)",
+        de: "Darstellung wechseln (SVG/PixiJS)",
+      },
+      brightness: {
+        en: "Brightness",
+        de: "Helligkeit",
+      },
       publish_more: {
         en: "More export formats",
         de: "Weitere Exportformate",
@@ -421,7 +441,7 @@ class I18nManager {
       },
       software_information: {
         en: "Software Information",
-        de: "Software Information",
+        de: "Software-Information",
       },
       version: {
         en: "Version",
@@ -453,15 +473,15 @@ class I18nManager {
       },
       help_improve: {
         en: "Help us improve the Open Animation Lab:",
-        de: "Hilf uns dabei, das Open Animation Lab zu verbessern:",
+        de: "Helfen Sie mit, das Open Animation Lab zu verbessern:",
       },
       support_me: {
         en: "Support me",
-        de: "Support me",
+        de: "Unterstützen",
       },
       bug_report: {
-        en: "Bug report",
-        de: "Bug report",
+        en: "Report a bug",
+        de: "Fehler melden",
       },
       imprint: {
         en: "Imprint",

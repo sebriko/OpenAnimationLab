@@ -101,6 +101,26 @@ function addDataUrlPrefix(base64String, mimeType = "model/gltf-binary") {
   return `data:${mimeType};base64,${base64String}`;
 }
 
+// Shows which file was chosen next to a file button (c107)
+function showChosenFile(container, file) {
+  if (!container || !file) return;
+  let info = container.querySelector(".chosen-file-info");
+  if (!info) {
+    info = document.createElement("div");
+    info.className = "chosen-file-info";
+    container.appendChild(info);
+  }
+  const kb = Math.max(1, Math.round(file.size / 1024));
+  info.textContent =
+    getTranslation("file_selected", "Selected:") +
+    " " +
+    file.name +
+    " (" +
+    kb +
+    " KB)";
+  info.title = file.name;
+}
+
 function isImageFile(file) {
   const imageTypes = [
     "image/png",
@@ -888,10 +908,18 @@ class ParameterForm {
     const container = document.createElement("div");
     container.className = "form-container";
 
+    // Clearly labelled way back to the code (c107): the form replaces the
+    // code editor, a small unlabelled "×" was easy to miss.
     const closeButton = document.createElement("button");
     closeButton.type = "button";
-    closeButton.className = "close-button";
-    closeButton.innerHTML = "&times;";
+    closeButton.className = "form-back-button";
+    closeButton.setAttribute("data-i18n", "back_to_code");
+    closeButton.setAttribute("data-i18n-title", "back_to_code_hint");
+    closeButton.textContent = getTranslation("back_to_code", "Back to code");
+    closeButton.title = getTranslation(
+      "back_to_code_hint",
+      "Close the form without applying changes and return to the code",
+    );
     closeButton.onclick = () => this.close(false);
 
     container.appendChild(closeButton);
@@ -1604,6 +1632,7 @@ class ExpressionInputBuilder {
             .replace(/\s+/g, " ")
             .trim();
           input.removeAttribute("data-is-expression");
+          showChosenFile(container, file);
         };
         reader.readAsText(file);
       }
@@ -1639,6 +1668,7 @@ class ExpressionInputBuilder {
             .replace(/\s+/g, " ")
             .trim();
           input.removeAttribute("data-is-expression");
+          showChosenFile(container, file);
         };
         reader.readAsText(file);
       }
@@ -1670,6 +1700,7 @@ class ExpressionInputBuilder {
           const result = await fileToBase64(file, true);
           input.value = result;
           input.removeAttribute("data-is-expression");
+          showChosenFile(container, file);
         } catch (error) {
           console.error("Error converting GLB to base64:", error);
         }
@@ -1698,6 +1729,7 @@ class ExpressionInputBuilder {
           const result = await fileToBase64(file, true);
           input.value = result;
           input.removeAttribute("data-is-expression");
+          showChosenFile(container, file);
         } catch (error) {
           console.error("Error converting image to base64:", error);
         }
@@ -2061,6 +2093,7 @@ function createSvgInput(key, value, group) {
           .replace(/[\r\n]+/g, " ")
           .replace(/\s+/g, " ")
           .trim();
+        showChosenFile(container, file);
       };
       reader.readAsText(file);
     }
@@ -2127,6 +2160,7 @@ function createX3dInput(key, value, group) {
           .replace(/[\r\n]+/g, " ")
           .replace(/\s+/g, " ")
           .trim();
+        showChosenFile(container, file);
       };
       reader.readAsText(file);
     }
@@ -2178,6 +2212,7 @@ function createGlbInput(key, value, group) {
       try {
         const result = await fileToBase64(file, true);
         input.value = result;
+        showChosenFile(container, file);
       } catch (error) {
         console.error("Error converting GLB to base64:", error);
       }
@@ -2226,6 +2261,7 @@ function createPngInput(key, value, group) {
       try {
         const result = await fileToBase64(file, true);
         input.value = result;
+        showChosenFile(container, file);
       } catch (error) {
         console.error("Error converting image to base64:", error);
       }

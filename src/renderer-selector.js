@@ -123,7 +123,11 @@
     const button = document.createElement("button");
     button.className = "regular-button renderer-button";
     button.id = "renderer-button";
-    button.title = "Switch renderer";
+    button.setAttribute("data-i18n-title", "switch_renderer");
+    button.title =
+      typeof getTranslation === "function"
+        ? getTranslation("switch_renderer", "Switch display (SVG/PixiJS)")
+        : "Switch display (SVG/PixiJS)";
 
     const currentRenderer = RENDERERS.find((r) => r.code === _activeRenderer);
     button.innerHTML =

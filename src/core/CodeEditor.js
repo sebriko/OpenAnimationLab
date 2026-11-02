@@ -1079,6 +1079,10 @@ CodeMirror.registerHelper("hint", "custom", function (editor) {
     if (resolvedClass) {
       var memberHints = [];
       var smap = resolvedClass.serializationMap;
+      var hintLang =
+        window.i18n && typeof window.i18n.getCurrentLanguage === "function"
+          ? window.i18n.getCurrentLanguage()
+          : "en";
 
       if (smap) {
         // Collect setters (properties)
@@ -1086,7 +1090,7 @@ CodeMirror.registerHelper("hint", "custom", function (editor) {
           Object.keys(smap.setter).forEach(function (key) {
             var entry = smap.setter[key];
             var info = entry.info;
-            var desc = info ? (info.de || info.en || "") : "";
+            var desc = info ? (info[hintLang] || info.en || info.de || "") : "";
             memberHints.push({
               name: key,
               kind: "property",
@@ -1101,7 +1105,7 @@ CodeMirror.registerHelper("hint", "custom", function (editor) {
           Object.keys(smap.methods).forEach(function (key) {
             var entry = smap.methods[key];
             var info = entry.info;
-            var desc = info ? (info.de || info.en || "") : "";
+            var desc = info ? (info[hintLang] || info.en || info.de || "") : "";
             // Extract signature from example, e.g. "setFillColor(0xff0000)" → "(0xff0000)"
             var sig = "";
             if (entry.example) {
@@ -1602,6 +1606,15 @@ document.addEventListener("DOMContentLoaded", () => {
         cm.toggleComment();
       },
       "Ctrl-D": function (cm) {
+        const cursor = cm.getCursor();
+        const line = cm.getLine(cursor.line);
+        cm.replaceRange(line + "\n", { line: cursor.line + 1, ch: 0 });
+      },
+      // Mac: Cmd variants of the same shortcuts
+      "Cmd-/": function (cm) {
+        cm.toggleComment();
+      },
+      "Cmd-D": function (cm) {
         const cursor = cm.getCursor();
         const line = cm.getLine(cursor.line);
         cm.replaceRange(line + "\n", { line: cursor.line + 1, ch: 0 });

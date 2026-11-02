@@ -1,16 +1,16 @@
 // Keyboard shortcuts
 document.addEventListener("keydown", function (event) {
-  if (event.ctrlKey && event.key === "s") {
+  if ((event.ctrlKey || event.metaKey) && event.key === "s") {
     event.preventDefault();
     saveCode();
     return false;
   }
-  if (event.ctrlKey && event.key === "o") {
+  if ((event.ctrlKey || event.metaKey) && event.key === "o") {
     event.preventDefault();
     document.getElementById("loadFile").click();
     return false;
   }
-  if (event.ctrlKey && event.key === "Enter") {
+  if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
     event.preventDefault();
     runCode();
     return false;

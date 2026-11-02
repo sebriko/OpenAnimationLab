@@ -85,7 +85,10 @@ class ColorPicker {
     brightnessContainer.style.gap = "8px";
 
     const brightnessLabel = document.createElement("label");
-    brightnessLabel.textContent = "Helligkeit";
+    brightnessLabel.textContent =
+      typeof getTranslation === "function"
+        ? getTranslation("brightness", "Brightness")
+        : "Brightness";
 
     const brightnessSliderContainer = document.createElement("div");
     brightnessSliderContainer.style.display = "flex";

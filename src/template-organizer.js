@@ -578,7 +578,7 @@ class TemplateOrganizer {
 
     if (!file.type.startsWith("image/")) {
       alert(
-        getTranslation("select_image_file", "Please select an image file."),
+        getTranslation("not_an_image_file", "Please select an image file."),
       );
       return;
     }
@@ -985,7 +985,7 @@ if (window.i18n && window.i18n.translations) {
       en: "File size too large. Please select an image smaller than 5MB.",
       de: "Datei zu groß. Bitte wählen Sie ein Bild kleiner als 5MB.",
     },
-    select_image_file: {
+    not_an_image_file: {
       en: "Please select an image file.",
       de: "Bitte wählen Sie eine Bilddatei aus.",
     },
