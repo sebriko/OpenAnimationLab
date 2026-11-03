@@ -646,7 +646,7 @@ label2.setFontSize(26);
     {
       name: "Images",
       description:
-        "Dieses Tool kann Ihre Bilder direkt in den Code integrieren.",
+        "This tool can embed your images and sounds directly in the code.",
       templates: [
         {
           image: "guitar.png",
@@ -677,6 +677,60 @@ let myPNG = new SimplePNG("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAB
 
 myPNG.x = 400;
 myPNG.y = 300;`,
+        },
+        {
+          image: "mp3.png",
+          title: "Sound (SimpleMP3)",
+          code: `// Created with Open Animation Lab
+
+let board = new Board(1280, 720);
+
+// Embed your own sound: click the green i in front of the line with new SimpleMP3,
+// "Select MP3 file", OK. Short sounds work best (under 300 KB).
+// Only use your own sounds or sounds you may use freely, and name the source here.
+// Source of this sound: made in the Open Animation Lab (free to use).
+
+let ping = new SimpleMP3("data:audio/mpeg;base64,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");
+ping.volume = 0.8;
+
+let bell = new Circle(90, 0xffcc33);
+bell.x = 640;
+bell.y = 280;
+bell.setBorder(0x333333, 3);
+
+// Never show something important by sound alone – the note appears in the picture too.
+let note = new Text("♪", "Arial", 90, 0x333333);
+note.x = 790;
+note.y = 150;
+note.visible = false;
+
+let button = new Button("Ping!", 200, 60, "Arial", 26);
+button.x = 540;
+button.y = 460;
+button.onClick(playSound);
+
+let soundOn = new Checkbox(true, 26, "Sound on", "Arial", 22);
+soundOn.x = 560;
+soundOn.y = 560;
+soundOn.onClick(toggleSound);
+
+ping.onEnded(finished);
+
+function playSound() {
+  note.visible = true;
+  ping.restart(); // from the start, even if the sound is still playing
+}
+
+function finished() {
+  note.visible = false;
+}
+
+function toggleSound(event) {
+  ping.muted = !event.value;
+}
+
+// Note: browsers only play sound after the first click on the page.
+// So it is best to start the sound with a button.`,
         },
       ],
     },

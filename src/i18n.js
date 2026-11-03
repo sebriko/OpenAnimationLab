@@ -259,6 +259,18 @@ class I18nManager {
         en: "Select image file",
         de: "Bilddatei auswählen",
       },
+      mp3_file: {
+        en: "MP3 File",
+        de: "MP3-Datei",
+      },
+      select_mp3_file: {
+        en: "Select MP3 file",
+        de: "MP3-Datei auswählen",
+      },
+      mp3_large_hint: {
+        en: "Large file – short sounds (under {kb} KB) keep the code and the export small.",
+        de: "Große Datei – kurze Geräusche (unter {kb} KB) halten Code und Export klein.",
+      },
       number_of_points: {
         en: "Number of points:",
         de: "Anzahl Punkte:",

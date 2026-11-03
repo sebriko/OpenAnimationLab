@@ -6760,3 +6760,456 @@ HtmlSvgEdu.HtmlRectangle = class HtmlRectangle extends HtmlSvgEdu.Component {
     this.remove();
   }
 };
+
+// ============================================================================
+// SimpleMP3 – Ton (MP3) als Objekt, seit 3.21.0 (E-012)
+// ----------------------------------------------------------------------------
+// Unsichtbar, darum hier bei den Komponenten und nicht in SvgJSEdu/PixiJSEdu:
+// funktioniert mit beiden Renderern gleich. Die MP3 steht wie bei SimplePNG
+// als Base64 im Code (grünes i → MP3-Datei auswählen) – Exporte brauchen
+// keine Zusatzdatei. Browser spielen Ton erst nach dem ersten Klick oder
+// Tastendruck auf der Seite (Autoplay-Regel); play() meldet das im Editor.
+// ============================================================================
+
+HtmlSvgEdu.SimpleMP3 = class SimpleMP3 extends HtmlSvgEdu.Component {
+  static _instances = new Set();
+  // Ab dieser Größe (KB) gibt es im Editor einen Hinweis.
+  static LARGE_FILE_KB = 300;
+
+  static serializationMap = {
+    description: {
+      de: "Ton (MP3) als Objekt – Geräusche und kurze Klänge für Animationen und Spiele",
+      en: "Sound (MP3) as object – noises and short sounds for animations and games",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example: 'let mySound = new SimpleMP3("data:audio/mpeg;base64,...");',
+    constructor: {
+      mp3Content: {
+        name: "mp3Content",
+        info: {
+          en: "Source of the MP3 sound (Base64 or URL). Easiest: click the green i and select an MP3 file",
+          de: "Quelle des MP3-Tons (Base64 oder URL). Am einfachsten: grünes i anklicken und eine MP3-Datei auswählen",
+        },
+      },
+    },
+    setter: {
+      volume: {
+        name: "volume",
+        info: {
+          en: "Volume from 0 (silent) to 1 (full)",
+          de: "Lautstärke von 0 (stumm) bis 1 (voll)",
+        },
+        example: "volume = 0.5",
+      },
+      loop: {
+        name: "loop",
+        info: {
+          en: "Repeat the sound endlessly (true/false)",
+          de: "Ton endlos wiederholen (true/false)",
+        },
+        example: "loop = true",
+      },
+      muted: {
+        name: "muted",
+        info: {
+          en: "Mute the sound (true/false) – the sound keeps running silently",
+          de: "Ton stummschalten (true/false) – der Ton läuft lautlos weiter",
+        },
+        example: "muted = true",
+      },
+      playbackRate: {
+        name: "playbackRate",
+        info: {
+          en: "Playback speed (1 = normal, 2 = double speed and higher pitch, 0.5 = half speed and lower pitch)",
+          de: "Abspielgeschwindigkeit (1 = normal, 2 = doppelt so schnell und höher, 0.5 = halb so schnell und tiefer)",
+        },
+        example: "playbackRate = 1.5",
+      },
+      currentTime: {
+        name: "currentTime",
+        info: {
+          en: "Current position in the sound in seconds",
+          de: "Aktuelle Stelle im Ton in Sekunden",
+        },
+        example: "currentTime = 0",
+      },
+    },
+    methods: {
+      play: {
+        name: "play",
+        example: "play()",
+        info: {
+          en: "Plays the sound – after pause() it continues where it stopped. Browsers only play sound after the first click or key press on the page",
+          de: "Spielt den Ton ab – nach pause() geht es an derselben Stelle weiter. Browser spielen Ton erst nach dem ersten Klick oder Tastendruck auf der Seite",
+        },
+      },
+      restart: {
+        name: "restart",
+        example: "restart()",
+        info: {
+          en: "Plays the sound from the beginning, even if it is still playing – good for game sounds",
+          de: "Spielt den Ton von vorn, auch wenn er gerade läuft – gut für Spielgeräusche",
+        },
+      },
+      pause: {
+        name: "pause",
+        example: "pause()",
+        info: {
+          en: "Pauses the sound at the current position",
+          de: "Hält den Ton an der aktuellen Stelle an",
+        },
+      },
+      stop: {
+        name: "stop",
+        example: "stop()",
+        info: {
+          en: "Stops the sound and goes back to the beginning",
+          de: "Beendet den Ton und springt an den Anfang zurück",
+        },
+      },
+      onEnded: {
+        name: "onEnded",
+        example:
+          'onEnded(soundEnded); \n\nfunction soundEnded() { console.log("Fertig"); }',
+        info: {
+          en: "Defines a function to execute when the sound has ended (not with loop = true)",
+          de: "Legt fest, welche Funktion ausgeführt wird, wenn der Ton zu Ende ist (nicht bei loop = true)",
+        },
+      },
+      isPlaying: {
+        name: "isPlaying",
+        example: "isPlaying()",
+        info: {
+          en: "Returns true while the sound is playing",
+          de: "Gibt true zurück, solange der Ton läuft",
+        },
+      },
+      getDuration: {
+        name: "getDuration",
+        example: "getDuration()",
+        info: {
+          en: "Returns the length of the sound in seconds (0 while it is still loading)",
+          de: "Gibt die Länge des Tons in Sekunden zurück (0, solange er noch lädt)",
+        },
+      },
+    },
+  };
+
+  constructor(mp3Content = "") {
+    super();
+    this._src = typeof mp3Content === "string" ? mp3Content.trim() : "";
+    this._volume = 1;
+    this._loop = false;
+    this._muted = false;
+    this._playbackRate = 1;
+    this._endedCallback = null;
+    this._released = false;
+    this._audio = null;
+    this._noSourceHintShown = false;
+    // Tab des Editors, in dem der Code lief – beim Schließen dieses Tabs
+    // endet der Ton (closeTab → SimpleMP3.destroyForTab). In Exporten null.
+    this._tabName = SimpleMP3._activeTabName();
+
+    if (this._src && typeof Audio !== "undefined") {
+      this._audio = new Audio();
+      this._audio.preload = "auto";
+      // Bei playbackRate ≠ 1 soll sich die Tonhöhe mit ändern (Dopplereffekt,
+      // Motor dreht hoch) – darum preservesPitch aus.
+      this._setPreservesPitch(false);
+      this._audio.addEventListener("ended", () => {
+        if (typeof this._endedCallback === "function") {
+          try {
+            this._endedCallback();
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      });
+      this._audio.addEventListener("error", () => {
+        if (this._released) return;
+        SimpleMP3._hint(
+          "SimpleMP3: Die Tondatei konnte nicht geladen werden. Bitte über das grüne i eine MP3-Datei auswählen.",
+          "SimpleMP3: The sound file could not be loaded. Please select an MP3 file via the green i.",
+          "error",
+        );
+      });
+      this._audio.src = this._src;
+      this._checkSize();
+    }
+
+    SimpleMP3._instances.add(this);
+    this._registerWithBoard();
+  }
+
+  // ---------- intern ----------
+
+  static _lang() {
+    try {
+      if (
+        typeof window !== "undefined" &&
+        window.i18n &&
+        typeof window.i18n.getCurrentLanguage === "function"
+      ) {
+        return window.i18n.getCurrentLanguage() === "de" ? "de" : "en";
+      }
+    } catch (e) {
+      // ignorieren
+    }
+    const htmlLang =
+      typeof document !== "undefined" && document.documentElement
+        ? document.documentElement.lang || ""
+        : "";
+    return htmlLang.toLowerCase().startsWith("de") ? "de" : "en";
+  }
+
+  // Hinweise erscheinen nur im Editor (Meldungsfenster), nicht in Exporten.
+  static _hint(de, en, type = "info") {
+    if (
+      typeof window !== "undefined" &&
+      typeof window.logEvalMessage === "function"
+    ) {
+      window.logEvalMessage(SimpleMP3._lang() === "de" ? de : en, type);
+    }
+  }
+
+  static stopAll() {
+    SimpleMP3._instances.forEach((sound) => sound.stop());
+  }
+
+  static _activeTabName() {
+    try {
+      if (typeof document === "undefined" || !document.querySelector) {
+        return null;
+      }
+      const activeTab = document.querySelector(".tab.active");
+      return activeTab ? activeTab.getAttribute("data-tab") : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Beendet und entfernt alle Töne, die im angegebenen Editor-Tab gestartet
+  // wurden (Aufruf aus closeTab in TabFunctions.js).
+  static destroyForTab(tabName) {
+    [...SimpleMP3._instances].forEach((sound) => {
+      if (sound._tabName === tabName) sound.destroy();
+    });
+  }
+
+  _registerWithBoard() {
+    try {
+      if (
+        typeof Board !== "undefined" &&
+        typeof INSTANCE_KEY !== "undefined" &&
+        Board[INSTANCE_KEY] &&
+        typeof Board[INSTANCE_KEY].addChild === "function"
+      ) {
+        // Damit beim erneuten Ausführen (Board.destroy) der Ton endet
+        Board[INSTANCE_KEY].addChild(this);
+      }
+    } catch (e) {
+      // ohne Board läuft der Ton trotzdem
+    }
+  }
+
+  _setPreservesPitch(value) {
+    if (!this._audio) return;
+    this._audio.preservesPitch = value;
+    this._audio.mozPreservesPitch = value;
+    this._audio.webkitPreservesPitch = value;
+  }
+
+  _checkSize() {
+    if (!this._src.startsWith("data:")) return;
+    const commaPos = this._src.indexOf(",");
+    const base64Length = commaPos >= 0 ? this._src.length - commaPos - 1 : 0;
+    const sizeKB = Math.round((base64Length * 0.75) / 1024);
+    if (sizeKB > SimpleMP3.LARGE_FILE_KB) {
+      SimpleMP3._hint(
+        "SimpleMP3: Die MP3 ist " +
+          sizeKB +
+          " KB groß. Kurze Geräusche (unter " +
+          SimpleMP3.LARGE_FILE_KB +
+          " KB) laden schneller – lange Musik macht den Code und den Export groß.",
+        "SimpleMP3: The MP3 is " +
+          sizeKB +
+          " KB. Short sounds (under " +
+          SimpleMP3.LARGE_FILE_KB +
+          " KB) load faster – long music makes the code and the export large.",
+        "info",
+      );
+    }
+  }
+
+  _canPlay() {
+    if (this._released) return false;
+    if (!this._audio) {
+      if (!this._noSourceHintShown) {
+        this._noSourceHintShown = true;
+        SimpleMP3._hint(
+          "SimpleMP3: Noch kein Ton ausgewählt. Klicken Sie auf das grüne i vor der Zeile mit new SimpleMP3 und wählen Sie eine MP3-Datei.",
+          "SimpleMP3: No sound selected yet. Click the green i in front of the line with new SimpleMP3 and select an MP3 file.",
+          "info",
+        );
+      }
+      return false;
+    }
+    return true;
+  }
+
+  _startPlayback() {
+    const result = this._audio.play();
+    if (result && typeof result.catch === "function") {
+      result.catch((error) => {
+        if (this._released) return;
+        if (error && error.name === "NotAllowedError") {
+          if (!SimpleMP3._autoplayHintShown) {
+            SimpleMP3._autoplayHintShown = true;
+            SimpleMP3._hint(
+              "SimpleMP3: Der Browser spielt Ton erst nach einem Klick oder Tastendruck auf der Seite. Tipp: Ton über einen Button starten (onClick).",
+              "SimpleMP3: The browser only plays sound after a click or key press on the page. Tip: start the sound with a button (onClick).",
+              "info",
+            );
+          }
+        } else if (error && error.name !== "AbortError") {
+          console.warn("SimpleMP3:", error);
+        }
+      });
+    }
+    return this;
+  }
+
+  // ---------- Abspielen ----------
+
+  play() {
+    if (!this._canPlay()) return this;
+    if (this._audio.ended) this._audio.currentTime = 0;
+    return this._startPlayback();
+  }
+
+  restart() {
+    if (!this._canPlay()) return this;
+    try {
+      this._audio.currentTime = 0;
+    } catch (e) {
+      // noch nicht geladen – startet ohnehin am Anfang
+    }
+    return this._startPlayback();
+  }
+
+  pause() {
+    if (this._audio) this._audio.pause();
+    return this;
+  }
+
+  stop() {
+    if (this._audio) {
+      this._audio.pause();
+      try {
+        this._audio.currentTime = 0;
+      } catch (e) {
+        // ignorieren
+      }
+    }
+    return this;
+  }
+
+  isPlaying() {
+    return !!(this._audio && !this._audio.paused && !this._audio.ended);
+  }
+
+  getDuration() {
+    if (!this._audio) return 0;
+    const d = this._audio.duration;
+    return isFinite(d) ? d : 0;
+  }
+
+  onEnded(callback) {
+    this._endedCallback = callback;
+    return this;
+  }
+
+  // ---------- Eigenschaften ----------
+
+  set volume(value) {
+    const v = Number(value);
+    this._volume = isFinite(v) ? Math.max(0, Math.min(1, v)) : 1;
+    if (this._audio) this._audio.volume = this._volume;
+  }
+  get volume() {
+    return this._volume;
+  }
+
+  set loop(value) {
+    this._loop = !!value;
+    if (this._audio) this._audio.loop = this._loop;
+  }
+  get loop() {
+    return this._loop;
+  }
+
+  set muted(value) {
+    this._muted = !!value;
+    if (this._audio) this._audio.muted = this._muted;
+  }
+  get muted() {
+    return this._muted;
+  }
+
+  set playbackRate(value) {
+    const r = Number(value);
+    // Browser erlauben etwa 0.0625 bis 16; sinnvoll und überall sicher: 0.25 bis 4
+    this._playbackRate = isFinite(r) && r > 0 ? Math.max(0.25, Math.min(4, r)) : 1;
+    if (this._audio) this._audio.playbackRate = this._playbackRate;
+  }
+  get playbackRate() {
+    return this._playbackRate;
+  }
+
+  set currentTime(value) {
+    const t = Number(value);
+    if (!this._audio || !isFinite(t)) return;
+    try {
+      this._audio.currentTime = Math.max(0, t);
+    } catch (e) {
+      // noch nicht geladen
+    }
+  }
+  get currentTime() {
+    return this._audio ? this._audio.currentTime : 0;
+  }
+
+  // Ton hat keine Fläche – visible schaltet ihn stumm bzw. wieder hörbar
+  set visible(value) {
+    this._visible = !!value;
+    if (this._audio) this._audio.muted = this._muted || !this._visible;
+  }
+  get visible() {
+    return this._visible;
+  }
+
+  // ---------- Aufräumen ----------
+
+  remove() {
+    this.destroy();
+  }
+
+  destroy() {
+    if (this._released) return;
+    this._released = true;
+    if (this._audio) {
+      try {
+        this._audio.pause();
+        this._audio.removeAttribute("src");
+        this._audio.load();
+      } catch (e) {
+        // ignorieren
+      }
+      this._audio = null;
+    }
+    SimpleMP3._instances.delete(this);
+  }
+};

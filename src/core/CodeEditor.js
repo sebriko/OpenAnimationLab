@@ -1893,6 +1893,54 @@ document.addEventListener("DOMContentLoaded", () => {
         window.contentMarks.push(mark);
       }
 
+      // 3b. Mask base64 audio (SimpleMP3, E-012)
+      const base64AudioRegex =
+        /"data:audio\/[\w.+-]+;base64,[A-Za-z0-9+/=]+"/gi;
+      base64AudioRegex.lastIndex = 0;
+
+      while ((match = base64AudioRegex.exec(code)) !== null) {
+        const startIndex = match.index;
+        const endIndex = match.index + match[0].length;
+
+        const span = document.createElement("span");
+        span.textContent = "🔊 MP3";
+        span.style.color = "#B45309";
+        span.style.fontStyle = "italic";
+        span.style.fontWeight = "500";
+        span.style.backgroundColor = "rgba(217, 119, 6, 0.1)";
+        span.style.border = "1px solid rgba(217, 119, 6, 0.35)";
+        span.style.padding = "3px 8px";
+        span.style.borderRadius = "6px";
+        span.style.cursor = "text";
+        span.style.fontSize = "0.9em";
+        span.style.letterSpacing = "0.5px";
+
+        span.setAttribute("data-base64-content", match[0]);
+
+        const base64Length = match[0].length;
+        const sizeKB = Math.max(1, Math.round((base64Length * 0.75) / 1024));
+        span.textContent = `🔊 MP3 (≈${sizeKB} KB)`;
+        span.title = `Base64 MP3 (≈${sizeKB}KB)`;
+
+        const mark = editor.markText(
+          editor.posFromIndex(startIndex),
+          editor.posFromIndex(endIndex),
+          {
+            replacedWith: span,
+            atomic: true,
+            handleMouseEvents: true,
+          },
+        );
+
+        span.addEventListener("click", function () {
+          const pos = editor.posFromIndex(endIndex);
+          editor.setCursor(pos);
+          editor.focus();
+        });
+
+        window.contentMarks.push(mark);
+      }
+
       // 4. Mask X3D scene literals
       const x3dRegex = /`[^`]*<scene[\s\S]*?<\/scene>[^`]*`/gi;
       x3dRegex.lastIndex = 0;

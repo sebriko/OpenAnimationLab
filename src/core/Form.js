@@ -121,6 +121,35 @@ function showChosenFile(container, file) {
   info.title = file.name;
 }
 
+// MP3 erkennen (SimpleMP3, E-012). Windows meldet teils "audio/mp3".
+function isAudioFile(file) {
+  const audioTypes = ["audio/mpeg", "audio/mp3", "audio/mpeg3", "audio/x-mpeg-3"];
+  return (
+    audioTypes.includes(file.type) || /\.mp3$/i.test(file.name || "")
+  );
+}
+
+// Hinweis unter der Dateiwahl, wenn die MP3 groß ist (SimpleMP3, E-012)
+const MP3_LARGE_FILE_KB = 300;
+function showMp3SizeHint(container, file) {
+  if (!container || !file) return;
+  let hint = container.querySelector(".mp3-size-hint");
+  const kb = Math.round(file.size / 1024);
+  if (kb <= MP3_LARGE_FILE_KB) {
+    if (hint) hint.remove();
+    return;
+  }
+  if (!hint) {
+    hint = document.createElement("div");
+    hint.className = "chosen-file-info mp3-size-hint";
+    container.appendChild(hint);
+  }
+  hint.textContent = getTranslation("mp3_large_hint").replace(
+    "{kb}",
+    String(MP3_LARGE_FILE_KB),
+  );
+}
+
 function isImageFile(file) {
   const imageTypes = [
     "image/png",
@@ -306,6 +335,10 @@ function inferDataTypeFromName(paramName) {
 
   if (paramName === "glbContent" || paramName.includes("glbContent")) {
     return "glb";
+  }
+
+  if (paramName === "mp3Content" || paramName.includes("mp3Content")) {
+    return "mp3";
   }
 
   if (
@@ -601,6 +634,13 @@ function formatConstructorArgument(key, val, isExpression = false) {
       }
 
     case "png":
+      if (typeof val === "string") {
+        return `"${val.replace(/"/g, '\\"')}"`;
+      } else {
+        return `"${String(val).replace(/"/g, '\\"')}"`;
+      }
+
+    case "mp3":
       if (typeof val === "string") {
         return `"${val.replace(/"/g, '\\"')}"`;
       } else {
@@ -1383,6 +1423,8 @@ class InputFactory {
         return this._createGlbInput();
       case "png":
         return this._createPngInput();
+      case "mp3":
+        return this._createMp3Input();
       case "color":
         return this._createColorInput();
       case "number":
@@ -1414,6 +1456,11 @@ class InputFactory {
   _createPngInput() {
     const { key, fieldValue, isVariableValue, group } = this.fieldBuilder;
     return createPngInput(key, isVariableValue ? "" : fieldValue, group);
+  }
+
+  _createMp3Input() {
+    const { key, fieldValue, isVariableValue, group } = this.fieldBuilder;
+    return createMp3Input(key, isVariableValue ? "" : fieldValue, group);
   }
 
   _createColorInput() {
@@ -1535,6 +1582,9 @@ class ExpressionInputBuilder {
         break;
       case "png":
         this._addPngHelper(inputRow, input, container);
+        break;
+      case "mp3":
+        this._addMp3Helper(inputRow, input, container);
         break;
       default:
         container.appendChild(inputRow);
@@ -1732,6 +1782,36 @@ class ExpressionInputBuilder {
           showChosenFile(container, file);
         } catch (error) {
           console.error("Error converting image to base64:", error);
+        }
+      }
+    });
+
+    container.appendChild(inputRow);
+    container.appendChild(fileInput);
+  }
+
+  _addMp3Helper(inputRow, input, container) {
+    const mp3Button = UIComponents.createButton(getTranslation("mp3_file"));
+    inputRow.appendChild(mp3Button);
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".mp3,audio/mpeg";
+    fileInput.style.display = "none";
+
+    mp3Button.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (file && isAudioFile(file)) {
+        try {
+          const result = await fileToBase64(file, true);
+          input.value = normalizeMp3DataUrl(result);
+          input.removeAttribute("data-is-expression");
+          showChosenFile(container, file);
+          showMp3SizeHint(container, file);
+        } catch (error) {
+          console.error("Error converting MP3 to base64:", error);
         }
       }
     });
@@ -2275,6 +2355,64 @@ function createPngInput(key, value, group) {
   return container;
 }
 
+// Einheitlicher MIME-Typ, egal was der Browser meldet ("audio/mp3", leer …)
+function normalizeMp3DataUrl(dataUrl) {
+  if (typeof dataUrl !== "string") return dataUrl;
+  const commaPos = dataUrl.indexOf(",");
+  if (!dataUrl.startsWith("data:") || commaPos < 0) return dataUrl;
+  return "data:audio/mpeg;base64," + dataUrl.substring(commaPos + 1);
+}
+
+function createMp3Input(key, value, group) {
+  const container = document.createElement("div");
+  container.className = "png-input-container mp3-input-container flex-column-gap";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.id = key;
+  input.name = key;
+  input.value = value || "";
+  input.setAttribute("data-original-value", value || "");
+  input.classList.add("form-input");
+  input.placeholder = "Base64-encoded MP3 content...";
+  if (group) input.setAttribute("data-group", group);
+
+  const inputRow = document.createElement("div");
+  inputRow.className = "input-row";
+  inputRow.appendChild(input);
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".mp3,audio/mpeg";
+  fileInput.style.display = "none";
+
+  const selectButton = UIComponents.createButton(
+    getTranslation("select_mp3_file"),
+  );
+
+  selectButton.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    if (file && isAudioFile(file)) {
+      try {
+        const result = await fileToBase64(file, true);
+        input.value = normalizeMp3DataUrl(result);
+        showChosenFile(container, file);
+        showMp3SizeHint(container, file);
+      } catch (error) {
+        console.error("Error converting MP3 to base64:", error);
+      }
+    }
+  });
+
+  inputRow.appendChild(selectButton);
+  container.appendChild(inputRow);
+  container.appendChild(fileInput);
+
+  return container;
+}
+
 // ===== LANGUAGE CHANGE HANDLER =====
 
 document.addEventListener("languageChanged", function () {
@@ -2344,6 +2482,16 @@ document.addEventListener("languageChanged", function () {
         button.textContent === "Select image file"
       ) {
         button.textContent = getTranslation("select_image_file");
+      } else if (
+        button.textContent === "MP3-Datei" ||
+        button.textContent === "MP3 File"
+      ) {
+        button.textContent = getTranslation("mp3_file");
+      } else if (
+        button.textContent === "MP3-Datei auswählen" ||
+        button.textContent === "Select MP3 file"
+      ) {
+        button.textContent = getTranslation("select_mp3_file");
       } else if (
         button.textContent === "Übernehmen" ||
         button.textContent === "Apply"

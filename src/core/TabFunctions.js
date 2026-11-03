@@ -385,6 +385,16 @@ function closeTab(tabName) {
 
   const wasActive = tabElement.classList.contains("active");
 
+  // Töne (SimpleMP3) aus diesem Tab beenden – sonst laufen sie nach dem
+  // Schließen weiter (3.21.0)
+  if (
+    typeof HtmlSvgEdu !== "undefined" &&
+    HtmlSvgEdu.SimpleMP3 &&
+    typeof HtmlSvgEdu.SimpleMP3.destroyForTab === "function"
+  ) {
+    HtmlSvgEdu.SimpleMP3.destroyForTab(tabName);
+  }
+
   tabElement.remove();
   delete tabContents[tabName];
   delete tabObjects[tabName];

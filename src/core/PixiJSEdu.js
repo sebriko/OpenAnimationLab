@@ -1,6 +1,6 @@
 /**
  * PixiJSEdu - Educational Animation Library
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author: Sebastian Rikowski
  * License: MIT
  *
@@ -29,6 +29,28 @@
  */
 
 var PixiJSEdu = PixiJSEdu || {};
+
+// ---------------------------------------------------------------------------
+// Fix for PixiJS 8: Graphics.lineStyle() (legacy API) ignores all "falsy"
+// arguments (width && ..., color && ..., alpha && ...). Black (0x000000),
+// width 0 and alpha 0 are therefore dropped and replaced by PixiJS defaults
+// (white, width 1, alpha 1). Result: black contours become invisible on
+// white parts (e.g. rotor, ring gear and eccentric in wankelmotor.js).
+// Here only arguments that are actually missing (undefined) are skipped.
+// ---------------------------------------------------------------------------
+(function () {
+  const proto = PIXI.Graphics && PIXI.Graphics.prototype;
+  if (!proto || typeof proto.lineStyle !== "function" || proto.__oalLineStyleFix) return;
+  proto.lineStyle = function (width, color, alpha) {
+    const style = {};
+    if (width !== undefined && width !== null) style.width = width;
+    if (color !== undefined && color !== null) style.color = color;
+    if (alpha !== undefined && alpha !== null) style.alpha = alpha;
+    this.context.strokeStyle = style;
+    return this;
+  };
+  proto.__oalLineStyleFix = true;
+})();
 
 PixiJSEdu.BoardGUI = class BoardGUI extends PIXI.Container {
   static serializationMap = {
@@ -258,8 +280,8 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
       removeChild: {
         example: "removeChild(rectangle)",
         info: {
-          en: "Removes an object from the group",
-          de: "Entfernt ein Objekt aus der Gruppe",
+          en: "Detaches an object from the group. It stays visible on the board; to remove it completely use board.removeChild(object)",
+          de: "Löst ein Objekt aus der Gruppe. Es bleibt auf der Zeichenfläche sichtbar; ganz entfernen mit board.removeChild(object)",
         },
       },
       setTransformationPoint: {
