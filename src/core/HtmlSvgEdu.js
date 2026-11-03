@@ -328,8 +328,8 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
       label: {
         name: "label",
         info: {
-          en: "Label or text of the element",
-          de: "Bezeichner oder Text des Elements",
+          en: "Label or text of the element (\\n for line break)",
+          de: "Bezeichner oder Text des Elements (\\n für Zeilenwechsel)",
         },
       },
       width: {
@@ -400,8 +400,8 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
       setText: {
         name: "setText",
         info: {
-          en: "Sets the label text of the button",
-          de: "Setzt den Beschriftungstext des Buttons",
+          en: "Sets the label text of the button (\\n for line break)",
+          de: "Setzt den Beschriftungstext des Buttons (\\n für Zeilenwechsel)",
         },
         example: 'setText("Neuer Text")',
       },
@@ -418,7 +418,7 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
     this._active = false;
     this._clickHandler = null;
     this._element = this._createElement("button");
-    this._element.textContent = label;
+    this._renderLabel(label);
     this._element.className = "pixi-html-ui pixi-button";
     this._applyStyles();
     this._setupEvents();
@@ -449,6 +449,18 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
     const padV = Math.max(0, Math.min(8, (this._height - 2 - this._fontSize) / 2));
     const padH = Math.max(0, Math.min(10, (this._width - 2 - this._fontSize) / 2));
     style.padding = padV + "px " + padH + "px";
+    // Mehrzeilige Beschriftung: normaler Zeilenabstand (CSS hat line-height 0.7)
+    // und Zeilen mittig. Einzeilig sieht der Button genauso aus wie vorher.
+    style.lineHeight = "1.2";
+    style.textAlign = "center";
+    style.whiteSpace = "pre-line";
+  }
+  // Zeilenwechsel mit "\n" (wie bei Text und Checkbox); <br> wird auch verstanden.
+  // Der Editor verdoppelt Backslashes, deshalb kommt "\n" auch als \ + n an.
+  _renderLabel(label) {
+    if (!this._element) return;
+    const text = label === undefined || label === null ? "" : String(label);
+    this._element.textContent = text.replace(/\\n|<br\s*\/?>/gi, "\n");
   }
   _setupEvents() {
     if (!this._element) return;
@@ -468,9 +480,8 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
   }
   setText(label) {
     this._text = label;
-    if (this._element) {
-      this._element.textContent = label;
-    }
+    this._label = label;
+    this._renderLabel(label);
   }
   setFont(font) {
     this._font = font;
