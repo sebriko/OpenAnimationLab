@@ -63,7 +63,16 @@ HtmlSvgEdu.Component = class Component {
         example: "visible = true",
       },
     },
-    methods: {},
+    methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
+    },
   };
   constructor() {
     this._x = 0;
@@ -139,14 +148,418 @@ HtmlSvgEdu.Component = class Component {
       this._displayBeforeHide = style.display;
       style.display = "none";
     }
+    if (!this._visible && HtmlSvgEdu.Component._tipOwner === this) {
+      HtmlSvgEdu.Component._hideTooltip(true);
+    }
   }
   get visible() {
     return this._visible;
   }
   remove() {
+    if (HtmlSvgEdu.Component._tipOwner === this) {
+      HtmlSvgEdu.Component._hideTooltip(true);
+    }
+    this._removeTooltipDescription();
     if (this._element && this._element.parentNode) {
       this._element.parentNode.removeChild(this._element);
     }
+  }
+  // ---------- Tooltip (Hinweistext) ----------
+  // Eigener, barrierefreier Tooltip statt des Browser-"title": erscheint bei
+  // Maus (kurze Verzögerung), Tastaturfokus (Tab) und langem Antippen (Touch),
+  // lässt sich mit Esc schließen und bleibt stehen, solange die Maus auf dem
+  // Hinweis liegt (WCAG 1.4.13). Bildschirmleser bekommen den Text über
+  // aria-describedby. Alle Komponenten nutzen eine gemeinsame Blase in der
+  // Komponenten-Ebene – sie skaliert also mit der Bühne.
+  setTooltip(text, position) {
+    const value =
+      text === undefined || text === null ? "" : String(text).trim();
+    const positions = ["top", "bottom", "left", "right"];
+    this._tooltipPosition = positions.includes(position) ? position : "top";
+    if (!value) {
+      this._tooltipText = "";
+      this._removeTooltipDescription();
+      if (HtmlSvgEdu.Component._tipOwner === this) {
+        HtmlSvgEdu.Component._hideTooltip(true);
+      }
+      return;
+    }
+    // "\n" als Zeilenwechsel (Editor verdoppelt Backslashes), <br> ebenso
+    this._tooltipText = value.replace(/\\n|<br\s*\/?>/gi, "\n");
+    if (!this._element) return;
+    this._setupTooltipEvents();
+    this._updateTooltipDescription();
+    if (HtmlSvgEdu.Component._tipOwner === this) {
+      HtmlSvgEdu.Component._showTooltip(this);
+    }
+  }
+  _setupTooltipEvents() {
+    if (this._tooltipEventsReady || !this._element) return;
+    this._tooltipEventsReady = true;
+    const C = HtmlSvgEdu.Component;
+    const el = this._element;
+    C._installTooltipKeyHandler();
+    // Maus und Stift: zeigen, sobald der Zeiger kurz ruht – und zwar dort,
+    // wo er ruht (über der Pfeilspitze, damit der Pfeil nichts verdeckt)
+    const restart = (e) => {
+      if (e.pointerType === "touch" || !this._tooltipText) return;
+      this._tipPointer = { x: e.clientX, y: e.clientY };
+      if (C._tipOwner === this) return; // schon sichtbar: nicht mitwandern
+      C._cancelTooltipHide();
+      clearTimeout(this._tipShowTimer);
+      this._tipShowTimer = setTimeout(
+        () => C._showTooltip(this, this._tipPointer),
+        400,
+      );
+    };
+    el.addEventListener("pointerenter", restart);
+    el.addEventListener("pointermove", restart);
+    el.addEventListener("pointerleave", (e) => {
+      if (e.pointerType === "touch") return;
+      clearTimeout(this._tipShowTimer);
+      if (C._tipOwner === this && !this._tipFocused) C._scheduleTooltipHide();
+    });
+    // Klick mit der Maus schließt den Hinweis
+    el.addEventListener("pointerdown", (e) => {
+      clearTimeout(this._tipShowTimer);
+      if (e.pointerType !== "touch") {
+        if (C._tipOwner === this) C._hideTooltip(true);
+        return;
+      }
+      // Touch: langes Antippen (0,5 s) zeigt den Hinweis
+      if (!this._tooltipText) return;
+      this._tipTouchStart = { x: e.clientX, y: e.clientY };
+      clearTimeout(this._tipLongPressTimer);
+      this._tipLongPressTimer = setTimeout(() => {
+        this._tipLongPress = true;
+        C._showTooltip(this);
+      }, 500);
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (e.pointerType !== "touch" || !this._tipTouchStart) return;
+      const dx = e.clientX - this._tipTouchStart.x;
+      const dy = e.clientY - this._tipTouchStart.y;
+      if (dx * dx + dy * dy > 100) clearTimeout(this._tipLongPressTimer);
+    });
+    const endTouch = (e) => {
+      if (e.pointerType !== "touch") return;
+      clearTimeout(this._tipLongPressTimer);
+      this._tipTouchStart = null;
+      if (this._tipLongPress && C._tipOwner === this) {
+        C._scheduleTooltipHide(2500);
+      }
+    };
+    el.addEventListener("pointerup", endTouch);
+    el.addEventListener("pointercancel", endTouch);
+    // Nach langem Antippen keinen Klick auslösen (man wollte nur den Hinweis)
+    el.addEventListener(
+      "click",
+      (e) => {
+        if (this._tipLongPress) {
+          this._tipLongPress = false;
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      },
+      true,
+    );
+    el.addEventListener("contextmenu", (e) => {
+      if (this._tipLongPress) e.preventDefault();
+    });
+    // Tastatur: sofort zeigen, wenn per Tab fokussiert
+    el.addEventListener("focusin", (e) => {
+      if (!this._tooltipText) return;
+      this._addTooltipDescription(e.target);
+      let keyboard = true;
+      try {
+        keyboard = e.target.matches(":focus-visible");
+      } catch (err) {}
+      if (!keyboard) return;
+      this._tipFocused = true;
+      C._cancelTooltipHide();
+      C._showTooltip(this);
+    });
+    el.addEventListener("focusout", (e) => {
+      if (e.relatedTarget && el.contains(e.relatedTarget)) return;
+      this._tipFocused = false;
+      if (C._tipOwner === this) C._hideTooltip(true);
+    });
+  }
+  // Unsichtbarer Beschreibungstext für Bildschirmleser (aria-describedby)
+  _updateTooltipDescription() {
+    const overlay = this._element && this._element.parentNode;
+    if (!overlay) return;
+    if (!this._tipDescId) {
+      HtmlSvgEdu.Component._tipCounter =
+        (HtmlSvgEdu.Component._tipCounter || 0) + 1;
+      this._tipDescId = "oal-tooltip-desc-" + HtmlSvgEdu.Component._tipCounter;
+    }
+    let desc = document.getElementById(this._tipDescId);
+    if (!desc) {
+      desc = document.createElement("span");
+      desc.id = this._tipDescId;
+      desc.hidden = true;
+      overlay.appendChild(desc);
+    }
+    desc.textContent = this._tooltipText;
+    this._addTooltipDescription(this._element);
+    this._element
+      .querySelectorAll("button, input, select, textarea, [tabindex]")
+      .forEach((node) => this._addTooltipDescription(node));
+  }
+  _addTooltipDescription(node) {
+    if (!node || !this._tipDescId || !node.setAttribute) return;
+    const ids = (node.getAttribute("aria-describedby") || "")
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!ids.includes(this._tipDescId)) {
+      ids.push(this._tipDescId);
+      node.setAttribute("aria-describedby", ids.join(" "));
+    }
+  }
+  _removeTooltipDescription() {
+    if (!this._tipDescId) return;
+    const desc = document.getElementById(this._tipDescId);
+    if (desc && desc.parentNode) desc.parentNode.removeChild(desc);
+    if (this._element) {
+      const nodes = [this._element].concat(
+        Array.from(this._element.querySelectorAll("[aria-describedby]")),
+      );
+      nodes.forEach((node) => {
+        const ids = (node.getAttribute("aria-describedby") || "")
+          .split(/\s+/)
+          .filter((id) => id && id !== this._tipDescId);
+        if (ids.length) node.setAttribute("aria-describedby", ids.join(" "));
+        else node.removeAttribute("aria-describedby");
+      });
+    }
+  }
+  static _getTooltipElement() {
+    const overlay = document.getElementById("pixi-ui-overlay");
+    if (!overlay) return null;
+    let tip = HtmlSvgEdu.Component._tipElement;
+    if (!tip || tip.parentNode !== overlay) {
+      tip = document.createElement("div");
+      tip.className = "oal-tooltip";
+      tip.setAttribute("aria-hidden", "true");
+      Object.assign(tip.style, {
+        position: "absolute",
+        left: "0px",
+        top: "0px",
+        zIndex: "10000",
+        display: "none",
+        boxSizing: "border-box",
+        // max-content: sonst bricht der Text bei verkleinerter Bühne um,
+        // weil die Ebene im Layout schmaler ist als die Bühne
+        width: "max-content",
+        maxWidth: "300px",
+        padding: "6px 10px",
+        background: "rgba(40, 40, 40, 0.94)",
+        color: "#ffffff",
+        fontFamily: "Arial, sans-serif",
+        fontSize: "15px",
+        lineHeight: "1.35",
+        textAlign: "left",
+        whiteSpace: "pre-line",
+        overflowWrap: "break-word",
+        borderRadius: "5px",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+        pointerEvents: "auto",
+        opacity: "0",
+        transition: "opacity 0.12s ease-out",
+      });
+      // Maus darf auf den Hinweis wandern, ohne dass er verschwindet
+      tip.addEventListener("pointerenter", () =>
+        HtmlSvgEdu.Component._cancelTooltipHide(),
+      );
+      tip.addEventListener("pointerleave", () =>
+        HtmlSvgEdu.Component._scheduleTooltipHide(),
+      );
+      overlay.appendChild(tip);
+      HtmlSvgEdu.Component._tipElement = tip;
+    } else if (tip !== overlay.lastElementChild) {
+      overlay.appendChild(tip); // immer über allen Komponenten
+    }
+    return tip;
+  }
+  // point: Mausposition (clientX/Y) – dann steht der Hinweis an der
+  // Pfeilspitze; ohne point (Tastatur, Touch) steht er am Element.
+  static _showTooltip(owner, point) {
+    const C = HtmlSvgEdu.Component;
+    if (!owner || !owner._tooltipText || !owner._element) return;
+    if (!owner._element.isConnected || !owner._visible) return;
+    const tip = C._getTooltipElement();
+    if (!tip) return;
+    C._cancelTooltipHide();
+    if (C._tipOwner && C._tipOwner !== owner) {
+      C._tipOwner._tipLongPress = false;
+    }
+    if (point || C._tipOwner !== owner) {
+      // Mauspunkt relativ zum Element merken (Anteil an Breite/Höhe),
+      // damit der Hinweis mitwandert, wenn sich das Element bewegt
+      owner._tipAnchor = null;
+      if (point) {
+        const r = owner._element.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          owner._tipAnchor = {
+            fx: Math.max(0, Math.min(1, (point.x - r.left) / r.width)),
+            fy: Math.max(0, Math.min(1, (point.y - r.top) / r.height)),
+          };
+        }
+      }
+    }
+    C._tipOwner = owner;
+    tip.textContent = owner._tooltipText;
+    tip.style.display = "block";
+    C._positionTooltip();
+    let reduce = false;
+    try {
+      reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch (err) {}
+    tip.style.transition = reduce ? "none" : "opacity 0.12s ease-out";
+    requestAnimationFrame(() => {
+      if (C._tipOwner === owner) tip.style.opacity = "1";
+    });
+    // Während der Hinweis sichtbar ist: mitwandern, wenn sich das Element
+    // bewegt; verschwinden, wenn es ausgeblendet oder entfernt wird
+    if (!C._tipFrame) {
+      const follow = () => {
+        const o = C._tipOwner;
+        if (!o) {
+          C._tipFrame = null;
+          return;
+        }
+        if (!o._element || !o._element.isConnected || !o._visible) {
+          C._tipFrame = null;
+          C._hideTooltip(true);
+          return;
+        }
+        C._positionTooltip();
+        C._tipFrame = requestAnimationFrame(follow);
+      };
+      C._tipFrame = requestAnimationFrame(follow);
+    }
+  }
+  static _positionTooltip() {
+    const C = HtmlSvgEdu.Component;
+    const owner = C._tipOwner;
+    const tip = C._tipElement;
+    if (!owner || !tip || !owner._element) return;
+    const overlay = tip.parentNode;
+    if (!overlay) return;
+    const oRect = overlay.getBoundingClientRect();
+    const scale =
+      overlay.offsetWidth > 0 ? oRect.width / overlay.offsetWidth || 1 : 1;
+    const r = owner._element.getBoundingClientRect();
+    const ex = (r.left - oRect.left) / scale;
+    const ey = (r.top - oRect.top) / scale;
+    const ew = r.width / scale;
+    const eh = r.height / scale;
+    const tw = tip.offsetWidth;
+    const th = tip.offsetHeight;
+    let board = null;
+    try {
+      board = Board[INSTANCE_KEY];
+    } catch (err) {}
+    const stageW = (board && board.width) || overlay.offsetWidth || 1280;
+    const stageH = (board && board.height) || overlay.offsetHeight || 720;
+    const gap = 8;
+    const margin = 4;
+    const place = (pos) => {
+      if (pos === "bottom") return { x: ex + ew / 2 - tw / 2, y: ey + eh + gap };
+      if (pos === "left") return { x: ex - tw - gap, y: ey + eh / 2 - th / 2 };
+      if (pos === "right") return { x: ex + ew + gap, y: ey + eh / 2 - th / 2 };
+      return { x: ex + ew / 2 - tw / 2, y: ey - th - gap };
+    };
+    // Oben/unten: nur die Höhe muss passen (seitlich wird verschoben);
+    // links/rechts: nur die Breite. Sonst auf die Gegenseite klappen.
+    const fits = (p, pos) =>
+      pos === "top" || pos === "bottom"
+        ? p.y >= margin && p.y + th <= stageH - margin
+        : p.x >= margin && p.x + tw <= stageW - margin;
+    const wanted = owner._tooltipPosition || "top";
+    const anchor = owner._tipAnchor;
+    if (anchor) {
+      // Maus: Pfeilspitze bei (ax, ay); der Pfeil hängt nach rechts unten
+      const ax = ex + anchor.fx * ew;
+      const ay = ey + anchor.fy * eh;
+      const cursorBelow = 24; // Platz für den Pfeil unter der Spitze
+      let q;
+      if (wanted === "left" || wanted === "right") {
+        const y = ay - th / 2;
+        const leftP = { x: ex - tw - gap, y: y };
+        const rightP = { x: ex + ew + gap, y: y };
+        const first = wanted === "left" ? leftP : rightP;
+        const second = wanted === "left" ? rightP : leftP;
+        const fitsX = (c) => c.x >= margin && c.x + tw <= stageW - margin;
+        q = fitsX(first) ? first : fitsX(second) ? second : first;
+      } else {
+        const above = { x: ax - tw / 2, y: ay - th - gap };
+        const below = { x: ax - tw / 2, y: ay + cursorBelow };
+        const fitsY = (c) => c.y >= margin && c.y + th <= stageH - margin;
+        const first = wanted === "bottom" ? below : above;
+        const second = wanted === "bottom" ? above : below;
+        q = fitsY(first) ? first : fitsY(second) ? second : first;
+      }
+      q.x = Math.max(margin, Math.min(q.x, stageW - tw - margin));
+      q.y = Math.max(margin, Math.min(q.y, stageH - th - margin));
+      tip.style.left = Math.round(q.x) + "px";
+      tip.style.top = Math.round(q.y) + "px";
+      return;
+    }
+    const opposite = { top: "bottom", bottom: "top", left: "right", right: "left" };
+    const order = [wanted, opposite[wanted], "top", "bottom"];
+    let p = null;
+    for (const pos of order) {
+      const candidate = place(pos);
+      if (fits(candidate, pos)) {
+        p = candidate;
+        break;
+      }
+    }
+    if (!p) p = place(wanted);
+    p.x = Math.max(margin, Math.min(p.x, stageW - tw - margin));
+    p.y = Math.max(margin, Math.min(p.y, stageH - th - margin));
+    tip.style.left = Math.round(p.x) + "px";
+    tip.style.top = Math.round(p.y) + "px";
+  }
+  static _scheduleTooltipHide(delay) {
+    const C = HtmlSvgEdu.Component;
+    clearTimeout(C._tipHideTimer);
+    C._tipHideTimer = setTimeout(() => C._hideTooltip(true), delay || 150);
+  }
+  static _cancelTooltipHide() {
+    clearTimeout(HtmlSvgEdu.Component._tipHideTimer);
+  }
+  static _hideTooltip() {
+    const C = HtmlSvgEdu.Component;
+    clearTimeout(C._tipHideTimer);
+    if (C._tipFrame) {
+      cancelAnimationFrame(C._tipFrame);
+      C._tipFrame = null;
+    }
+    if (C._tipOwner) {
+      clearTimeout(C._tipOwner._tipShowTimer);
+      C._tipOwner._tipFocused = false;
+    }
+    C._tipOwner = null;
+    const tip = C._tipElement;
+    if (tip) {
+      tip.style.opacity = "0";
+      tip.style.display = "none";
+    }
+  }
+  static _installTooltipKeyHandler() {
+    if (HtmlSvgEdu.Component._tipKeyHandlerInstalled) return;
+    HtmlSvgEdu.Component._tipKeyHandlerInstalled = true;
+    document.addEventListener("keydown", (e) => {
+      if (
+        (e.key === "Escape" || e.key === "Esc") &&
+        HtmlSvgEdu.Component._tipOwner
+      ) {
+        HtmlSvgEdu.Component._hideTooltip(true);
+      }
+    });
   }
   _hexToCSS(hexColor) {
     if (typeof hexColor === "string") {
@@ -388,6 +801,14 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       onClick: {
         name: "onClick",
         info: {
@@ -611,6 +1032,14 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       onClick: {
         name: "onClick",
         info: {
@@ -1054,6 +1483,14 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       onClick: {
         name: "onClick",
         info: {
@@ -1579,6 +2016,14 @@ HtmlSvgEdu.NumericStepper = class NumericStepper extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       onChange: {
         name: "onChange",
         info: {
@@ -1970,6 +2415,14 @@ HtmlSvgEdu.Dropdown = class Dropdown extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       onChange: {
         name: "onChange",
         info: {
@@ -2447,6 +2900,14 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       setValue: {
         info: {
           en: "Sets the current value",
@@ -3418,6 +3879,14 @@ HtmlSvgEdu.MathForm = class MathForm extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       setScale: {
         name: "setScale",
         info: {
@@ -3655,6 +4124,14 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       setText: {
         name: "setText",
         info: {
@@ -4727,6 +5204,14 @@ HtmlSvgEdu.ParameterTable = class ParameterTable extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       setTitle: {
         name: "setTitle",
         info: {
@@ -5417,6 +5902,14 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       setProperty: {
         name: "setProperty",
         info: {
@@ -6018,6 +6511,14 @@ HtmlSvgEdu.HtmlRectangle = class HtmlRectangle extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setTooltip: {
+        name: "setTooltip",
+        info: {
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
       setFillColor: {
         example: "setFillColor(0xff0000)",
         info: {
