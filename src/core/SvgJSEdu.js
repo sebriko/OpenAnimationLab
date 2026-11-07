@@ -174,6 +174,65 @@ SvgJSEdu.BoardGUI = class BoardGUI {
 };
 
 // ============================================================================
+// Konturen beim Skalieren (non-scaling-stroke)
+// ============================================================================
+// setScale() markiert die SVG-Gruppe des Objekts mit data-oal-strokes:
+// "fixed" = Konturen behalten ihre Stärke, "scale" = Konturen werden mitskaliert.
+// Für jede Kontur gilt die Markierung des nächstgelegenen Vorfahren.
+// Ein MutationObserver überträgt die Einstellung auch auf Elemente, die nach
+// setScale() neu gezeichnet oder hinzugefügt werden (setPoints, setStart,
+// setFillColor, addChild …) – sonst gingen sie beim Neuzeichnen verloren.
+
+const OAL_STROKE_SELECTOR = "[stroke]:not([stroke='none'])";
+
+function oalSyncStroke(el) {
+  if (!el.matches || !el.matches(OAL_STROKE_SELECTOR)) return;
+  const owner = el.closest("[data-oal-strokes]");
+  if (!owner) return;
+  if (owner.getAttribute("data-oal-strokes") === "fixed") {
+    if (el.getAttribute("vector-effect") !== "non-scaling-stroke") {
+      el.setAttribute("vector-effect", "non-scaling-stroke");
+    }
+  } else if (el.hasAttribute("vector-effect")) {
+    el.removeAttribute("vector-effect");
+  }
+}
+
+function oalSyncStrokesIn(node) {
+  if (!node || node.nodeType !== 1) return;
+  oalSyncStroke(node);
+  node.querySelectorAll(OAL_STROKE_SELECTOR).forEach(oalSyncStroke);
+}
+
+function oalApplyStrokeScaling(element) {
+  if (!element._group) return;
+  const node = element._group.node;
+  node.setAttribute("data-oal-strokes", element._scaleStrokes ? "scale" : "fixed");
+  oalSyncStrokesIn(node);
+  if (!element._strokeObserver && typeof MutationObserver !== "undefined") {
+    element._strokeObserver = new MutationObserver((records) => {
+      for (const r of records) {
+        if (r.type === "attributes") oalSyncStroke(r.target);
+        else r.addedNodes.forEach(oalSyncStrokesIn);
+      }
+    });
+    element._strokeObserver.observe(node, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["stroke"],
+    });
+  }
+}
+
+function oalStopStrokeScaling(element) {
+  if (element._strokeObserver) {
+    element._strokeObserver.disconnect();
+    element._strokeObserver = null;
+  }
+}
+
+// ============================================================================
 // SvgJSElement – Base class for all SVG elements
 // ============================================================================
 
@@ -251,15 +310,7 @@ class SvgJSElement {
   }
 
   _applyNonScalingStroke() {
-    if (!this._group) return;
-    const elements = this._group.node.querySelectorAll("[stroke]:not([stroke='none'])");
-    elements.forEach((el) => {
-      if (!this._scaleStrokes) {
-        el.setAttribute("vector-effect", "non-scaling-stroke");
-      } else {
-        el.removeAttribute("vector-effect");
-      }
-    });
+    oalApplyStrokeScaling(this);
   }
 
   set x(value) {
@@ -637,6 +688,7 @@ class SvgJSElement {
   // ---------- Destroy ----------
 
   destroy() {
+    oalStopStrokeScaling(this);
     if (this._group) {
       this._group.off();
     }
@@ -709,8 +761,8 @@ SvgJSEdu.Group = class Group extends SvgJSElement {
       removeChild: {
         example: "removeChild(myRectangle)",
         info: {
-          en: "Removes an element from the group",
-          de: "Entfernt ein Element aus der Gruppe",
+          en: "Detaches an element from the group. It stays visible on the board; to remove it completely use board.removeChild(element)",
+          de: "Löst ein Element aus der Gruppe. Es bleibt auf der Zeichenfläche sichtbar; ganz entfernen mit board.removeChild(element)",
         },
       },
       setTransformationPoint: {
@@ -3053,15 +3105,7 @@ SvgJSEdu.Polygon = class Polygon {
   }
 
   _applyNonScalingStroke() {
-    if (!this._group) return;
-    const elements = this._group.node.querySelectorAll("[stroke]:not([stroke='none'])");
-    elements.forEach((el) => {
-      if (!this._scaleStrokes) {
-        el.setAttribute("vector-effect", "non-scaling-stroke");
-      } else {
-        el.removeAttribute("vector-effect");
-      }
-    });
+    oalApplyStrokeScaling(this);
   }
 
   setAlpha(value) {
@@ -3282,6 +3326,7 @@ SvgJSEdu.Polygon = class Polygon {
   // ---------- Destroy ----------
 
   destroy() {
+    oalStopStrokeScaling(this);
     if (this._boundDragMove) {
       svgRoot.node.removeEventListener("pointermove", this._boundDragMove);
     }

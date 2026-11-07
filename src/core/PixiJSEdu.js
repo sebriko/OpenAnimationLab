@@ -52,6 +52,48 @@ var PixiJSEdu = PixiJSEdu || {};
   proto.__oalLineStyleFix = true;
 })();
 
+// ---------------------------------------------------------------------------
+// Konturen beim Skalieren
+// setScale(sx, sy, scaleStrokes) merkt sich in _strokeMode, ob Konturen ihre
+// Stärke behalten ("fixed", Standard) oder mitskaliert werden ("scale").
+// Maßgeblich ist das nächste Objekt (das Objekt selbst oder eine Gruppe darüber),
+// bei dem setScale() aufgerufen wurde. Bei "fixed" wird die Linienstärke durch die
+// Gesamtskalierung aller Ebenen bis zur Bühne geteilt – so bleibt sie auch in
+// skalierten (gezoomten) Gruppen gleich dick, wie im SVG-Renderer.
+// ---------------------------------------------------------------------------
+function pixiEffectiveStrokeWidth(obj, width) {
+  if (!width) return width || 0;
+  const stage = typeof app !== "undefined" && app ? app.stage : null;
+  let mode = null;
+  let s = 1;
+  let p = obj;
+  while (p && p !== stage) {
+    if (mode === null && p._strokeMode) mode = p._strokeMode;
+    if (p.scale) s *= Math.sqrt(Math.abs(p.scale.x * p.scale.y));
+    p = p.parent;
+  }
+  if (mode !== "fixed" || !(s > 0)) return width;
+  return width / s;
+}
+
+// Alle Objekte in einer Gruppe (auch in Untergruppen) neu zeichnen,
+// damit ihre Linienstärken zur neuen Skalierung passen.
+function pixiRedrawStrokeObject(obj) {
+  if (!obj) return;
+  if (obj instanceof PixiJSEdu.Group) {
+    pixiRedrawStrokes(obj);
+  } else if (typeof obj._redrawStrokes === "function") {
+    obj._redrawStrokes();
+  } else if (typeof obj._draw === "function") {
+    obj._draw();
+  }
+}
+
+function pixiRedrawStrokes(container) {
+  if (!container || !container.children) return;
+  container.children.forEach(pixiRedrawStrokeObject);
+}
+
 PixiJSEdu.BoardGUI = class BoardGUI extends PIXI.Container {
   static serializationMap = {
     description: {
@@ -127,9 +169,13 @@ class PixiJSElement extends PIXI.Container {
   }
 
   _effectiveStrokeWidth(width) {
-    if (this._scaleStrokes || !width) return width || 0;
-    const s = this.scale.x;
-    return s !== 0 ? width / s : width;
+    return pixiEffectiveStrokeWidth(this, width);
+  }
+
+  _redrawStrokes() {
+    if (typeof this._draw === "function") {
+      this._draw();
+    }
   }
 
   _updatePosition() {
@@ -196,6 +242,7 @@ class PixiJSElement extends PIXI.Container {
       scaleY = scaleX;
     }
     this._scaleStrokes = scaleStrokes;
+    this._strokeMode = scaleStrokes ? "scale" : "fixed";
     this.scale.set(scaleX, scaleY);
     this._updatePosition();
     if (typeof this._draw === "function") {
@@ -544,6 +591,10 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
       Board[INSTANCE_KEY].removeChild(child);
     }
     super.addChild(child);
+    // Linienstärke an eine bereits skalierte Gruppe anpassen
+    if (pixiEffectiveStrokeWidth(child, 1) !== 1) {
+      pixiRedrawStrokeObject(child);
+    }
     return this;
   }
 
@@ -575,17 +626,18 @@ PixiJSEdu.Group = class Group extends PIXI.Container {
     } else if (scaleY === undefined) {
       scaleY = scaleX;
     }
+    const mode = scaleStrokes ? "scale" : "fixed";
+    const changed =
+      this._strokeMode !== mode ||
+      this.scale.x !== scaleX ||
+      this.scale.y !== scaleY;
     this._scaleStrokes = scaleStrokes;
+    this._strokeMode = mode;
     this.scale.set(scaleX, scaleY);
     this._updatePosition();
-    this.children.forEach((child) => {
-      if (child._scaleStrokes !== undefined) {
-        child._scaleStrokes = scaleStrokes;
-        if (typeof child._draw === "function") {
-          child._draw();
-        }
-      }
-    });
+    if (changed) {
+      pixiRedrawStrokes(this);
+    }
     return this;
   }
 
@@ -2630,6 +2682,10 @@ PixiJSEdu.LinePath = class LinePath extends PIXI.Container {
     return this._isClosed;
   }
 
+  _redrawStrokes() {
+    this._rebuildSegments();
+  }
+
   _rebuildSegments() {
     this._clearSegments();
     for (let i = 0; i < this.points.length - 1; i++) {
@@ -2651,7 +2707,7 @@ PixiJSEdu.LinePath = class LinePath extends PIXI.Container {
       return;
     const segment = new PIXI.Graphics();
     segment.beginFill();
-    segment.lineStyle(this._thickness, this._color);
+    segment.lineStyle(pixiEffectiveStrokeWidth(this, this._thickness), this._color);
     const [x1, y1] = this.points[startIndex];
     const [x2, y2] = this.points[endIndex];
     segment.moveTo(x1, y1);
@@ -2675,7 +2731,7 @@ PixiJSEdu.LinePath = class LinePath extends PIXI.Container {
     const segment = this.segments[segmentIndex];
     segment.clear();
     segment.beginFill();
-    segment.lineStyle(this._thickness, this._color);
+    segment.lineStyle(pixiEffectiveStrokeWidth(this, this._thickness), this._color);
     const [x1, y1] = this.points[startPointIndex];
     const [x2, y2] = this.points[endPointIndex];
     segment.moveTo(x1, y1);
@@ -3238,9 +3294,12 @@ PixiJSEdu.BezierPath = class BezierPath extends PIXI.Container {
     this.fillGraphics.closePath();
     this.fillGraphics.endFill();
   }
+  _redrawStrokes() {
+    this._redrawAll();
+  }
   _drawLines() {
     this.lineGraphics.beginFill(0x000000, 0);
-    this.lineGraphics.lineStyle(this._thickness, this._color);
+    this.lineGraphics.lineStyle(pixiEffectiveStrokeWidth(this, this._thickness), this._color);
     const startPoint = this.points[0];
     this.lineGraphics.moveTo(startPoint[0], startPoint[1]);
     for (let i = 0; i < this.points.length - 1; i++) {
@@ -4040,10 +4099,13 @@ PixiJSEdu.SplinePath = class SplinePath extends PIXI.Container {
       );
     }
   }
+  _redrawStrokes() {
+    this._draw();
+  }
   _draw() {
     const graphics = this.curveShape;
     graphics.clear();
-    graphics.lineStyle(this._thickness, this._color);
+    graphics.lineStyle(pixiEffectiveStrokeWidth(this, this._thickness), this._color);
     if (this._fillColor !== null) {
       graphics.beginFill(this._fillColor);
     } else {
@@ -4556,7 +4618,7 @@ PixiJSEdu.Arrow = class Arrow extends PIXI.Container {
     if (this._outlineEnabled) {
       this.lineOutlineGraphics.clear();
       this.lineOutlineGraphics.lineStyle(
-        this._thickness + this._outlineThickness * 2,
+        pixiEffectiveStrokeWidth(this, this._thickness + this._outlineThickness * 2),
         this._outlineColor,
       );
       this.lineOutlineGraphics.beginFill();
@@ -4677,7 +4739,7 @@ PixiJSEdu.Arrow = class Arrow extends PIXI.Container {
       this.arrowOutlineGraphics.clear();
     }
     this.lineGraphics.clear();
-    this.lineGraphics.lineStyle(this._thickness, this._color);
+    this.lineGraphics.lineStyle(pixiEffectiveStrokeWidth(this, this._thickness), this._color);
     this.lineGraphics.beginFill();
     this.lineGraphics.moveTo(0, 0);
     this.lineGraphics.lineTo(length - this._arrowHeadLength, 0);
@@ -4686,7 +4748,7 @@ PixiJSEdu.Arrow = class Arrow extends PIXI.Container {
     this.lineGraphics.y = this._startY;
     this.lineGraphics.rotation = angleRad;
     this.arrowGraphics.clear();
-    this.arrowGraphics.lineStyle(1, this._color);
+    this.arrowGraphics.lineStyle(pixiEffectiveStrokeWidth(this, 1), this._color);
     this.arrowGraphics.beginFill(this._color);
     this.arrowGraphics.moveTo(0, 0);
     this.arrowGraphics.lineTo(
@@ -6588,7 +6650,7 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
 
     if (this._lineThickness > 0) {
       this.arcGraphics.lineStyle(
-        this._lineThickness,
+        pixiEffectiveStrokeWidth(this, this._lineThickness),
         this._lineColor,
         this._alpha,
       );
@@ -6976,7 +7038,7 @@ PixiJSEdu.Line = class Line extends PIXI.Container {
       this._drawDashedLine();
     } else {
       this.lineGraphics.beginFill();
-      this.lineGraphics.lineStyle(this._thickness, this._color);
+      this.lineGraphics.lineStyle(pixiEffectiveStrokeWidth(this, this._thickness), this._color);
       this.lineGraphics.moveTo(this._startX, this._startY);
       this.lineGraphics.lineTo(this._endX, this._endY);
       this.lineGraphics.endFill();
@@ -6995,7 +7057,7 @@ PixiJSEdu.Line = class Line extends PIXI.Container {
     let patternIndex = 0;
     let drawing = true;
     this.lineGraphics.beginFill();
-    this.lineGraphics.lineStyle(this._thickness, this._color);
+    this.lineGraphics.lineStyle(pixiEffectiveStrokeWidth(this, this._thickness), this._color);
     while (currentDistance < totalLength) {
       const segmentLength = Math.min(
         this._dashPattern[patternIndex],
