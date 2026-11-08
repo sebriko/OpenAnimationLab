@@ -208,7 +208,7 @@ class I18nManager {
 
       // Form elements
       parameters: {
-        en: "Initialization parameters",
+        en: "Initialisation parameters",
         de: "Parameter zur Initialisierung",
       },
       additional: {
@@ -236,7 +236,7 @@ class I18nManager {
         de: "Kopiert!",
       },
       choose_color: {
-        en: "Choose Color",
+        en: "Choose colour",
         de: "Farbe wählen",
       },
       edit_matrix: {
@@ -340,7 +340,7 @@ class I18nManager {
 
       // Preloader
       initializing: {
-        en: "Initializing...",
+        en: "Initialising...",
         de: "Initialisiere...",
       },
 
@@ -422,7 +422,7 @@ class I18nManager {
         de: "Vorlagen speichern",
       },
       template_organizer: {
-        en: "Template Organizer",
+        en: "Template Organiser",
         de: "Vorlagen-Verwaltung",
       },
       custom_templates_loaded: {
@@ -472,7 +472,7 @@ class I18nManager {
         de: "Open Animation Lab – interaktives JavaScript-Werkzeug für die Erstellung von Bildungsanimationen und interaktiven Lerninhalten",
       },
       license: {
-        en: "License",
+        en: "Licence",
         de: "Lizenz",
       },
       license_text: {
@@ -488,7 +488,7 @@ class I18nManager {
         de: "Helfen Sie mit, das Open Animation Lab zu verbessern:",
       },
       support_me: {
-        en: "Support me",
+        en: "Support the project",
         de: "Unterstützen",
       },
       bug_report: {
@@ -516,11 +516,11 @@ class I18nManager {
         de: "Dieses Tool nutzt verschiedene hervorragende Open-Source-Bibliotheken und -Frameworks. Wir möchten uns bei allen Entwicklern bedanken:",
       },
       license_notice: {
-        en: "License Notice",
+        en: "Licence Notice",
         de: "Lizenzhinweis",
       },
       license_notice_text: {
-        en: "All used libraries are under open source licenses (mainly MIT License and Apache License 2.0). The complete license texts are available in the respective projects. This tool respects all license terms and passes on the appropriate credits to the original authors.",
+        en: "All used libraries are under open source licences (mainly MIT License and Apache License 2.0). The complete licence texts are available in the respective projects. This tool respects all licence terms and passes on the appropriate credits to the original authors.",
         de: "Alle verwendeten Bibliotheken stehen unter Open-Source-Lizenzen (hauptsächlich MIT License und Apache License 2.0). Die vollständigen Lizenztexte sind in den jeweiligen Projekten verfügbar. Dieses Tool respektiert alle Lizenzbestimmungen und gibt die entsprechenden Credits an die ursprünglichen Autoren weiter.",
       },
       last_update: {
@@ -562,7 +562,7 @@ class I18nManager {
         de: "JavaScript-Code-Qualitätswerkzeug",
       },
       svgo_desc: {
-        en: "SVG optimization tool",
+        en: "SVG optimisation tool",
         de: "SVG-Optimierungstool",
       },
       material_icons_desc: {
@@ -574,7 +574,7 @@ class I18nManager {
         de: "Web-Schriftarten-Service von Google",
       },
       license_various: {
-        en: "Various open source licenses",
+        en: "Various open source licences",
         de: "Verschiedene Open-Source-Lizenzen",
       },
 
@@ -626,7 +626,7 @@ class I18nManager {
         de: "Seite vollständig geladen",
       },
       all_systems_initialized: {
-        en: "All systems successfully initialized",
+        en: "All systems successfully initialised",
         de: "Alle Systeme erfolgreich initialisiert",
       },
       created_with_editor: {
@@ -652,7 +652,7 @@ class I18nManager {
         de: "In Zwischenablage kopieren",
       },
       no_class_info_found: {
-        en: "No classes with serialization information found in the selected area.",
+        en: "No classes with serialisation information found in the selected area.",
         de: "Keine Klassen mit Serialisierungsinformationen im markierten Bereich gefunden.",
       },
       class_info_copied: {
