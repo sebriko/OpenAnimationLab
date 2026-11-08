@@ -4032,11 +4032,155 @@ HtmlSvgEdu.MathForm = class MathForm extends HtmlSvgEdu.Component {
   }
 };
 
+// ---------- Silbentrennung (K-015, 3.23.0) ----------
+// Liang-Verfahren mit den TeX-Trennmustern aus hyph-utf8 (MIT-Lizenz):
+// Deutsch (reformierte Rechtschreibung) und britisches Englisch. Die Muster
+// liegen in lib/hyph-utf8/<version>/ und werden erst geladen, wenn ein Text
+// setHyphenation(true, …) aufruft; danach zeichnen sich die wartenden Texte
+// neu. Gibt es keine Muster (andere Sprache, offline), wird nur an
+// Bindestrichen und weichen Trennstrichen (&shy;) getrennt.
+HtmlSvgEdu.Hyphenator = {
+  PATH: "lib/hyph-utf8/2024-02-28/",
+  MIN_WORD: 5, // kürzere Wörter werden nie getrennt
+  _base: (function () {
+    const cs = typeof document !== "undefined" ? document.currentScript : null;
+    const src = cs && cs.src ? cs.src : "";
+    const m = src.match(/^(.*\/)src\/core\/HtmlSvgEdu\.js(\?.*)?$/);
+    return m ? m[1] : "https://www.educational-animation.org/oal/";
+  })(),
+  _tables: {},
+  _state: {},
+  _waiting: new Set(),
+  // Sprachkürzel → Musterdatei (de, de-DE, de-AT, de-CH → de; en… → en-gb)
+  fileFor(lang) {
+    const l = String(lang || "").toLowerCase();
+    if (l === "de" || /^de[-_]/.test(l)) return "de";
+    if (l === "en" || /^en[-_]/.test(l)) return "en-gb";
+    return null;
+  },
+  ready(file) {
+    return !!this._table(file);
+  },
+  _table(file) {
+    if (!file) return null;
+    if (this._tables[file]) return this._tables[file];
+    const g = typeof window !== "undefined" ? window : globalThis;
+    const raw = g.OALHyphenPatterns && g.OALHyphenPatterns[file];
+    if (!raw) return null;
+    const map = new Map();
+    let max = 0;
+    for (const p of raw.patterns.split(" ")) {
+      if (!p) continue;
+      let letters = "";
+      const pts = [0];
+      for (const ch of p) {
+        if (ch >= "0" && ch <= "9") {
+          pts[pts.length - 1] = +ch;
+        } else {
+          letters += ch;
+          pts.push(0);
+        }
+      }
+      map.set(letters, pts);
+      if (letters.length > max) max = letters.length;
+    }
+    const exc = new Map();
+    for (const e of (raw.exceptions || "").split(" ")) {
+      if (!e) continue;
+      const pos = [];
+      let n = 0;
+      for (const ch of e) {
+        if (ch === "-") pos.push(n);
+        else n++;
+      }
+      exc.set(e.replace(/-/g, ""), pos);
+    }
+    this._tables[file] = {
+      map,
+      max,
+      exc,
+      left: raw.left || 2,
+      right: raw.right || 2,
+    };
+    return this._tables[file];
+  },
+  // Trennstellen eines Wortes aus Buchstaben (Anzahl Buchstaben davor)
+  _wordPoints(word, t) {
+    const lower = word.toLowerCase();
+    if (lower.length !== word.length) return [];
+    let pos = t.exc.get(lower);
+    if (!pos) {
+      const w = "." + lower + ".";
+      const v = new Array(w.length + 1).fill(0);
+      for (let i = 0; i < w.length; i++) {
+        const end = Math.min(w.length, i + t.max);
+        for (let j = i + 1; j <= end; j++) {
+          const p = t.map.get(w.substring(i, j));
+          if (p) {
+            for (let k = 0; k < p.length; k++) {
+              if (p[k] > v[i + k]) v[i + k] = p[k];
+            }
+          }
+        }
+      }
+      pos = [];
+      for (let k = 1; k < word.length; k++) {
+        if (v[k + 1] % 2 === 1) pos.push(k);
+      }
+    }
+    return pos.filter((k) => k >= t.left && word.length - k >= t.right);
+  },
+  // Alle Trennstellen in einem Text (Index = Anzahl Zeichen davor).
+  // Jede Buchstabenfolge wird für sich getrennt ("Feder-Masse", "(Lehrmodell)").
+  hyphenate(text, file) {
+    const t = this._table(file);
+    if (!t) return [];
+    const out = [];
+    const re = /\p{L}+/gu;
+    let m;
+    while ((m = re.exec(text))) {
+      if (m[0].length < this.MIN_WORD) continue;
+      this._wordPoints(m[0], t).forEach((k) => out.push(m.index + k));
+    }
+    return out;
+  },
+  // Text bittet um Muster: einmal nachladen, danach neu zeichnen
+  request(file, text) {
+    if (!file || this.ready(file) || this._state[file] === "failed") return;
+    if (text) this._waiting.add(text);
+    if (this._state[file] === "loading") return;
+    if (typeof document === "undefined") return;
+    this._state[file] = "loading";
+    const s = document.createElement("script");
+    s.src = this._base + this.PATH + file + ".js";
+    s.async = true;
+    s.onload = () => this._registered(file);
+    s.onerror = () => {
+      this._state[file] = "failed";
+      console.warn(
+        "Silbentrennung: Trennmuster nicht geladen / hyphenation patterns not loaded: " +
+          s.src,
+      );
+    };
+    (document.head || document.documentElement).appendChild(s);
+  },
+  // Wird von der Musterdatei selbst aufgerufen (und nach onload)
+  _registered(file) {
+    if (!this._table(file)) return;
+    this._state[file] = "ready";
+    this._waiting.forEach((text) => {
+      if (text._hyphenFile() !== file) return;
+      this._waiting.delete(text);
+      if (text._hyphenate && text._boxWidth !== null) text._refreshText();
+    });
+  },
+};
+
 HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
   static serializationMap = {
     description: {
-      de: "Text-Element mit Formatierung. Der Registrierungspunkt liegt links oben – dies muss bei der Positionierung (x, y) berücksichtigt werden.",
-      en: "Text element with formatting. The registration point is at the top-left corner – this must be considered when positioning (x, y).",
+      de: "Text-Element mit Formatierung. Bezugspunkt (x, y) ist die linke OBERE Ecke der Textbox – nicht die Grundlinie unten links wie in vielen Grafikprogrammen. Die Box hat 10 px Innenabstand: Der Text beginnt bei x + 10, eine einzelne Zeile liegt mittig bei y + 0,7 × Schriftgröße + 10. Bei Ausrichtung center ist x die Mitte, bei right die rechte Kante. Mit Textbox (setSize) beginnt die erste Zeile direkt an der Oberkante.",
+      en: "Text element with formatting. The reference point (x, y) is the TOP-left corner of the text box – not the bottom-left baseline used by many graphics programs. The box has 10 px padding: the text starts at x + 10, and a single line is centred at y + 0.7 × font size + 10. With alignment center, x is the middle; with right, the right edge. With a text box (setSize), the first line starts directly at the top edge.",
     },
     weblink: {
       de: "https://www.educational-animation.org",
@@ -4076,8 +4220,8 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       textAlign: {
         name: "textAlign",
         info: {
-          en: "Text alignment (left, center, right)",
-          de: "Textausrichtung (left, center, right)",
+          en: "Text alignment: left (x = left edge), center (x = middle) or right (x = right edge)",
+          de: "Textausrichtung: left (x = linke Kante), center (x = Mitte) oder right (x = rechte Kante)",
         },
       },
     },
@@ -4085,16 +4229,16 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       x: {
         name: "x",
         info: {
-          en: "Horizontal position of the element",
-          de: "Horizontale Position des Elements",
+          en: "Left edge of the text box (center: middle, right: right edge). The visible text starts 10 px further right",
+          de: "Linke Kante der Textbox (bei center: Mitte, bei right: rechte Kante). Der sichtbare Text beginnt 10 px weiter rechts",
         },
         example: "x = 100",
       },
       y: {
         name: "y",
         info: {
-          en: "Vertical position of the element",
-          de: "Vertikale Position des Elements",
+          en: "TOP edge of the text box – not the baseline. Without a text box, a single line is centred at y + 0.7 × font size + 10",
+          de: "OBERKANTE der Textbox – nicht die Grundlinie. Ohne Textbox liegt eine einzelne Zeile mittig bei y + 0,7 × Schriftgröße + 10",
         },
         example: "y = 200",
       },
@@ -4109,8 +4253,8 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       width: {
         name: "width",
         info: {
-          en: "Width of the text box for word wrapping (null to disable)",
-          de: "Breite des Textfelds für Zeilenumbruch (null zum Deaktivieren)",
+          en: "Width of the text box for word wrapping (null to disable). Returns the box width that was set, not the measured text width",
+          de: "Breite des Textfelds für Zeilenumbruch (null zum Deaktivieren). Liefert die gesetzte Boxbreite, nicht die gemessene Textbreite",
         },
         example: "width = 200",
       },
@@ -4168,8 +4312,8 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       setSize: {
         name: "setSize",
         info: {
-          en: "Sets the text box dimensions for word wrapping. Pass null to disable the box.",
-          de: "Setzt die Textfeld-Abmessungen für automatischen Zeilenumbruch. null deaktiviert das Textfeld.",
+          en: "Sets the text box dimensions for word wrapping (x, y stay the top-left corner; lines may use width − 20 px). Pass null to disable the box.",
+          de: "Setzt die Textfeld-Abmessungen für automatischen Zeilenumbruch (x, y bleibt die linke obere Ecke; die Zeilen nutzen Breite − 20 px). null deaktiviert das Textfeld.",
         },
         example: "setSize(200, 100)",
       },
@@ -4192,8 +4336,8 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       setHyphenation: {
         name: "setHyphenation",
         info: {
-          en: "Enables or disables automatic hyphenation. Optional: language code (e.g. 'de', 'en') for linguistically correct syllable breaks using the browser's built-in hyphenation dictionary (only effective when a text box width is set)",
-          de: "Aktiviert oder deaktiviert die automatische Silbentrennung. Optional: Sprachkürzel (z.B. 'de', 'en') für linguistisch korrekte Silbentrennung über das browsereigene Silbentrennungs-Wörterbuch (nur wirksam wenn eine Textfeld-Breite gesetzt ist)",
+          en: "Switches automatic hyphenation on or off (only with a text box, see setSize). Language de or en (British); without it, the language of the page. Breaks follow the hyphenation patterns of the language, come after hyphens and at soft hyphens written as &shy; in the text – these take priority. Words under 5 letters are never split. Other languages: only hyphens and &shy;",
+          de: "Schaltet die automatische Silbentrennung ein oder aus (nur mit Textbox, siehe setSize). Sprache de oder en (britisch); ohne Angabe die Sprache der Seite. Getrennt wird nach den Trennmustern der Sprache, hinter Bindestrichen und an weichen Trennstrichen, die als &shy; im Text stehen – diese haben Vorrang. Wörter unter 5 Buchstaben bleiben ganz. Andere Sprachen: nur Bindestriche und &shy;",
         },
         example: 'setHyphenation(true, "de")',
       },
@@ -4249,7 +4393,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     }
   }
   _calculateTextDimensions() {
-    const lines = this._text.split("\\n");
+    const lines = HtmlSvgEdu.Text.stripSoftHyphens(this._text).split("\\n");
     let maxLineWidth = 0;
     let totalHeight = 0;
     const formatState = { bold: 0, italic: 0, typeStack: [] };
@@ -4316,6 +4460,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     );
   }
   _estimateTextWidth(text) {
+    text = HtmlSvgEdu.Text.stripSoftHyphens(text);
     const plainText = text.replace(/<[^>]+>/g, "");
     let width =
       plainText.length * (this._fontSize * 0.6) +
@@ -4333,6 +4478,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     return width;
   }
   _measureTextWidth(text) {
+    text = HtmlSvgEdu.Text.stripSoftHyphens(text);
     const plainText = text.replace(/<[^>]+>/g, "");
     if (!HtmlSvgEdu.Text._measureCtx) {
       const canvas = document.createElement("canvas");
@@ -4371,6 +4517,11 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     }
     return result;
   }
+  // Zeilenumbruch in der Textbox. Mit Silbentrennung (K-015, 3.23.0) gibt es
+  // nur drei Arten von Trennstellen: hinter einem Bindestrich (ohne neuen
+  // Strich), an weichen Trennstrichen (&shy;) und nach den Trennmustern der
+  // Sprache (Liang-Verfahren, HtmlSvgEdu.Hyphenator). Nur ein Wort, das nicht
+  // einmal in eine leere Zeile passt, wird ohne Rücksicht auf Silben zerlegt.
   _wrapLine(text) {
     if (!text) return [""];
     const availWidth = this._boxWidth - 20;
@@ -4382,7 +4533,10 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       : (t) => this._estimateTextWidth(t);
 
     for (let i = 0; i < words.length; i++) {
-      const word = words[i];
+      let word = words[i];
+      // Trennstellen immer am ganzen Wort bestimmen, auch für seine Reste
+      // (sonst trennt "Do-naudampf…" den Rest falsch: "dam-pfsc-hiff")
+      const ctx = { cands: null, done: 0 };
       const testLine = currentLine ? currentLine + " " + word : word;
 
       if (measure(testLine) <= availWidth) {
@@ -4390,228 +4544,150 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
         continue;
       }
 
-      if (this._hyphenate) {
-        // Try to hyphenate the word to fill the remaining space on the current line
-        const prefix = currentLine ? currentLine + " " : "";
-        const remainingWidth = availWidth - measure(prefix);
-        let hyphenated = false;
-
-        if (remainingWidth >= measure("xx-")) {
-          const hyphenPos = this._findHyphenPoint(word, remainingWidth);
-          if (
-            hyphenPos > 0 &&
-            measure(word.substring(0, hyphenPos) + "-") <= remainingWidth
-          ) {
-            lines.push(prefix + word.substring(0, hyphenPos) + "-");
-            currentLine = "";
-            hyphenated = true;
-            let rest = word.substring(hyphenPos);
-            while (rest.length > 0) {
-              if (measure(rest) <= availWidth) {
-                currentLine = rest;
-                rest = "";
-              } else {
-                const sp = this._findHyphenPoint(rest, availWidth);
-                if (sp > 0) {
-                  lines.push(rest.substring(0, sp) + "-");
-                  rest = rest.substring(sp);
-                } else {
-                  currentLine = rest;
-                  rest = "";
-                }
-              }
-            }
-          }
-        }
-
-        if (!hyphenated) {
-          // Could not hyphenate on current line — move word to new line
-          if (currentLine) {
-            lines.push(currentLine);
-            currentLine = "";
-          }
-          if (measure(word) <= availWidth) {
-            currentLine = word;
-          } else {
-            // Word too long for a full line — force-hyphenate
-            let rest = word;
-            while (rest.length > 0) {
-              if (measure(rest) <= availWidth) {
-                currentLine = rest;
-                rest = "";
-              } else {
-                const sp = this._findHyphenPoint(rest, availWidth);
-                if (sp > 0) {
-                  lines.push(rest.substring(0, sp) + "-");
-                  rest = rest.substring(sp);
-                } else {
-                  currentLine = rest;
-                  rest = "";
-                }
-              }
-            }
-          }
-        }
-      } else {
-        // No hyphenation — original behavior
+      if (!this._hyphenate) {
+        // Ohne Silbentrennung — bisheriges Verhalten
         if (currentLine) {
           lines.push(currentLine);
-          currentLine = "";
         }
         currentLine = word;
+        continue;
       }
+
+      // 1. Restplatz der aktuellen Zeile mit dem Wortanfang füllen
+      if (currentLine) {
+        const prefix = currentLine + " ";
+        const brk = this._findWordBreak(word, availWidth - measure(prefix), ctx);
+        if (brk) {
+          lines.push(prefix + brk.head);
+          word = brk.tail;
+        } else {
+          lines.push(currentLine);
+        }
+        currentLine = "";
+      }
+      // 2. Was nicht in eine ganze Zeile passt, weiter trennen
+      while (word && measure(word) > availWidth) {
+        const brk =
+          this._findWordBreak(word, availWidth, ctx) ||
+          this._forceWordBreak(word, availWidth, ctx);
+        if (!brk) break;
+        lines.push(brk.head);
+        word = brk.tail;
+      }
+      currentLine = word;
     }
     if (currentLine) {
       lines.push(currentLine);
     }
     return lines.length > 0 ? lines : [""];
   }
-  _findHyphenPoint(word, maxWidth) {
-    if (/<\/?(b|i|sub|sup)>/i.test(word)) {
-      return this._findHyphenPointFormatted(word, maxWidth);
-    }
-    if (this._hyphenLang) {
-      const browserPoint = this._findBrowserHyphenPoint(word, maxWidth);
-      if (browserPoint > 0) return browserPoint;
-    }
-    return this._findHeuristicHyphenPoint(word, maxWidth);
-  }
-  // Trennstelle in einem Wort mit Tags (<b>, <i>, <sub>, <sup>): Die Trennstelle
-  // wird nur im sichtbaren Text gesucht und dann in den Rohtext umgerechnet,
-  // damit kein Tag zerschnitten wird (vorher z. B. "<b-" + ">Präsentationen").
-  // Schließende Tags direkt hinter der Trennstelle bleiben in der ersten Zeile,
-  // öffnende Tags wandern mit dem Rest in die nächste Zeile.
-  _findHyphenPointFormatted(word, maxWidth) {
+  // Zerlegt ein Wort in sichtbare Zeichen. Tags (<b>, <i>, <sub>, <sup>) und
+  // weiche Trennstriche (&shy;) zählen nicht mit; after[k] = Rohtext-Index
+  // direkt hinter dem (k+1)-ten sichtbaren Zeichen, soft = Trennvorschläge.
+  _scanWord(word) {
     const tagRegex = /^<\/?(b|i|sub|sup)>/i;
-    const closingRegex = /^<\/(b|i|sub|sup)>/i;
     let plain = "";
-    const after = []; // after[k] = Rohtext-Index direkt hinter dem (k+1)-ten sichtbaren Zeichen
+    const after = [];
+    const soft = new Set();
     let i = 0;
     while (i < word.length) {
-      const tag = word[i] === "<" ? word.substring(i).match(tagRegex) : null;
-      if (tag) {
-        i += tag[0].length;
+      if (word[i] === "<") {
+        const tag = word.substring(i).match(tagRegex);
+        if (tag) {
+          i += tag[0].length;
+          continue;
+        }
+      }
+      if (word.startsWith("&shy;", i)) {
+        soft.add(plain.length);
+        i += 5;
+        continue;
+      }
+      if (word[i] === "­") {
+        soft.add(plain.length);
+        i++;
         continue;
       }
       plain += word[i];
       i++;
       after.push(i);
     }
-    const toRaw = (k) => {
-      let r = after[k - 1];
-      let m;
-      while ((m = word.substring(r).match(closingRegex))) {
-        r += m[0].length;
-      }
-      return r;
-    };
-    if (plain.length < 3) return -1;
-    const measure = this._hyphenate
-      ? (t) => this._measureTextWidth(t)
-      : (t) => this._estimateTextWidth(t);
-    const fits = (k) => measure(word.substring(0, toRaw(k)) + "-") <= maxWidth;
-    let k = -1;
-    if (this._hyphenLang) {
-      // Schriftschnitt des ersten sichtbaren Abschnitts (meist ist das ganze Wort fett/kursiv)
-      const first = this._parseFormattedText(word).find((p) => p.text) || {};
-      const browserPoint = this._findBrowserHyphenPoint(plain, maxWidth, first);
-      if (browserPoint > 0 && browserPoint < plain.length && fits(browserPoint)) {
-        k = browserPoint;
-      }
-    }
-    if (k < 0) {
-      k = this._findHeuristicHyphenPoint(plain, maxWidth, fits);
-    }
-    if (k < 1 || k >= plain.length) return -1;
-    return toRaw(k);
+    return { plain, after, soft };
   }
-  // Fallback: vowel-based heuristic
-  _findHeuristicHyphenPoint(word, maxWidth, fits) {
-    const measure = this._hyphenate
-      ? (t) => this._measureTextWidth(t)
-      : (t) => this._estimateTextWidth(t);
-    const prefixFits =
-      fits || ((n) => measure(word.substring(0, n) + "-") <= maxWidth);
-    const vowels = "aeiouäöüAEIOUÄÖÜ";
-    const isVowel = (c) => vowels.includes(c);
-    let bestSyllablePos = -1;
-    let lastFitPos = -1;
-    for (let i = 2; i < word.length - 1; i++) {
-      if (!prefixFits(i)) break;
-      lastFitPos = i;
-      if (i >= 2 && i < word.length - 2) {
-        if (!isVowel(word[i - 1]) && isVowel(word[i])) {
-          bestSyllablePos = i;
-        } else if (
-          isVowel(word[i - 1]) &&
-          !isVowel(word[i]) &&
-          i + 1 < word.length &&
-          !isVowel(word[i + 1])
-        ) {
-          bestSyllablePos = i + 1;
-        }
-      }
+  // Rohtext-Index hinter k sichtbaren Zeichen. Schließende Tags direkt hinter
+  // der Trennstelle bleiben in der ersten Zeile, öffnende wandern mit dem Rest.
+  _rawIndex(word, info, k) {
+    const closingRegex = /^<\/(b|i|sub|sup)>/i;
+    let r = info.after[k - 1];
+    let m;
+    while ((m = word.substring(r).match(closingRegex))) {
+      r += m[0].length;
     }
-    const splitPos = bestSyllablePos > 0 ? bestSyllablePos : lastFitPos;
-    return splitPos > 0 ? splitPos : Math.max(2, Math.floor(word.length / 2));
+    return r;
   }
-  _findBrowserHyphenPoint(word, maxWidth, style) {
-    const div = document.createElement("div");
-    div.style.position = "absolute";
-    div.style.visibility = "hidden";
-    div.style.top = "-9999px";
-    div.style.left = "-9999px";
-    div.style.whiteSpace = "normal";
-    div.style.width = maxWidth + "px";
-    div.style.fontFamily = this._font;
-    div.style.fontSize = this._fontSize + "px";
-    div.style.letterSpacing = this._letterSpacing + "px";
-    if (style && style.bold) div.style.fontWeight = "bold";
-    if (style && style.italic) div.style.fontStyle = "italic";
-    div.style.lineHeight = this._fontSize * this._lineHeightFactor + "px";
-    div.style.hyphens = "auto";
-    div.style.webkitHyphens = "auto";
-    div.style.msHyphens = "auto";
-    div.style.wordWrap = "break-word";
-    div.style.overflowWrap = "break-word";
-    div.lang = this._hyphenLang;
-    div.textContent = word;
-    document.body.appendChild(div);
-
-    const lineHeight = this._fontSize * this._lineHeightFactor;
-    if (div.offsetHeight <= lineHeight * 1.3) {
-      document.body.removeChild(div);
-      return -1;
+  // Erlaubte Trennstellen eines Wortes: [{ k, hyphen }], k = Anzahl sichtbarer
+  // Zeichen vor der Trennstelle, hyphen = Trennstrich anfügen
+  _breakCandidates(info) {
+    const { plain, soft } = info;
+    const cands = new Map();
+    // Hinter einem vorhandenen Bindestrich ("Feder-Masse"), kein zweiter Strich
+    for (let k = 2; k <= plain.length - 2; k++) {
+      if (plain[k - 1] === "-") cands.set(k, false);
     }
-
-    const textNode = div.firstChild;
-    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
-      document.body.removeChild(div);
-      return -1;
+    if (soft.size > 0) {
+      // Weiche Trennstriche des Autors haben Vorrang vor den Trennmustern
+      soft.forEach((k) => {
+        if (k > 0 && k < plain.length && !cands.has(k)) cands.set(k, true);
+      });
+    } else {
+      HtmlSvgEdu.Hyphenator.hyphenate(plain, this._hyphenFile()).forEach((k) => {
+        if (!cands.has(k)) cands.set(k, true);
+      });
     }
-
-    const range = document.createRange();
-    let breakPoint = -1;
-    let firstTop = null;
-
-    for (let i = 0; i < word.length; i++) {
-      range.setStart(textNode, i);
-      range.setEnd(textNode, i + 1);
-      const rects = range.getClientRects();
-      if (rects.length === 0) continue;
-
-      if (firstTop === null) {
-        firstTop = rects[0].top;
-      }
-
-      if (rects[0].top > firstTop + 2) {
-        breakPoint = i;
-        break;
+    return [...cands.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([k, hyphen]) => ({ k, hyphen }));
+  }
+  // Späteste erlaubte Trennstelle, deren Anfang (mit Strich) in maxWidth passt.
+  // ctx merkt sich die Trennstellen des ganzen Wortes (cands) und wie viele
+  // sichtbare Zeichen schon in früheren Zeilen stehen (done).
+  _findWordBreak(word, maxWidth, ctx) {
+    if (!(maxWidth > 0)) return null;
+    const info = this._scanWord(word);
+    if (!ctx.cands) ctx.cands = this._breakCandidates(info);
+    for (let c = ctx.cands.length - 1; c >= 0; c--) {
+      const k = ctx.cands[c].k - ctx.done;
+      if (k < 1) break;
+      if (k >= info.plain.length) continue;
+      const raw = this._rawIndex(word, info, k);
+      const head = word.substring(0, raw) + (ctx.cands[c].hyphen ? "-" : "");
+      if (this._measureTextWidth(head) <= maxWidth) {
+        ctx.done += k;
+        return { head, tail: word.substring(raw) };
       }
     }
-
-    document.body.removeChild(div);
-    return breakPoint > 1 ? breakPoint : -1;
+    return null;
+  }
+  // Notumbruch für Wörter, die länger als eine ganze Zeile sind
+  _forceWordBreak(word, maxWidth, ctx) {
+    const info = this._scanWord(word);
+    for (let k = info.plain.length - 1; k >= 1; k--) {
+      const raw = this._rawIndex(word, info, k);
+      const head = word.substring(0, raw) + "-";
+      if (this._measureTextWidth(head) <= maxWidth) {
+        ctx.done += k;
+        return { head, tail: word.substring(raw) };
+      }
+    }
+    return null;
+  }
+  // Trennmuster-Datei zur gewählten Sprache (sonst Sprache der Seite)
+  _hyphenFile() {
+    const pageLang =
+      typeof document !== "undefined" && document.documentElement
+        ? document.documentElement.lang
+        : "";
+    return HtmlSvgEdu.Hyphenator.fileFor(this._hyphenLang || pageLang);
   }
   _addStyles() {
     const style = document.createElementNS(
@@ -4724,7 +4800,10 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       if (this._letterSpacing) {
         textElement.setAttribute("letter-spacing", this._letterSpacing + "px");
       }
-      const parsedLine = this._parseFormattedText(line, formatState);
+      const parsedLine = this._parseFormattedText(
+        HtmlSvgEdu.Text.stripSoftHyphens(line),
+        formatState,
+      );
       if (
         parsedLine.length === 0 ||
         (parsedLine.length === 1 &&
@@ -4828,8 +4907,12 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     this._refreshText();
   }
   setHyphenation(enabled, lang) {
-    this._hyphenate = enabled;
-    this._hyphenLang = enabled && lang ? lang : null;
+    this._hyphenate = !!enabled;
+    this._hyphenLang = this._hyphenate && lang ? lang : null;
+    if (this._hyphenate) {
+      // Trennmuster bei Bedarf nachladen; der Text zeichnet sich danach neu
+      HtmlSvgEdu.Hyphenator.request(this._hyphenFile(), this);
+    }
     if (this._boxWidth !== null) {
       this._refreshText();
     }
@@ -4854,6 +4937,11 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
 
 // Fett gesetzte Zeichen sind in Arial im Mittel etwa 10 % breiter
 HtmlSvgEdu.Text.BOLD_WIDTH_FACTOR = 1.1;
+
+// Weiche Trennstriche (&shy; oder U+00AD) sind nur Trennvorschläge –
+// sie werden weder angezeigt noch mitgemessen
+HtmlSvgEdu.Text.stripSoftHyphens = (s) =>
+  typeof s === "string" ? s.replace(/&shy;|\u00AD/g, "") : s;
 
 HtmlSvgEdu.Preloader = class Preloader extends HtmlSvgEdu.Component {
   static serializationMap = {
