@@ -502,6 +502,74 @@ const angleLabel2 = new AngleLabel(
 `,
         },
         {
+          image: "length-label.png",
+          title: "Längenmarkierung (LengthLabel)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Platte mit Breite und Höhe
+let platte = new Rectangle(400, 200, 0xdfeaf5, 0x333333, 2);
+platte.x = 120;
+platte.y = 160;
+
+// Längenmarkierung: Start, Ende, Abstand der Maßlinie, Text
+// Negativer Abstand = Maßlinie auf der anderen Seite
+let breite = new LengthLabel(120, 160, 520, 160, -40, "<i>b</i> = 4,0 m", "Arial", 22, 0x444444, 1, 0x444444);
+let hoehe = new LengthLabel(520, 160, 520, 360, -40, "<i>h</i> = 2,0 m", "Arial", 22, 0x444444, 1, 0x444444);
+
+// Regler für die Breite
+let reglerText = new Text("Breite der Platte", "Arial", 20, 0x444444);
+reglerText.x = 110;
+reglerText.y = 500;
+let regler = new ButtonSlider(1, 6, 4, 0.1, 40, 300);
+regler.x = 120;
+regler.y = 540;
+
+function breiteAendern() {
+    let b = regler.value;
+    let rechts = 120 + b * 100;
+    platte.setWidth(b * 100);
+    breite.setEnd(rechts, 160);
+    breite.setText("<i>b</i> = " + b.toFixed(1).replace(".", ",") + " m");
+    hoehe.setPoints(rechts, 160, rechts, 360);
+}
+regler.onChange(breiteAendern);
+
+// Schräge Strecke: Text parallel zur Maßlinie
+let start = new Circle(10, 0xc0392b);
+start.x = 800;
+start.y = 520;
+start.setDragging(0, 0, 1280, 720);
+let ende = new Circle(10, 0xc0392b);
+ende.x = 1150;
+ende.y = 300;
+ende.setDragging(0, 0, 1280, 720);
+let strecke = new Line(800, 520, 1150, 300, 0x333333, 2);
+let s = new LengthLabel(800, 520, 1150, 300, 30, "", "Arial", 22, 0xc0392b, 1, 0xc0392b);
+s.setTextAlongLine(true);
+
+function streckeAendern() {
+    strecke.setStart(start.x, start.y);
+    strecke.setEnd(ende.x, ende.y);
+    s.setPoints(start.x, start.y, ende.x, ende.y);
+    s.setText("<i>s</i> = " + Math.round(s.getLength()) + " px");
+}
+start.onDrag(streckeAendern);
+ende.onDrag(streckeAendern);
+streckeAendern();
+
+// Kurze Längen: Pfeile von außen, Text daneben
+let spalt = new LengthLabel(800, 160, 812, 160, -30, "<i>d</i> = 1 mm", "Arial", 22, 0x444444, 1, 0x444444);
+spalt.setExternalLabel(true);
+let teil1 = new Rectangle(100, 60, 0xcfd8dc, 0x333333, 1);
+teil1.x = 700;
+teil1.y = 160;
+let teil2 = new Rectangle(100, 60, 0xcfd8dc, 0x333333, 1);
+teil2.x = 812;
+teil2.y = 160;
+`,
+        },
+        {
           image: "line-label.png",
           title: "Linienbeschriftung (LineLabel)",
           code: `// Created with Open Animation Lab

@@ -6866,6 +6866,690 @@ PixiJSEdu.AngleLabel = class AngleLabel extends PIXI.Container {
     return this._alpha;
   }
 };
+
+// ============================================================================
+// LengthLabel
+// ============================================================================
+
+PixiJSEdu.LengthLabel = class LengthLabel extends PIXI.Container {
+  static serializationMap = {
+    description: {
+      de: "Längenmarkierung (Bemaßung) mit Maßlinie, Pfeilen und Text",
+      en: "Length label (dimension) with dimension line, arrowheads and text",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example:
+      'let myLengthLabel = new LengthLabel(100, 200, 300, 200, 30, "<i>l</i> = 2 m", "Arial", 16, 0x444444, 1, 0x444444);',
+    constructor: {
+      startX: {
+        name: "startX",
+        info: {
+          en: "X coordinate of the start point of the measured length",
+          de: "X-Koordinate des Startpunkts der gemessenen Länge",
+        },
+      },
+      startY: {
+        name: "startY",
+        info: {
+          en: "Y coordinate of the start point of the measured length",
+          de: "Y-Koordinate des Startpunkts der gemessenen Länge",
+        },
+      },
+      endX: {
+        name: "endX",
+        info: {
+          en: "X coordinate of the end point of the measured length",
+          de: "X-Koordinate des Endpunkts der gemessenen Länge",
+        },
+      },
+      endY: {
+        name: "endY",
+        info: {
+          en: "Y coordinate of the end point of the measured length",
+          de: "Y-Koordinate des Endpunkts der gemessenen Länge",
+        },
+      },
+      offset: {
+        name: "offset",
+        info: {
+          en: "Distance of the dimension line from the measured length. Positive and negative values place it on opposite sides (same side as LineLabel for positive values). 0 = directly on the length, without extension lines",
+          de: "Abstand der Maßlinie von der gemessenen Länge. Positive und negative Werte legen sie auf verschiedene Seiten (bei positiven Werten dieselbe Seite wie bei LineLabel). 0 = direkt auf der Länge, ohne Maßhilfslinien",
+        },
+      },
+      label: {
+        name: "label",
+        info: {
+          en: "Text of the label (supports <b>, <i>, <sub> and <sup> tags, also combined and nested)",
+          de: "Text der Beschriftung (unterstützt die Tags <b>, <i>, <sub> und <sup>, auch kombiniert und verschachtelt)",
+        },
+      },
+      font: {
+        name: "font",
+        info: {
+          en: "Font family for the text",
+          de: "Schriftart für den Text",
+        },
+      },
+      fontSize: {
+        name: "fontSize",
+        info: {
+          en: "Font size for the text",
+          de: "Schriftgröße für den Text",
+        },
+      },
+      textColor: {
+        name: "textColor",
+        info: {
+          en: "Colour of the text in hexadecimal format",
+          de: "Farbe des Textes im Hexadezimalformat",
+        },
+      },
+      lineThickness: {
+        name: "lineThickness",
+        info: {
+          en: "Thickness of the dimension line and the extension lines",
+          de: "Linienstärke der Maßlinie und der Maßhilfslinien",
+        },
+      },
+      lineColor: {
+        name: "lineColor",
+        info: {
+          en: "Colour of the lines and arrowheads in hexadecimal format",
+          de: "Farbe der Linien und Pfeilspitzen im Hexadezimalformat",
+        },
+      },
+    },
+    setter: {
+      x: {
+        name: "x",
+        info: {
+          en: "Horizontal position of the element in pixels",
+          de: "Horizontale Position des Elements in Pixeln",
+        },
+        example: "x = 100",
+      },
+      y: {
+        name: "y",
+        info: {
+          en: "Vertical position of the element in pixels",
+          de: "Vertikale Position des Elements in Pixeln",
+        },
+        example: "y = 200",
+      },
+      visible: {
+        name: "visible",
+        info: {
+          en: "Visibility of the element (true = visible, false = hidden)",
+          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
+        },
+        example: "visible = false",
+      },
+      alpha: {
+        name: "alpha",
+        info: {
+          en: "Sets the transparency of the object (0.0 to 1.0)",
+          de: "Setzt die Transparenz des Objekts (0.0 bis 1.0)",
+        },
+        example: "alpha = 0.5",
+      },
+    },
+    methods: {
+      setText: {
+        example: 'setText("<i>l</i> = 2,5 m")',
+        info: {
+          en: "Changes the text of the label (supports <b>, <i>, <sub> and <sup> tags)",
+          de: "Ändert den Text der Beschriftung (unterstützt die Tags <b>, <i>, <sub> und <sup>)",
+        },
+      },
+      setTextColor: {
+        example: "setTextColor(0xff0000)",
+        info: {
+          en: "Changes the colour of the text",
+          de: "Ändert die Farbe des Textes",
+        },
+      },
+      setFontSize: {
+        example: "setFontSize(16)",
+        info: {
+          en: "Sets the font size of the text",
+          de: "Setzt die Schriftgröße des Textes",
+        },
+      },
+      setLineColor: {
+        example: "setLineColor(0x0000ff)",
+        info: {
+          en: "Changes the colour of the lines and arrowheads",
+          de: "Ändert die Farbe der Linien und Pfeilspitzen",
+        },
+      },
+      setLineThickness: {
+        example: "setLineThickness(2)",
+        info: {
+          en: "Sets the thickness of the dimension line and the extension lines",
+          de: "Setzt die Linienstärke der Maßlinie und der Maßhilfslinien",
+        },
+      },
+      setStart: {
+        example: "setStart(100, 200)",
+        info: {
+          en: "Sets the start point of the measured length",
+          de: "Setzt den Startpunkt der gemessenen Länge",
+        },
+      },
+      setEnd: {
+        example: "setEnd(300, 200)",
+        info: {
+          en: "Sets the end point of the measured length",
+          de: "Setzt den Endpunkt der gemessenen Länge",
+        },
+      },
+      setPoints: {
+        example: "setPoints(100, 200, 300, 200)",
+        info: {
+          en: "Sets the start and end point at once (startX, startY, endX, endY)",
+          de: "Setzt Start- und Endpunkt auf einmal (startX, startY, endX, endY)",
+        },
+      },
+      setOffset: {
+        example: "setOffset(40)",
+        info: {
+          en: "Sets the distance of the dimension line from the measured length (negative = other side)",
+          de: "Setzt den Abstand der Maßlinie von der gemessenen Länge (negativ = andere Seite)",
+        },
+      },
+      setFlipSide: {
+        example: "setFlipSide(true)",
+        info: {
+          en: "Moves the dimension line and the label to the opposite side",
+          de: "Legt Maßlinie und Beschriftung auf die gegenüberliegende Seite",
+        },
+      },
+      setLabelDistance: {
+        example: "setLabelDistance(8)",
+        info: {
+          en: "Sets the gap between the dimension line and the text (default: automatic)",
+          de: "Setzt den Abstand zwischen Maßlinie und Text (Standard: automatisch)",
+        },
+      },
+      setArrowheads: {
+        example: "setArrowheads(true, 12)",
+        info: {
+          en: "Shows or hides the arrowheads at the ends of the dimension line. Optionally sets the arrowhead size (default 8)",
+          de: "Zeigt oder verbirgt die Pfeilspitzen an den Enden der Maßlinie. Optional kann die Größe angegeben werden (Standard 8)",
+        },
+      },
+      setExtensionLines: {
+        example: "setExtensionLines(true, 6, 3)",
+        info: {
+          en: "Shows or hides the extension lines. Optionally sets how far they extend beyond the dimension line (default 6) and the gap to the measured points (default 3)",
+          de: "Zeigt oder verbirgt die Maßhilfslinien. Optional: wie weit sie über die Maßlinie hinausragen (Standard 6) und Lücke zu den gemessenen Punkten (Standard 3)",
+        },
+      },
+      setTextAlongLine: {
+        example: "setTextAlongLine(true)",
+        info: {
+          en: "Turns the text parallel to the dimension line, as in technical drawings (default false = text stays horizontal)",
+          de: "Dreht den Text parallel zur Maßlinie wie in technischen Zeichnungen (Standard false = Text bleibt waagerecht)",
+        },
+      },
+      setExternalLabel: {
+        example: "setExternalLabel(true, 20)",
+        info: {
+          en: "For short lengths: the arrowheads point inwards from outside and the label is placed beyond the end point. There is no line between the arrowheads. Optionally sets the length of the lines outside the points (default 20)",
+          de: "Für kurze Längen: Die Pfeilspitzen zeigen von außen nach innen, die Beschriftung steht hinter dem Endpunkt. Zwischen den Pfeilspitzen liegt keine Linie. Optional kann die Länge der Linien außerhalb der Punkte angegeben werden (Standard 20)",
+        },
+      },
+      setAlpha: {
+        example: "setAlpha(0.5)",
+        info: {
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
+        },
+      },
+      getLength: {
+        example: "getLength()",
+        info: {
+          en: "Returns the measured length in pixels",
+          de: "Gibt die gemessene Länge in Pixeln zurück",
+        },
+      },
+    },
+  };
+
+  constructor(
+    startX = 0,
+    startY = 0,
+    endX = 100,
+    endY = 0,
+    offset = 20,
+    label = "",
+    font = "Arial",
+    fontSize = 12,
+    textColor = 0x444444,
+    lineThickness = 1,
+    lineColor = 0x444444,
+  ) {
+    super();
+    this._startX = startX;
+    this._startY = startY;
+    this._endX = endX;
+    this._endY = endY;
+    this._offset = offset;
+    this._text = label;
+    this._fontFamily = font;
+    this._fontSize = fontSize;
+    this._textColor = textColor;
+    this._lineThickness = lineThickness;
+    this._lineColor = lineColor;
+    this._visible = true;
+    this._alpha = 1.0;
+    this._flipped = false;
+    this._labelDistance = null;
+    this._showArrowheads = true;
+    this._arrowheadSize = 8;
+    this._showExtensionLines = true;
+    this._extensionOvershoot = 6;
+    this._extensionGap = 3;
+    this._textAlongLine = false;
+    this._externalLabel = false;
+    this._externalLength = 20;
+
+    this.lineGraphics = new PIXI.Graphics();
+    this.arrowGraphics = new PIXI.Graphics();
+    this.textContainer = new PIXI.Container();
+    this.addChild(this.lineGraphics);
+    this.addChild(this.arrowGraphics);
+    this.addChild(this.textContainer);
+
+    this._createTextElements();
+    this._draw();
+    app.stage.addChild(this);
+    Board[INSTANCE_KEY].addChild(this);
+  }
+
+  // ---------- Geometry ----------
+
+  _geometry() {
+    const dx = this._endX - this._startX;
+    const dy = this._endY - this._startY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    let ux = 1;
+    let uy = 0;
+    if (length > 0) {
+      ux = dx / length;
+      uy = dy / length;
+    }
+    // Normal as in LineLabel: same side for both directions of a line
+    let nx = -uy;
+    let ny = ux;
+    if (dx < 0) {
+      nx = -nx;
+      ny = -ny;
+    }
+    if (this._flipped) {
+      nx = -nx;
+      ny = -ny;
+    }
+    const o = this._offset;
+    // Direction from the measured length towards the dimension line
+    const side = o < 0 ? -1 : 1;
+    const ax = this._startX + nx * o;
+    const ay = this._startY + ny * o;
+    const bx = this._endX + nx * o;
+    const by = this._endY + ny * o;
+    return { length, ux, uy, nx, ny, side, ax, ay, bx, by };
+  }
+
+  _textRotation(ux, uy) {
+    if (!this._textAlongLine) return 0;
+    let deg = (Math.atan2(uy, ux) * 180) / Math.PI;
+    // Keep the text readable: never upside down
+    if (deg > 90) deg -= 180;
+    if (deg <= -90) deg += 180;
+    return deg;
+  }
+
+  // ---------- Drawing ----------
+
+  _draw() {
+    const g = this._geometry();
+    this._drawLines(g);
+    this._drawArrowheads(g);
+    this._updateTextPosition(g);
+  }
+
+  _drawLines(g) {
+    this.lineGraphics.clear();
+    if (!(this._lineThickness > 0)) return;
+    const s = this._showArrowheads ? this._arrowheadSize : 0;
+    const t = this._lineThickness;
+    this.lineGraphics.beginFill(0x000000, 0);
+    this.lineGraphics.lineStyle(
+      pixiEffectiveStrokeWidth(this, t),
+      this._lineColor,
+      this._alpha,
+    );
+
+    // Dimension line
+    if (this._externalLabel) {
+      // Two short lines outside the points, no line between the arrowheads
+      const e = this._externalLength;
+      const cut = s > 0 ? Math.min(t * 1.7, s, e) : 0;
+      this.lineGraphics.moveTo(g.ax - g.ux * e, g.ay - g.uy * e);
+      this.lineGraphics.lineTo(g.ax - g.ux * cut, g.ay - g.uy * cut);
+      this.lineGraphics.moveTo(g.bx + g.ux * cut, g.by + g.uy * cut);
+      this.lineGraphics.lineTo(g.bx + g.ux * e, g.by + g.uy * e);
+    } else if (g.length > 0) {
+      // Shorten the line under the arrow tips so that it does not stick out
+      const cut = s > 0 ? Math.min(t * 1.7, s, g.length / 2) : 0;
+      this.lineGraphics.moveTo(g.ax + g.ux * cut, g.ay + g.uy * cut);
+      this.lineGraphics.lineTo(g.bx - g.ux * cut, g.by - g.uy * cut);
+    }
+
+    // Extension lines
+    const absO = Math.abs(this._offset);
+    if (this._showExtensionLines && absO > this._extensionGap) {
+      const gap = this._extensionGap * g.side;
+      const far = this._offset + this._extensionOvershoot * g.side;
+      this.lineGraphics.moveTo(
+        this._startX + g.nx * gap,
+        this._startY + g.ny * gap,
+      );
+      this.lineGraphics.lineTo(
+        this._startX + g.nx * far,
+        this._startY + g.ny * far,
+      );
+      this.lineGraphics.moveTo(this._endX + g.nx * gap, this._endY + g.ny * gap);
+      this.lineGraphics.lineTo(this._endX + g.nx * far, this._endY + g.ny * far);
+    }
+    this.lineGraphics.endFill();
+    this.lineGraphics.alpha = this._alpha;
+  }
+
+  _drawArrowhead(tipX, tipY, dirX, dirY) {
+    // dir points in the direction of the tip
+    const s = this._arrowheadSize;
+    const halfWidth = s * 0.3;
+    const baseX = tipX - dirX * s;
+    const baseY = tipY - dirY * s;
+    const pX = -dirY * halfWidth;
+    const pY = dirX * halfWidth;
+    this.arrowGraphics.moveTo(tipX, tipY);
+    this.arrowGraphics.lineTo(baseX + pX, baseY + pY);
+    this.arrowGraphics.lineTo(baseX - pX, baseY - pY);
+    this.arrowGraphics.closePath();
+  }
+
+  _drawArrowheads(g) {
+    this.arrowGraphics.clear();
+    if (!this._showArrowheads || g.length === 0) return;
+    // Inside: tips point outwards; external: tips point inwards
+    const k = this._externalLabel ? 1 : -1;
+    this.arrowGraphics.beginFill(this._lineColor, this._alpha);
+    this._drawArrowhead(g.ax, g.ay, g.ux * k, g.uy * k);
+    this._drawArrowhead(g.bx, g.by, -g.ux * k, -g.uy * k);
+    this.arrowGraphics.endFill();
+  }
+
+  _parseHTMLText(htmlText) {
+    const segments = [];
+    const tagRegex = /<\/?(\w+)>/g;
+    let lastIndex = 0;
+    let bold = false;
+    let italic = false;
+    let type = "normal";
+    const typeStack = [];
+    let match;
+
+    while ((match = tagRegex.exec(htmlText)) !== null) {
+      if (match.index > lastIndex) {
+        segments.push({
+          text: htmlText.substring(lastIndex, match.index),
+          type: type,
+          bold: bold,
+          italic: italic,
+        });
+      }
+
+      const isClosing = match[0].startsWith("</");
+      const tagName = match[1].toLowerCase();
+
+      if (!isClosing) {
+        if (tagName === "b") bold = true;
+        else if (tagName === "i") italic = true;
+        else if (tagName === "sub" || tagName === "sup") {
+          typeStack.push(type);
+          type = tagName;
+        }
+      } else {
+        if (tagName === "b") bold = false;
+        else if (tagName === "i") italic = false;
+        else if (tagName === "sub" || tagName === "sup") {
+          type = typeStack.pop() || "normal";
+        }
+      }
+
+      lastIndex = tagRegex.lastIndex;
+    }
+
+    if (lastIndex < htmlText.length) {
+      segments.push({
+        text: htmlText.substring(lastIndex),
+        type: type,
+        bold: bold,
+        italic: italic,
+      });
+    }
+
+    return segments;
+  }
+
+  _createTextElements() {
+    this.textContainer.removeChildren();
+    const segments = this._parseHTMLText(String(this._text));
+    let currentX = 0;
+    segments.forEach((segment) => {
+      const fontSize =
+        segment.type === "normal" ? this._fontSize : this._fontSize * 0.7;
+      const textObj = new PIXI.Text(segment.text, {
+        fontFamily: this._fontFamily,
+        fontSize: fontSize,
+        fill: this._textColor,
+        align: "center",
+        fontWeight: segment.bold ? "bold" : "normal",
+        fontStyle: segment.italic ? "italic" : "normal",
+      });
+      textObj.x = currentX;
+      if (segment.type === "sub") {
+        textObj.y = this._fontSize * 0.3 + 2;
+      } else if (segment.type === "sup") {
+        textObj.y = -this._fontSize * 0.3;
+      } else {
+        textObj.y = 0;
+      }
+      this.textContainer.addChild(textObj);
+      currentX += textObj.width;
+    });
+    const bounds = this.textContainer.getLocalBounds();
+    this._textWidth = bounds.width;
+    this._textHeight = bounds.height;
+    this.textContainer.pivot.x = bounds.x + bounds.width / 2;
+    this.textContainer.pivot.y = bounds.y + bounds.height / 2;
+  }
+
+  _updateTextPosition(g) {
+    g = g || this._geometry();
+    const w = this._textWidth || 0;
+    const h = this._textHeight || 0;
+    const rot = this._textRotation(g.ux, g.uy);
+    const gap =
+      this._labelDistance !== null
+        ? this._labelDistance
+        : Math.max(3, this._fontSize * 0.25);
+    let x;
+    let y;
+
+    if (this._externalLabel) {
+      // Beyond the end point, on the axis of the dimension line
+      const along = this._textAlongLine
+        ? w / 2
+        : Math.abs(g.ux) * (w / 2) + Math.abs(g.uy) * (h / 2);
+      const d = this._externalLength + gap + along;
+      x = g.bx + g.ux * d;
+      y = g.by + g.uy * d;
+    } else {
+      // Beside the middle of the dimension line, away from the measured length
+      const across = this._textAlongLine
+        ? h / 2
+        : Math.abs(g.nx) * (w / 2) + Math.abs(g.ny) * (h / 2);
+      const d = gap + across;
+      const mx = (g.ax + g.bx) / 2;
+      const my = (g.ay + g.by) / 2;
+      x = mx + g.nx * g.side * d;
+      y = my + g.ny * g.side * d;
+    }
+
+    this.textContainer.x = x;
+    this.textContainer.y = y;
+    this.textContainer.rotation = (rot * Math.PI) / 180;
+    this.textContainer.alpha = this._alpha;
+  }
+
+  // ---------- Public methods ----------
+
+  setText(text) {
+    this._text = text;
+    this._createTextElements();
+    this._updateTextPosition();
+    return this;
+  }
+
+  setTextColor(color) {
+    this._textColor = color;
+    this.textContainer.children.forEach((child) => {
+      if (child instanceof PIXI.Text) {
+        child.style.fill = color;
+      }
+    });
+    return this;
+  }
+
+  setFontSize(size) {
+    this._fontSize = size;
+    return this.setText(this._text);
+  }
+
+  setLineColor(color) {
+    this._lineColor = color;
+    this._draw();
+    return this;
+  }
+
+  setLineThickness(thickness) {
+    this._lineThickness = thickness;
+    this._draw();
+    return this;
+  }
+
+  setStart(x, y) {
+    this._startX = x;
+    this._startY = y;
+    this._draw();
+    return this;
+  }
+
+  setEnd(x, y) {
+    this._endX = x;
+    this._endY = y;
+    this._draw();
+    return this;
+  }
+
+  setPoints(startX, startY, endX, endY) {
+    this._startX = startX;
+    this._startY = startY;
+    this._endX = endX;
+    this._endY = endY;
+    this._draw();
+    return this;
+  }
+
+  setOffset(offset) {
+    this._offset = offset;
+    this._draw();
+    return this;
+  }
+
+  setFlipSide(flipped) {
+    this._flipped = !!flipped;
+    this._draw();
+    return this;
+  }
+
+  setLabelDistance(distance) {
+    this._labelDistance = distance;
+    this._updateTextPosition();
+    return this;
+  }
+
+  setArrowheads(visible, size) {
+    this._showArrowheads = !!visible;
+    if (size !== undefined) this._arrowheadSize = size;
+    this._draw();
+    return this;
+  }
+
+  setExtensionLines(visible, overshoot, gap) {
+    this._showExtensionLines = !!visible;
+    if (overshoot !== undefined) this._extensionOvershoot = overshoot;
+    if (gap !== undefined) this._extensionGap = gap;
+    this._draw();
+    return this;
+  }
+
+  setTextAlongLine(enabled) {
+    this._textAlongLine = !!enabled;
+    this._updateTextPosition();
+    return this;
+  }
+
+  setExternalLabel(enabled, length) {
+    this._externalLabel = !!enabled;
+    if (length !== undefined) this._externalLength = length;
+    this._draw();
+    return this;
+  }
+
+  getLength() {
+    return this._geometry().length;
+  }
+
+  setAlpha(alpha) {
+    this._alpha = Math.max(0, Math.min(1, alpha));
+    this._draw();
+    return this;
+  }
+
+  set visible(value) {
+    super.visible = Boolean(value);
+  }
+
+  get visible() {
+    return super.visible;
+  }
+
+  set alpha(value) {
+    this._alpha = Math.max(0, Math.min(1, value));
+    this._draw();
+  }
+
+  get alpha() {
+    return this._alpha;
+  }
+};
 PixiJSEdu.Line = class Line extends PIXI.Container {
   static serializationMap = {
     description: { de: "Einfache Linie", en: "Simple line" },

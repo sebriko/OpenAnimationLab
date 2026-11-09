@@ -331,7 +331,11 @@ function initTabSortable() {
   tabSortableInstance = Sortable.create(tabsContainer, {
     animation: 150,
     draggable: ".tab",
-    filter: ".plus-tab",
+    // Eingabefeld beim Umbenennen nicht als Ziehgriff werten, sonst
+    // verschiebt ein Markieren mit der Maus den Tab statt Text zu markieren.
+    // preventOnFilter: false lässt Mausklick und Markieren im Feld zu.
+    filter: ".plus-tab, .tab-name-input",
+    preventOnFilter: false,
     ghostClass: "tab-sortable-ghost",
     chosenClass: "tab-sortable-chosen",
     dragClass: "tab-sortable-drag",
@@ -1108,21 +1112,57 @@ function loadTemplateCode(tabName, code) {
 function editTabName(event, tab) {
   try {
     event.stopPropagation();
-    const currentName = tab.childNodes[0].nodeValue?.trim() || "";
+    if (tab.querySelector(".tab-name-input")) return;
+
+    const currentName = tab.childNodes[0]?.nodeValue?.trim() || "";
     const input = document.createElement("input");
 
+    input.type = "text";
+    input.className = "tab-name-input";
     input.value = currentName;
+    input.spellcheck = false;
+    input.setAttribute(
+      "aria-label",
+      getTranslation("rename_tab", "Rename tab"),
+    );
     Object.assign(input.style, {
       width: "80px",
       margin: "0",
       padding: "2px",
       border: "1px solid #ccc",
+      cursor: "text",
+      userSelect: "text",
+      webkitUserSelect: "text",
     });
 
-    input.onblur = () => saveTabName(input, tab);
+    // Maus- und Touch-Ereignisse im Feld nicht an den Tab weitergeben:
+    // kein Ziehen (Sortable), kein Tab-Wechsel, Doppelklick markiert ein Wort.
+    [
+      "pointerdown",
+      "mousedown",
+      "touchstart",
+      "click",
+      "dblclick",
+      "dragstart",
+    ].forEach((type) =>
+      input.addEventListener(type, (e) => e.stopPropagation()),
+    );
+
+    let done = false;
+    const finish = (save) => {
+      if (done) return;
+      done = true;
+      saveTabName(input, tab, save ? input.value : currentName, currentName);
+    };
+
+    input.onblur = () => finish(true);
     input.onkeydown = (e) => {
       if (e.key === "Enter") {
-        saveTabName(input, tab);
+        e.preventDefault();
+        finish(true);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        finish(false);
       }
     };
 
@@ -1131,14 +1171,18 @@ function editTabName(event, tab) {
     tab.appendChild(input);
     if (closeButton) tab.appendChild(closeButton);
     input.focus();
+    input.select();
   } catch (error) {
     console.error("Error editing tab name:", error);
   }
 }
 
-function saveTabName(input, tab) {
+function saveTabName(input, tab, value, previousName) {
   try {
-    const newName = input.value.trim();
+    const raw = value !== undefined ? value : input.value;
+    // Leerer Name: bisherigen Namen behalten
+    const newName =
+      raw.trim() || previousName || tab.getAttribute("data-name") || "";
     const closeButton = tab.querySelector(".close-tab");
     tab.textContent = newName;
     if (closeButton) tab.appendChild(closeButton);
@@ -1216,7 +1260,7 @@ document.querySelector(".tabs")?.addEventListener("dblclick", (e) => {
     const tab = e.target;
     if (
       tab.classList.contains("tab") &&
-      !tab.contains(document.querySelector("input"))
+      !tab.querySelector(".tab-name-input")
     ) {
       editTabName(e, tab);
     }

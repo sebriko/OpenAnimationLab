@@ -637,6 +637,10 @@ class I18nManager {
         de: "Dieser Tab enthält Code. Sind Sie sicher, dass Sie ihn schließen möchten? Alle ungespeicherten Änderungen gehen verloren.",
         en: "This tab contains code. Are you sure you want to close it? All unsaved changes will be lost.",
       },
+      rename_tab: {
+        de: "Tab umbenennen",
+        en: "Rename tab",
+      },
 
       // Class info window
       extract_class_info: {

@@ -502,6 +502,74 @@ const angleLabel2 = new AngleLabel(
 `,
         },
         {
+          image: "length-label.png",
+          title: "Length label (LengthLabel)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Plate with width and height
+let plate = new Rectangle(400, 200, 0xdfeaf5, 0x333333, 2);
+plate.x = 120;
+plate.y = 160;
+
+// Length label: start, end, distance of the dimension line, text
+// Negative distance = dimension line on the other side
+let width = new LengthLabel(120, 160, 520, 160, -40, "<i>b</i> = 4.0 m", "Arial", 22, 0x444444, 1, 0x444444);
+let height = new LengthLabel(520, 160, 520, 360, -40, "<i>h</i> = 2.0 m", "Arial", 22, 0x444444, 1, 0x444444);
+
+// Slider for the width
+let sliderText = new Text("Width of the plate", "Arial", 20, 0x444444);
+sliderText.x = 110;
+sliderText.y = 500;
+let slider = new ButtonSlider(1, 6, 4, 0.1, 40, 300);
+slider.x = 120;
+slider.y = 540;
+
+function changeWidth() {
+    let b = slider.value;
+    let right = 120 + b * 100;
+    plate.setWidth(b * 100);
+    width.setEnd(right, 160);
+    width.setText("<i>b</i> = " + b.toFixed(1) + " m");
+    height.setPoints(right, 160, right, 360);
+}
+slider.onChange(changeWidth);
+
+// Slanted line: text parallel to the dimension line
+let start = new Circle(10, 0xc0392b);
+start.x = 800;
+start.y = 520;
+start.setDragging(0, 0, 1280, 720);
+let end = new Circle(10, 0xc0392b);
+end.x = 1150;
+end.y = 300;
+end.setDragging(0, 0, 1280, 720);
+let segment = new Line(800, 520, 1150, 300, 0x333333, 2);
+let s = new LengthLabel(800, 520, 1150, 300, 30, "", "Arial", 22, 0xc0392b, 1, 0xc0392b);
+s.setTextAlongLine(true);
+
+function segmentAendrn() {
+    segment.setStart(start.x, start.y);
+    segment.setEnd(end.x, end.y);
+    s.setPoints(start.x, start.y, end.x, end.y);
+    s.setText("<i>s</i> = " + Math.round(s.getLength()) + " px");
+}
+start.onDrag(segmentAendrn);
+end.onDrag(segmentAendrn);
+segmentAendrn();
+
+// Short lengths: arrowheads from outside, text beside them
+let gap = new LengthLabel(800, 160, 812, 160, -30, "<i>d</i> = 1 mm", "Arial", 22, 0x444444, 1, 0x444444);
+gap.setExternalLabel(true);
+let part1 = new Rectangle(100, 60, 0xcfd8dc, 0x333333, 1);
+part1.x = 700;
+part1.y = 160;
+let part2 = new Rectangle(100, 60, 0xcfd8dc, 0x333333, 1);
+part2.x = 812;
+part2.y = 160;
+`,
+        },
+        {
           image: "line-label.png",
           title: "Line label (LineLabel)",
           code: `// Created with Open Animation Lab
