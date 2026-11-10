@@ -692,8 +692,21 @@ function checkForNewStatement() {
   return resultJson;
 }
 
+// Stop the timers of the previous run. Otherwise their callbacks keep running and draw
+// onto the new board, where the old code can no longer remove the objects.
+function stopPreviousTimers() {
+  try {
+    if (typeof SvgJSEdu !== "undefined" && SvgJSEdu.Timer && SvgJSEdu.Timer.stopAll) {
+      SvgJSEdu.Timer.stopAll();
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
 // CODE EXECUTION
 function runCode() {
+  stopPreviousTimers();
   const leftActions = document.getElementById("left-actions");
   const rightActions = document.getElementById("right-actions");
 
@@ -820,6 +833,8 @@ ${rendererAlias}
         // Destroy any existing Board singleton before re-running so resources
         // from the previous execution are fully released. INSTANCE_KEY is a
         // global defined in PixiJSEdu.js.
+
+        stopPreviousTimers();
 
         // PixiJS Board instance
         if (

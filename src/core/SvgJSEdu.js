@@ -9662,7 +9662,17 @@ SvgJSEdu.Timer = class Timer {
     },
   };
 
+  // Running timers. runCode() stops them before a new run, so callbacks of a previous run
+  // cannot keep drawing onto the new board (objects register with BoardSVG[INSTANCE_KEY]).
+  static _running = new Set();
+
+  static stopAll() {
+    [...Timer._running].forEach((t) => t.stop());
+    Timer._running.clear();
+  }
+
   constructor(duration = null, loop = false, autoStart = false) {
+    this._board = Timer._activeBoard();
     this._duration = duration;
     this._loop = loop;
     this._autoStart = autoStart;
@@ -9776,11 +9786,29 @@ SvgJSEdu.Timer = class Timer {
     return this;
   }
 
+  static _activeBoard() {
+    return typeof BoardSVG !== "undefined" && typeof INSTANCE_KEY !== "undefined"
+      ? BoardSVG[INSTANCE_KEY] || null
+      : null;
+  }
+
+  // The board this timer belongs to is gone (code was run again): stop for good.
+  _boardGone() {
+    const b = Timer._activeBoard();
+    if (!this._board) {
+      this._board = b;
+      return false;
+    }
+    return b !== this._board;
+  }
+
   _startUpdateLoop() {
+    Timer._running.add(this);
     this._animationFrameLoop();
   }
 
   _stopUpdateLoop() {
+    Timer._running.delete(this);
     if (this._animationFrameId) {
       cancelAnimationFrame(this._animationFrameId);
       this._animationFrameId = null;
@@ -9789,11 +9817,23 @@ SvgJSEdu.Timer = class Timer {
 
   _animationFrameLoop() {
     if (this._isRunning && !this._isPaused) {
+      if (this._boardGone()) {
+        this.stop();
+        return;
+      }
       this._update();
       this._animationFrameId = requestAnimationFrame(() =>
         this._animationFrameLoop(),
       );
     }
+  }
+
+  destroy() {
+    this.stop();
+    this._animations = [];
+    this._keyframeAnimations = [];
+    this._onCompleteCallback = null;
+    this._onUpdateCallback = null;
   }
 
   _update() {
