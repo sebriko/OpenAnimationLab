@@ -913,11 +913,13 @@ SvgJSEdu.Group = class Group extends SvgJSElement {
     if (!element || !element._group) return this;
 
     if (element._group.parent() === this._group) {
-      // Re-attach to the board root, matching PixiJS removeChild behavior
-      const boardGroup =
-        BoardSVG[INSTANCE_KEY]._group || BoardSVG[INSTANCE_KEY];
-      if (boardGroup && boardGroup.add) {
-        boardGroup.add(element._group);
+      // Re-attach to the board (main group), matching PixiJS removeChild behavior.
+      // Bisher landete das Element direkt in svgRoot (BoardSVG hat kein _group):
+      // außerhalb der Hauptgruppe, sodass board.removeChild(element) es danach nicht fand.
+      const board = BoardSVG[INSTANCE_KEY];
+      const target = board && (board._mainGroup || board.mainGroup);
+      if (target && target.add) {
+        target.add(element._group);
       } else {
         svgRoot.add(element._group);
       }
@@ -1059,7 +1061,20 @@ SvgJSEdu.Group = class Group extends SvgJSElement {
   // ---------- Destroy ----------
 
   destroy() {
-    this.removeAllChildren();
+    // Eine zerstörte Gruppe nimmt ihre Kinder mit (wie bei PixiJS). Bisher hängte
+    // removeAllChildren() die Kinder sichtbar an die Zeichenfläche zurück: Nach
+    // board.removeChild(gruppe) blieben deren Linien, Formen usw. stehen.
+    const board = BoardSVG[INSTANCE_KEY];
+    const copy = [...this._children];
+    this._children = [];
+    copy.forEach((child) => {
+      try {
+        if (board && typeof board.removeChild === "function") board.removeChild(child);
+        else if (child && typeof child.destroy === "function") child.destroy();
+      } catch (e) {
+        console.warn("Group.destroy: Kind konnte nicht entfernt werden", e);
+      }
+    });
     this.removeMask();
     super.destroy();
   }
