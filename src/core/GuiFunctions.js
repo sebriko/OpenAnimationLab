@@ -1130,9 +1130,55 @@ function closePublishMenu() {
 // H5P lädt die Skripte wie der HTML-Export vom eigenen Server;
 // H5P (offline) bettet sie ein (E-007, 3.20.0). Der Animations-Code wird in
 // beiden Fällen verkürzt und verschleiert (protectExportHtml).
+// 3.25.0 (ZUM-Rückmeldung): Die HTML im Paket ist dieselbe wie beim
+// HTML-Export (buildExportHtml, keine eigene Vorlage mehr). Bibliothek
+// H5P.OALAnimation 1.1: Sandbox nur "allow-scripts" (ohne allow-same-origin –
+// sonst liefe die Animation mit den Rechten der Lernplattform), HTML als
+// Base64 (H5P maskiert HTML in Textfeldern beim Speichern), Format 16:9
+// statt fester 600 px, iframe mit title, Lizenz aus dem Lizenzhinweis.
+
+const H5P_LIBRARY_VERSION = { major: 1, minor: 1, patch: 0 };
 
 async function publishH5POffline(exportTitle) {
   return publishH5P(exportTitle, { offline: true });
+}
+
+// UTF-8-Text → Base64 (btoa allein kann keine Umlaute)
+function exportToBase64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+// Lizenzhinweis → Lizenzangaben in h5p.json. H5P kennt feste Kürzel
+// (CC BY, CC BY-SA, …, PD, C, U); alles andere (z. B. MIT) bleibt "U"
+// (nicht angegeben), der Hinweis steht dann wörtlich in licenseExtras.
+// Ohne Hinweis: "U" statt bisher "C" (alle Rechte vorbehalten).
+function h5pLicenseInfo(licenseText) {
+  const text = String(licenseText || "").replace(/\s+/g, " ").trim();
+  const info = { license: "U" };
+  if (!text) return info;
+  const cc = text.match(/\bCC[ -]?(BY(?:[ -](?:NC|SA|ND)){0,2})(?:[ -](\d\.\d))?/i);
+  const ccCodes = ["BY", "BY-SA", "BY-ND", "BY-NC", "BY-NC-SA", "BY-NC-ND"];
+  if (cc) {
+    const code = cc[1].toUpperCase().replace(/ /g, "-");
+    if (ccCodes.includes(code)) {
+      info.license = "CC " + code;
+      info.licenseVersion = cc[2] || "4.0";
+    }
+  } else if (/\b(CC0|public domain|gemeinfrei)\b/i.test(text)) {
+    info.license = "PD";
+  }
+  info.licenseExtras = text.slice(0, 5000);
+  const author = text.match(/^©\s*(?:\d{4}\s+)?([^,–—|]+?)(?:\s*[,–—|]|$)/);
+  if (author && author[1].trim()) {
+    info.authors = [{ name: author[1].trim().slice(0, 255), role: "Author" }];
+  }
+  return info;
 }
 
 async function publishH5P(exportTitle, options = {}) {
@@ -1143,146 +1189,53 @@ async function publishH5P(exportTitle, options = {}) {
   tabName = tabName.slice(0, -1).trim();
   // Titel für <title> und h5p.json (E-004); ohne Angabe wie bisher der Tab-Name
   const h5pTitle = exportTitle || tabName;
+  const animationLang = detectAnimationLanguage(editor.getValue()); // K-002
 
-  let jsCode = editor.getValue();
-  const animationLang = detectAnimationLanguage(jsCode); // K-002
-  jsCode = jsCode.replace(/\\(?![\\'"`])/g, "\\\\");
-  jsCode = replacer(jsCode);
-
-  const renderer =
-    typeof getActiveRenderer === "function" ? getActiveRenderer() : "pixi";
-
-  // Build the same standalone HTML that publishCode() produces
-  let rendererScripts = "";
-  let postLoadCode = "";
-  let rendererAlias = "";
-
-  if (renderer === "svg") {
-    rendererScripts = `
-  <script src="https://www.educational-animation.org/oal/lib/svg.js/3.2.5/svg.min.js"><\/script>
-    <script src="https://www.educational-animation.org/oal/src/core/SvgJSEdu.js"><\/script>
-    <script src="https://www.educational-animation.org/oal/src/core/HtmlSvgEdu.js"><\/script>
-    <script src="https://www.educational-animation.org/oal/src/core/BoardBase.js"><\/script>
-    <script src="https://www.educational-animation.org/oal/src/core/BoardSVG.js"><\/script>`;
-    rendererAlias = "const Board = BoardSVG;";
-    postLoadCode = `
-    let overlayFrameCount = 0;
-    function removeOverlay() {
-      overlayFrameCount++;
-      if (overlayFrameCount > 3) {
-        const overlay = document.getElementById('loading-overlay');
-        if (overlay) { overlay.style.transition='opacity 0.2s'; overlay.style.opacity='0'; setTimeout(()=>overlay.remove(),200); }
-      } else { requestAnimationFrame(removeOverlay); }
-    }
-    requestAnimationFrame(removeOverlay);`;
-  } else {
-    rendererScripts = `
-  <script src="https://www.educational-animation.org/oal/lib/pixi/8.22.0/pixi.min.js"><\/script>
-    <script src="https://www.educational-animation.org/oal/src/core/PixiJSEdu.js"><\/script>
-    <script src="https://www.educational-animation.org/oal/src/core/HtmlSvgEdu.js"><\/script>
-    <script src="https://www.educational-animation.org/oal/src/core/BoardBase.js"><\/script>
-
-    <script src="https://www.educational-animation.org/oal/src/core/Board.js"><\/script>`;
-    rendererAlias = "";
-    postLoadCode = `
-    setTimeout(() => {
-      if (typeof board !== 'undefined' && board.app && board.app.renderer) {
-        board.app.renderer.backgroundColor = 0xFFFFFF;
-      }
-      if (typeof board !== 'undefined' && board.app && board.app.stage) {
-        const bg = new PIXI.Graphics();
-        bg.beginFill(0xFFFFFF);
-        bg.drawRect(0, 0, board.app.screen.width, board.app.screen.height);
-        bg.endFill();
-        board.app.stage.addChildAt(bg, 0);
-      }
-    }, 10);
-    let overlayFrameCount = 0;
-    function removeOverlay() {
-      overlayFrameCount++;
-      if (overlayFrameCount > 3) {
-        const overlay = document.getElementById('loading-overlay');
-        if (overlay) { overlay.style.transition='opacity 0.2s'; overlay.style.opacity='0'; setTimeout(()=>overlay.remove(),200); }
-      } else { requestAnimationFrame(removeOverlay); }
-    }
-    requestAnimationFrame(removeOverlay);`;
-  }
-
-  const rawHtmlContent = String.raw`<!DOCTYPE html>
-<html lang="${animationLang}">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeExportTitle(h5pTitle)}</title>
-  <style>
-    #preview { width:100%; height:100vh; overflow:hidden; position:relative; border:none; background:#fff; touch-action:manipulation; }
-    #loading-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:9999; pointer-events:none; transition:opacity .2s ease-out; }
-    body { margin:0; padding:0; overflow:hidden; background:#fff; }
-    #pixi-ui-overlay { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
-    .pixi-html-ui { pointer-events:auto; transform-origin:top left; font-family:Arial,sans-serif; color:#555; box-sizing:border-box; }
-    .pixi-button { background:linear-gradient(to bottom,#fafafa,#efefef); border:1px solid #aaa; border-radius:10px; cursor:pointer; text-align:center; padding:8px 10px; line-height:.7; transition:all .2s; outline:none; user-select:none; display:inline-block; vertical-align:middle; }
-    .pixi-button:hover { border-color:#228b22; background:#fff; }
-    .pixi-button:active { background:#ddd; }
-    .pixi-button.active { border-color:#228b22; background:#e8f5e8; }
-  </style>
-  <script src="https://www.educational-animation.org/oal/lib/mathjax/3.2.2/tex-svg.js" async></script>
-  ${rendererScripts}
-  <script>window.exportMode=true;</script>
-</head>
-<body>
-  <div id="preview"><div id="loading-overlay"></div></div>
-  <div id="canvas-container"></div>
-  <script>
-    // Created with Open Animation Lab
-    ${rendererAlias}
-    ${jsCode}
-    ${postLoadCode}
-  </script>
-</body>
-</html>`;
-
+  // Dieselbe HTML wie beim HTML-Export (3.25.0)
+  const built = await buildExportHtml(h5pTitle);
   // Verkürzen/verschleiern, bei Offline zusätzlich Skripte einbetten
-  let htmlContent = await protectExportHtml(rawHtmlContent);
+  let htmlContent = await protectExportHtml(built.htmlContent);
   if (htmlContent === null) return;
   if (offline) {
     htmlContent = await embedExportScripts(htmlContent);
     if (htmlContent === null) return;
   }
 
+  const v = H5P_LIBRARY_VERSION;
+  const libDir = `H5P.OALAnimation-${v.major}.${v.minor}`;
+
   // ── Build H5P ZIP ──
   const zip = new JSZip();
 
   // h5p.json – package metadata
-  zip.file("h5p.json", JSON.stringify({
+  zip.file("h5p.json", JSON.stringify(Object.assign({
     title: h5pTitle,
     language: animationLang,
     mainLibrary: "H5P.OALAnimation",
-    license: "C",
     authors: [],
     embedTypes: ["iframe"],
     preloadedDependencies: [
-      { machineName: "H5P.OALAnimation", majorVersion: 1, minorVersion: 0 }
+      { machineName: "H5P.OALAnimation", majorVersion: v.major, minorVersion: v.minor }
     ]
-  }, null, 2));
+  }, h5pLicenseInfo(_currentExportLicense)), null, 2));
 
-  // content/content.json – the animation HTML
+  // content/content.json – die Animation als Base64 (übersteht die
+  // HTML-Maskierung von H5P beim Speichern unverändert)
   zip.file("content/content.json", JSON.stringify({
-    htmlContent: htmlContent
+    htmlBase64: exportToBase64(htmlContent)
   }));
 
   // OALAnimation library
-  const libDir = "H5P.OALAnimation-1.0";
-
   zip.file(`${libDir}/library.json`, JSON.stringify({
     title: "OAL Animation",
-    description: "Displays an Open Animation Lab animation inside an iframe.",
+    description: "Displays an Open Animation Lab animation in a sandboxed iframe (16:9).",
     machineName: "H5P.OALAnimation",
-    majorVersion: 1,
-    minorVersion: 0,
-    patchVersion: 0,
+    majorVersion: v.major,
+    minorVersion: v.minor,
+    patchVersion: v.patch,
     runnable: 1,
     license: "MIT",
-    author: "Open Animation Lab",
+    author: "Open Animation Lab – educational-animation.org",
     coreApi: { majorVersion: 1, minorVersion: 6 },
     embedTypes: ["iframe"],
     preloadedJs: [{ path: "oal-animation.js" }],
@@ -1291,32 +1244,81 @@ async function publishH5P(exportTitle, options = {}) {
 
   zip.file(`${libDir}/semantics.json`, JSON.stringify([
     {
+      name: "htmlBase64",
+      type: "text",
+      widget: "textarea",
+      label: "Animation (Base64)",
+      description: "Exported from the Open Animation Lab. Do not edit – export a new package instead.",
+      optional: true
+    },
+    {
       name: "htmlContent",
       type: "text",
-      widget: "html",
-      label: "HTML Content",
-      description: "The HTML content of the animation"
+      widget: "textarea",
+      label: "Animation (HTML, packages before version 1.1)",
+      optional: true
     }
   ], null, 2));
 
   zip.file(`${libDir}/oal-animation.js`, `\
+/* H5P.OALAnimation ${v.major}.${v.minor}.${v.patch} – Open Animation Lab, MIT License
+ * Shows the animation in a sandboxed iframe (scripts only: no access to the
+ * page, its cookies or storage). Format 16:9, scales with the container. */
 H5P.OALAnimation = (function ($) {
-  function C(options, id) {
-    this.options = $.extend(true, {}, { htmlContent: "" }, options);
-    this.id = id;
+  function decodeBase64Utf8(base64) {
+    var binary = atob(String(base64).replace(/\\s+/g, ""));
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder("utf-8").decode(bytes);
   }
 
-  C.prototype.attach = function ($container) {
-    $container.addClass("h5p-oal-animation");
+  // Packages before 1.1 stored plain HTML, which H5P masks (&lt;) on save
+  function unmask(html) {
+    if (!/^\\s*&lt;/.test(html)) return html;
+    var t = document.createElement("textarea");
+    t.innerHTML = html;
+    return t.value;
+  }
 
+  function C(params, id, extras) {
+    H5P.EventDispatcher.call(this);
+    this.params = $.extend({}, { htmlBase64: "", htmlContent: "" }, params);
+    this.id = id;
+    this.title = (extras && extras.metadata && extras.metadata.title) || "";
+  }
+  C.prototype = Object.create(H5P.EventDispatcher.prototype);
+  C.prototype.constructor = C;
+
+  C.prototype.attach = function ($container) {
+    var html = "";
+    try {
+      html = this.params.htmlBase64
+        ? decodeBase64Utf8(this.params.htmlBase64)
+        : unmask(this.params.htmlContent || "");
+    } catch (e) {
+      html = "<p style=\\"font-family:Arial,sans-serif\\">Animation could not be loaded.</p>";
+    }
+
+    // Name for screen readers: H5P title, else the <title> of the animation
+    var title = this.title;
+    if (!title) {
+      var m = /<title>([^<]*)<\\/title>/i.exec(html);
+      var t = document.createElement("textarea");
+      t.innerHTML = m ? m[1] : "";
+      title = t.value.trim() || "Animation";
+    }
+
+    $container.addClass("h5p-oal-animation");
+    var frame = document.createElement("div");
+    frame.className = "h5p-oal-animation-frame";
     var iframe = document.createElement("iframe");
-    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-    iframe.style.border = "none";
-    iframe.srcdoc = this.options.htmlContent;
+    iframe.setAttribute("sandbox", "allow-scripts");
+    iframe.setAttribute("title", title);
+    iframe.setAttribute("allow", "autoplay");
+    iframe.srcdoc = html;
+    frame.appendChild(iframe);
     $container[0].innerHTML = "";
-    $container[0].appendChild(iframe);
+    $container[0].appendChild(frame);
 
     this.trigger("resize");
   };
@@ -1328,13 +1330,24 @@ H5P.OALAnimation = (function ($) {
   zip.file(`${libDir}/oal-animation.css`, `\
 .h5p-oal-animation {
   width: 100%;
-  height: 600px;
   overflow: hidden;
+  background: #fff;
 }
-.h5p-oal-animation iframe {
+.h5p-oal-animation-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+@supports not (aspect-ratio: 16 / 9) {
+  .h5p-oal-animation-frame { height: 0; padding-top: 56.25%; }
+}
+.h5p-oal-animation-frame iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  border: none;
+  border: 0;
 }
 `);
 
@@ -1348,7 +1361,7 @@ H5P.OALAnimation = (function ($) {
   });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  const fileBase = exportFileBase(exportTitle, tabName); // 3.20.2
+  const fileBase = exportFileBase(exportTitle, built.tabName); // 3.20.2
   link.download = offline ? `${fileBase} (offline).h5p` : `${fileBase}.h5p`;
   document.body.appendChild(link);
   link.click();
