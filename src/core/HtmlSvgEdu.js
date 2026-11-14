@@ -67,8 +67,8 @@ HtmlSvgEdu.Component = class Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -647,7 +647,7 @@ HtmlSvgEdu.Component = class Component {
     return segments;
   }
   _calculateTextDimensions() {
-    const lines = this._label.split("\\n");
+    const lines = HtmlSvgEdu.Text.brToNewline(this._label).split("\\n");
     let maxLineWidth = 0;
     let totalHeight = 0;
     lines.forEach((line) => {
@@ -741,8 +741,8 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
       label: {
         name: "label",
         info: {
-          en: "Label or text of the element (\\n for line break)",
-          de: "Bezeichner oder Text des Elements (\\n für Zeilenwechsel)",
+          en: "Label or text of the element (\\n or <br> for line break)",
+          de: "Bezeichner oder Text des Elements (\\n oder <br> für Zeilenwechsel)",
         },
       },
       width: {
@@ -804,8 +804,8 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -821,8 +821,8 @@ HtmlSvgEdu.Button = class Button extends HtmlSvgEdu.Component {
       setText: {
         name: "setText",
         info: {
-          en: "Sets the label text of the button (\\n for line break)",
-          de: "Setzt den Beschriftungstext des Buttons (\\n für Zeilenwechsel)",
+          en: "Sets the label text of the button (\\n or <br> for line break)",
+          de: "Setzt den Beschriftungstext des Buttons (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setText("Neuer Text")',
       },
@@ -971,8 +971,8 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
       label: {
         name: "label",
         info: {
-          en: "Label or text of the element (\\n for line break, <sub></sub> and <sup></sup> for subscript/superscript possible)",
-          de: "Bezeichner oder Text des Elements (\\n für Zeilenwechsel, <sub></sub> und <sup></sup> für tiefgestellt/hochgestellt möglich)",
+          en: "Label or text of the element (\\n or <br> for line break, <sub></sub> and <sup></sup> for subscript/superscript possible)",
+          de: "Bezeichner oder Text des Elements (\\n oder <br> für Zeilenwechsel, <sub></sub> und <sup></sup> für tiefgestellt/hochgestellt möglich)",
         },
       },
       font: {
@@ -1035,8 +1035,8 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -1236,7 +1236,7 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
   }
   _createStyledLabel(checkboxX, checkboxSize, contentCenterY) {
     const textX = checkboxX + checkboxSize + 10;
-    const lines = this._label.split("\\n");
+    const lines = HtmlSvgEdu.Text.brToNewline(this._label).split("\\n");
     const lineHeight = this._fontSize * 1.2;
     const totalTextHeight = lines.length * lineHeight;
     const textCenteringDelta = -(this._fontSize * 0.2);
@@ -1430,8 +1430,8 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
       label: {
         name: "label",
         info: {
-          en: "Label or text of the element (\\n for line break, <sub></sub> and <sup></sup> for subscript/superscript possible)",
-          de: "Bezeichner oder Text des Elements (\\n für Zeilenwechsel, <sub></sub> und <sup></sup> für tiefgestellt/hochgestellt möglich)",
+          en: "Label or text of the element (\\n or <br> for line break, <sub></sub> and <sup></sup> for subscript/superscript possible)",
+          de: "Bezeichner oder Text des Elements (\\n oder <br> für Zeilenwechsel, <sub></sub> und <sup></sup> für tiefgestellt/hochgestellt möglich)",
         },
       },
       font: {
@@ -1486,8 +1486,8 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -1697,7 +1697,7 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
   }
   _createStyledLabel(radioButtonX, radioButtonSize, contentCenterY) {
     const textX = radioButtonX + radioButtonSize + 10;
-    const lines = this._label.split("\\n");
+    const lines = HtmlSvgEdu.Text.brToNewline(this._label).split("\\n");
     const lineHeight = this._fontSize * 1.2;
     const totalTextHeight = lines.length * lineHeight;
     const textCenteringDelta = -(this._fontSize * 0.2);
@@ -2019,8 +2019,8 @@ HtmlSvgEdu.NumericStepper = class NumericStepper extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -2418,8 +2418,8 @@ HtmlSvgEdu.Dropdown = class Dropdown extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -2903,8 +2903,8 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -3882,8 +3882,8 @@ HtmlSvgEdu.MathForm = class MathForm extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -4192,8 +4192,8 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       text: {
         name: "text",
         info: {
-          en: "Text content to display (\\n for line break; <b></b> bold, <i></i> italic, <sub></sub> subscript, <sup></sup> superscript – also combined and nested)",
-          de: "Anzuzeigender Textinhalt (\\n für Zeilenwechsel; <b></b> fett, <i></i> kursiv, <sub></sub> tiefgestellt, <sup></sup> hochgestellt – auch kombiniert und verschachtelt)",
+          en: "Text content to display (\\n or <br> for line break; <b></b> bold, <i></i> italic, <sub></sub> subscript, <sup></sup> superscript – also combined and nested)",
+          de: "Anzuzeigender Textinhalt (\\n oder <br> für Zeilenwechsel; <b></b> fett, <i></i> kursiv, <sub></sub> tiefgestellt, <sup></sup> hochgestellt – auch kombiniert und verschachtelt)",
         },
       },
       font: {
@@ -4271,8 +4271,8 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -4393,7 +4393,9 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     }
   }
   _calculateTextDimensions() {
-    const lines = HtmlSvgEdu.Text.stripSoftHyphens(this._text).split("\\n");
+    const lines = HtmlSvgEdu.Text.stripSoftHyphens(
+      HtmlSvgEdu.Text.brToNewline(this._text),
+    ).split("\\n");
     let maxLineWidth = 0;
     let totalHeight = 0;
     const formatState = { bold: 0, italic: 0, typeStack: [] };
@@ -4509,7 +4511,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     return width;
   }
   _getWrappedLines() {
-    const hardLines = this._text.split("\\n");
+    const hardLines = HtmlSvgEdu.Text.brToNewline(this._text).split("\\n");
     const result = [];
     for (const line of hardLines) {
       const wrapped = this._wrapLine(line);
@@ -4749,7 +4751,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     const lines =
       this._wrappedLines !== null
         ? this._wrappedLines
-        : this._text.split("\\n");
+        : HtmlSvgEdu.Text.brToNewline(this._text).split("\\n");
     const lineHeight = this._fontSize * this._lineHeightFactor;
     const totalTextHeight = lines.length * lineHeight;
     const textStartY =
@@ -4942,6 +4944,15 @@ HtmlSvgEdu.Text.BOLD_WIDTH_FACTOR = 1.1;
 // sie werden weder angezeigt noch mitgemessen
 HtmlSvgEdu.Text.stripSoftHyphens = (s) =>
   typeof s === "string" ? s.replace(/&shy;|\u00AD/g, "") : s;
+
+// Zeilenwechsel auch als <br>, <br/> oder <br /> (Groß/Klein egal) – wird
+// intern zum gleichen Zeilenwechsel wie \n. Genutzt von Text, Checkbox und
+// RadioButton; text.text liefert den Text, wie er gesetzt wurde. Zahlen und
+// andere Werte werden zu Text (new Text(42) zeigt 42), null/undefined zu "".
+HtmlSvgEdu.Text.brToNewline = (s) =>
+  s === null || s === undefined
+    ? ""
+    : String(s).replace(/<br\s*\/?>/gi, "\\n");
 
 HtmlSvgEdu.Preloader = class Preloader extends HtmlSvgEdu.Component {
   static serializationMap = {
@@ -5295,8 +5306,8 @@ HtmlSvgEdu.ParameterTable = class ParameterTable extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -5993,8 +6004,8 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
@@ -6602,8 +6613,8 @@ HtmlSvgEdu.HtmlRectangle = class HtmlRectangle extends HtmlSvgEdu.Component {
       setTooltip: {
         name: "setTooltip",
         info: {
-          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n for line break)",
-          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n für Zeilenwechsel)",
+          en: "Shows a short hint when the mouse rests on the element, when it is selected with the Tab key or after a long tap. Optional position: top, bottom, left or right. An empty text removes the hint (\\n or <br> for line break)",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht, wenn es mit der Tab-Taste ausgewählt oder lange angetippt wird. Optionale Position: top, bottom, left oder right. Leerer Text entfernt den Hinweis (\\n oder <br> für Zeilenwechsel)",
         },
         example: 'setTooltip("Startet die Animation")',
       },
