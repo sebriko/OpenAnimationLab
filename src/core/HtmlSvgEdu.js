@@ -4530,9 +4530,17 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     const words = text.split(" ");
     const lines = [];
     let currentLine = "";
-    const measure = this._hyphenate
-      ? (t) => this._measureTextWidth(t)
-      : (t) => this._estimateTextWidth(t);
+    // Immer echt messen (Canvas), wie schon mit Silbentrennung. Die frühere
+    // Schätzung 0,6 × Schriftgröße je Zeichen lag bei Arial rund ein Drittel
+    // über der echten Breite – der Text brach zu früh um (3.26.1).
+    // Die Schätzung bleibt nur als Rückfall, falls kein Canvas messen kann.
+    const measure = (t) => {
+      try {
+        return this._measureTextWidth(t);
+      } catch (err) {
+        return this._estimateTextWidth(t);
+      }
+    };
 
     for (let i = 0; i < words.length; i++) {
       let word = words[i];
@@ -4547,7 +4555,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       }
 
       if (!this._hyphenate) {
-        // Ohne Silbentrennung — bisheriges Verhalten
+        // Ohne Silbentrennung: ganzes Wort in die nächste Zeile
         if (currentLine) {
           lines.push(currentLine);
         }
