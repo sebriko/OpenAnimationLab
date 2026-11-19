@@ -6097,6 +6097,14 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
         },
         example: "onMessage((data) => { console.log(data); })",
       },
+      setLoadingText: {
+        name: "setLoadingText",
+        info: {
+          en: "Text under the loading circle while the 3D scene loads. Default: One moment, please. Loading 3D models. An empty text shows only the circle",
+          de: "Text unter dem Ladekreis, solange die 3D-Szene lädt. Standard: Moment bitte. Lade 3D-Modelle. Leerer Text zeigt nur den Kreis",
+        },
+        example: 'setLoadingText("Lade Getriebe")',
+      },
       onReady: {
         name: "onReady",
         info: {
@@ -6235,6 +6243,11 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     this._pendingPings = {};
     this._batchQueue = null;          // null = kein Batch aktiv, [] = Sammelmodus
     this._batchFlushId = 0;           // RAF-ID für automatisches Flush
+    this._revealed = false;           // Szene schon sichtbar?
+    this._loader = null;              // OAL-Ladekreis über der Szene
+    this._loadingText = HtmlSvgEdu.SimpleMP3._lang() === "de"
+      ? "Moment bitte. Lade 3D-Modelle"
+      : "One moment, please. Loading 3D models";
     this._boundMessageHandler = this._handleMessage.bind(this);
     HtmlSvgEdu.Model3D._instances.add(this);
 
@@ -6242,6 +6255,12 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     iframe.style.width = this._width + "px";
     iframe.style.height = this._height + "px";
     iframe.style.border = "none";
+    // Szene erst zeigen, wenn der Startzustand aus dem Code gesetzt ist –
+    // sonst blitzen beim Laden Objekte auf, die der Code gleich ausblendet.
+    // (opacity statt display/visibility: das iframe rendert weiter, und
+    // die Eigenschaft visible des Bausteins bleibt davon unberührt.)
+    iframe.style.opacity = "0";
+    this._revealTimeout = setTimeout(() => this._reveal(), 15000); // Notfall: nie ganz unsichtbar
     iframe.scrolling = "no";
     iframe.style.overflow = "hidden";
     iframe.style.pointerEvents = "auto";
@@ -6251,8 +6270,11 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
       // Ready-Callback wird NICHT hier ausgelöst – erst wenn der Editor
       // sein 'ready'-postMessage sendet (nach vollständigem Szene-Load).
     });
-    iframe.src = this._url;
-    if (window.logEvalMessage) window.logEvalMessage("[Model3D] iframe src gesetzt: " + this._url, "log");
+    // embed=oal: Der 3D-Scene-Editor blendet seinen eigenen Ladebalken aus,
+    // stattdessen zeigt Model3D den Ladekreis des OAL (bis zum Einblenden).
+    iframe.src = HtmlSvgEdu.Model3D._embedUrl(this._url);
+    if (window.logEvalMessage) window.logEvalMessage("[Model3D] iframe src gesetzt: " + iframe.src, "log");
+    this._createLoader();
 
     window.addEventListener("message", this._boundMessageHandler);
   }
@@ -6270,6 +6292,7 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
       // Batch-Modus automatisch aktivieren für optimale Performance
       this.enableBatching();
       if (this._readyCallback) this._readyCallback();
+      this._revealWhenSettled();
     }
     if (data.action === "ping" && data.data && data.data.pingId) {
       const resolve = this._pendingPings[data.data.pingId];
@@ -6293,6 +6316,142 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     if (this._objectSelectedCallback && data.action === "objectSelected") {
       this._objectSelectedCallback({ value: data.data.name });
     }
+  }
+
+  // Hängt embed=oal an Adressen des 3D-Scene-Editors (andere Adressen bleiben).
+  static _embedUrl(url) {
+    if (typeof url !== "string" || url.indexOf("3d-scene-editor") === -1) return url;
+    if (/[?&]embed=/.test(url)) return url;
+    const hash = url.indexOf("#");
+    const base = hash === -1 ? url : url.slice(0, hash);
+    const rest = hash === -1 ? "" : url.slice(hash);
+    return base + (base.indexOf("?") === -1 ? "?" : "&") + "embed=oal" + rest;
+  }
+
+  // Ladekreis wie beim Start des OAL (gleiche Form und Farben), mit Text.
+  _createLoader() {
+    if (!document.getElementById("oal-model3d-loader-styles")) {
+      const st = document.createElement("style");
+      st.id = "oal-model3d-loader-styles";
+      st.textContent =
+        ".oal-model3d-loader{position:absolute;display:flex;flex-direction:column;" +
+        "align-items:center;justify-content:center;background:#ffffff;pointer-events:none;" +
+        "transition:opacity 0.25s ease-out;}" +
+        ".oal-model3d-loader .spinner{width:40px;height:40px;border:3px solid rgba(0, 0, 0, 0.1);" +
+        "border-top-color:#666666;border-radius:50%;animation:oal-model3d-spin 1s linear infinite;}" +
+        ".oal-model3d-loader .loading-text{margin-top:15px;font-family:Arial, sans-serif;" +
+        "font-size:14px;color:#666666;text-align:center;padding:0 10px;}" +
+        ".oal-model3d-loader .loading-text:empty{display:none;}" +
+        "@keyframes oal-model3d-spin{to{transform:rotate(360deg);}}" +
+        "@media (prefers-reduced-motion: reduce){.oal-model3d-loader .spinner{animation-duration:3s;}" +
+        ".oal-model3d-loader{transition:none;}}";
+      document.head.appendChild(st);
+    }
+    const box = document.createElement("div");
+    box.className = "pixi-html-ui oal-model3d-loader";
+    box.setAttribute("role", "status");
+    const spinner = document.createElement("div");
+    spinner.className = "spinner";
+    const text = document.createElement("div");
+    text.className = "loading-text";
+    text.textContent = this._loadingText;
+    box.appendChild(spinner);
+    box.appendChild(text);
+    this._loaderText = text;
+    // direkt hinter das iframe, also darüber gezeichnet
+    if (this._element && this._element.parentNode) {
+      this._element.parentNode.insertBefore(box, this._element.nextSibling);
+    }
+    this._loader = box;
+    this._syncLoader();
+  }
+
+  _syncLoader() {
+    const box = this._loader;
+    if (!box) return;
+    box.style.left = this._x + "px";
+    box.style.top = this._y + "px";
+    box.style.width = this._width + "px";
+    box.style.height = this._height + "px";
+    box.style.display = this._visible ? "flex" : "none";
+  }
+
+  _removeLoader() {
+    const box = this._loader;
+    if (!box) return;
+    this._loader = null;
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      if (box.parentNode) box.parentNode.removeChild(box);
+      return;
+    }
+    box.style.opacity = "0";
+    setTimeout(() => { if (box.parentNode) box.parentNode.removeChild(box); }, 300);
+  }
+
+  setLoadingText(text) {
+    this._loadingText = text === undefined || text === null ? "" : String(text);
+    if (this._loaderText) this._loaderText.textContent = this._loadingText;
+  }
+
+  _applyPosition() {
+    super._applyPosition();
+    this._syncLoader();
+  }
+
+  set x(value) {
+    super.x = value;
+  }
+
+  get x() {
+    return this._x;
+  }
+
+  set y(value) {
+    super.y = value;
+  }
+
+  get y() {
+    return this._y;
+  }
+
+  set visible(value) {
+    super.visible = value;
+    this._syncLoader();
+  }
+
+  get visible() {
+    return this._visible;
+  }
+
+  // Wartet, bis der Editor alle Startbefehle verarbeitet hat, und blendet
+  // die Szene dann weich ein. Zwei Runden: Die erste fängt Befehle aus der
+  // Warteschlange und aus onReady, die zweite die der ersten Bilder eines
+  // Timers. postMessage ist geordnet – kommt der Ping zurück, ist alles
+  // davor verarbeitet; zwei Bilder Pause, damit der Editor neu zeichnet.
+  _revealWhenSettled() {
+    if (this._revealed) return;
+    const zweiBilder = (fn) => requestAnimationFrame(() => requestAnimationFrame(fn));
+    const runde = (fn) => {
+      this.flushBatch();
+      let fertig = false;
+      const weiter = () => { if (!fertig) { fertig = true; zweiBilder(fn); } };
+      this.flush().then(weiter);
+      setTimeout(weiter, 1500); // Editor antwortet nicht auf Ping → trotzdem zeigen
+    };
+    runde(() => runde(() => this._reveal()));
+  }
+
+  _reveal() {
+    if (this._revealed) return;
+    this._revealed = true;
+    clearTimeout(this._revealTimeout);
+    this._removeLoader();
+    const el = this._element;
+    if (!el) return;
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.style.transition = reduce ? "none" : "opacity 0.25s ease-out";
+    el.style.opacity = "1";
   }
 
   _postMessage(payload) {
@@ -6362,6 +6521,7 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
   set width(value) {
     this._width = value;
     if (this._element) this._element.style.width = value + "px";
+    this._syncLoader();
   }
 
   get width() {
@@ -6371,6 +6531,7 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
   set height(value) {
     this._height = value;
     if (this._element) this._element.style.height = value + "px";
+    this._syncLoader();
   }
 
   get height() {
@@ -6531,6 +6692,9 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
   }
 
   remove() {
+    clearTimeout(this._revealTimeout);
+    if (this._loader && this._loader.parentNode) this._loader.parentNode.removeChild(this._loader);
+    this._loader = null;
     window.removeEventListener("message", this._boundMessageHandler);
     HtmlSvgEdu.Model3D._instances.delete(this);
     super.remove();
