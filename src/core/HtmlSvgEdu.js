@@ -6100,8 +6100,8 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
       setLoadingText: {
         name: "setLoadingText",
         info: {
-          en: "Text under the loading circle while the 3D scene loads. Default: One moment, please. Loading 3D models. An empty text shows only the circle",
-          de: "Text unter dem Ladekreis, solange die 3D-Szene lädt. Standard: Moment bitte. Lade 3D-Modelle. Leerer Text zeigt nur den Kreis",
+          en: "Text under the loading circle while the 3D scene loads. If the model is created at start, the start screen stays until the scene is ready. Default: One moment, please. Loading 3D models. An empty text shows only the circle",
+          de: "Text unter dem Ladekreis, solange die 3D-Szene lädt. Wird das Modell beim Start erzeugt, bleibt der Startbildschirm stehen, bis die Szene bereit ist. Standard: Moment bitte. Lade 3D-Modelle. Leerer Text zeigt nur den Kreis",
         },
         example: 'setLoadingText("Lade Getriebe")',
       },
@@ -6274,7 +6274,11 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     // stattdessen zeigt Model3D den Ladekreis des OAL (bis zum Einblenden).
     iframe.src = HtmlSvgEdu.Model3D._embedUrl(this._url);
     if (window.logEvalMessage) window.logEvalMessage("[Model3D] iframe src gesetzt: " + iframe.src, "log");
-    this._createLoader();
+    // Läuft der Start-Ladekreis des OAL noch (Modell gleich beim Start
+    // erzeugt), bleibt er stehen, bis die Szene eingeblendet ist – dann
+    // erscheint alles auf einmal. Sonst eigener Ladekreis über dem 3D-Fenster.
+    this._boardHold = HtmlSvgEdu.Model3D._holdBoardPreloader(this._loadingText);
+    if (!this._boardHold) this._createLoader();
 
     window.addEventListener("message", this._boundMessageHandler);
   }
@@ -6326,6 +6330,42 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     const base = hash === -1 ? url : url.slice(0, hash);
     const rest = hash === -1 ? "" : url.slice(hash);
     return base + (base.indexOf("?") === -1 ? "?" : "&") + "embed=oal" + rest;
+  }
+
+  // Hält den Start-Ladekreis der Bühne fest, solange Szenen laden. Gibt die
+  // Bühne zurück oder null, wenn der Ladekreis schon weg ist.
+  static _holdBoardPreloader(text) {
+    let b = null;
+    try { b = Board[INSTANCE_KEY]; } catch (e) { b = null; }
+    if (!b || typeof b.hidePreloader !== "function") return null;
+    const pre = b.preloader;
+    const box = pre && pre._container;
+    if (!box || box.classList.contains("hiding") || box.style.display === "none") return null;
+    if (!b._model3dHold) {
+      const original = b.hidePreloader.bind(b);
+      const hold = { count: 0, pending: false, original };
+      b._model3dHold = hold;
+      b.hidePreloader = function () {
+        if (hold.count > 0) { hold.pending = true; return; }
+        original();
+      };
+    }
+    b._model3dHold.count++;
+    if (typeof pre.setText === "function") pre.setText(text);
+    return b;
+  }
+
+  _releaseBoardPreloader() {
+    const b = this._boardHold;
+    if (!b) return;
+    this._boardHold = null;
+    const hold = b._model3dHold;
+    if (!hold) return;
+    hold.count = Math.max(0, hold.count - 1);
+    if (hold.count === 0 && hold.pending) {
+      hold.pending = false;
+      hold.original();
+    }
   }
 
   // Ladekreis wie beim Start des OAL (gleiche Form und Farben), mit Text.
@@ -6392,6 +6432,8 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
   setLoadingText(text) {
     this._loadingText = text === undefined || text === null ? "" : String(text);
     if (this._loaderText) this._loaderText.textContent = this._loadingText;
+    const pre = this._boardHold && this._boardHold.preloader;
+    if (pre && typeof pre.setText === "function") pre.setText(this._loadingText);
   }
 
   _applyPosition() {
@@ -6447,6 +6489,7 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     this._revealed = true;
     clearTimeout(this._revealTimeout);
     this._removeLoader();
+    this._releaseBoardPreloader();
     const el = this._element;
     if (!el) return;
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -6695,6 +6738,7 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     clearTimeout(this._revealTimeout);
     if (this._loader && this._loader.parentNode) this._loader.parentNode.removeChild(this._loader);
     this._loader = null;
+    this._releaseBoardPreloader();
     window.removeEventListener("message", this._boundMessageHandler);
     HtmlSvgEdu.Model3D._instances.delete(this);
     super.remove();
