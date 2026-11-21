@@ -96,6 +96,85 @@ let myLine = new Line(400, 200, 800, 500, 0x555555, 2);
 myLine.x = 0;
 myLine.y = 0;`,
         },
+        {
+          image: "spring.png",
+          title: "Spring",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Ceiling
+let ceiling = new Rectangle(240, 20, 0xcfd8dc);
+ceiling.setBorder(0x333333, 1);
+ceiling.x = 520;
+ceiling.y = 60;
+
+// Spring: start (x1, y1), end (x2, y2), coils, width, colour, line thickness
+let spring = new Spring(640, 80, 640, 380, 12, 44, 0x444444, 2);
+
+// Mass
+let mass = new Rectangle(120, 90, 0x2e86c1);
+mass.setBorder(0x333333, 1);
+mass.x = 580;
+mass.y = 380;
+
+// Oscillation: spring and mass move together
+let timer = new Timer();
+timer.onUpdate(oscillate);
+timer.start();
+
+function oscillate() {
+    let t = timer.getElapsedTime() / 1000;
+    let y = 380 + 90 * Math.sin(2 * Math.PI * 0.5 * t);
+    spring.setEnd(640, y);
+    mass.y = y;
+}`,
+        },
+        {
+          image: "arc.png",
+          title: "Arc",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Arc: radius, start angle, end angle, colour, line thickness
+// Angles in degrees: 0 = right, 90 = down (clockwise)
+let arc = new Arc(110, 180, 360, 0x444444, 3);
+arc.x = 200;
+arc.y = 300;
+
+// Rotation arrow
+let rotationArrow = new Arc(110, -60, 240, 0xc0392b, 4);
+rotationArrow.x = 490;
+rotationArrow.y = 300;
+rotationArrow.setArrowhead(true);
+
+// Pie slice
+let pie = new Arc(110, -90, 30, 0x333333, 1);
+pie.x = 780;
+pie.y = 300;
+pie.setFillColor(0xf5b041);
+
+// Ring segment
+let ring = new Arc(110, -90, 30, 0x333333, 1);
+ring.x = 1070;
+ring.y = 300;
+ring.setFillColor(0xaed6f1);
+ring.setInnerRadius(70);
+
+// Slider: end angle of pie slice and ring segment
+let sliderText = new Text("End angle in degrees", "Arial", 20, 0x444444);
+sliderText.x = 470;
+sliderText.y = 500;
+let slider = new ButtonSlider(-80, 270, 30, 1, 40, 300);
+slider.x = 480;
+slider.y = 540;
+slider.enableValueDisplay();
+slider.onChange(changeAngle);
+
+function changeAngle(e) {
+    pie.setEndAngle(e.value);
+    ring.setEndAngle(e.value);
+}`,
+        },
       ],
     },
     {
@@ -147,6 +226,48 @@ mySlider.enableValueDisplay()
 
 mySlider.x = 100;
 mySlider.y = 100;`,
+        },
+        {
+          image: "play-button.png",
+          title: "Play button (PlayButton)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// A wind turbine made of three pie slices that turns while the timer is running
+let tower = new Rectangle(16, 300, 0xcfd8dc);
+tower.setBorder(0x333333, 1);
+tower.x = 632;
+tower.y = 300;
+let rotor = new Group();
+rotor.x = 640;
+rotor.y = 300;
+for (let i = 0; i < 3; i++) {
+    let blade = new Arc(170, i * 120 - 10, i * 120 + 25, 0x333333, 1);
+    blade.setFillColor(0xaed6f1);
+    rotor.addChild(blade);
+}
+let hub = new Circle(16, 0x444444);
+hub.x = 640;
+hub.y = 300;
+
+let timer = new Timer();
+timer.onUpdate(turn);
+
+function turn() {
+    rotor.rotation = timer.getElapsedTime() / 10;
+}
+
+// Play/pause button: starts, pauses and resumes the timer
+let button = new PlayButton(timer, 130, 40);
+button.x = 575;
+button.y = 630;
+
+// Optional: react to the click (e.value is true while playing)
+button.onChange(clicked);
+
+function clicked(e) {
+    console.log("Playing: " + e.value);
+}`,
         },
         {
           image: "radiobutton.png",
@@ -266,6 +387,110 @@ let myRuler = new Ruler("right", [2, 4, 6], 50, 50, 0x444444, 1, 10, 21, 0x44444
 
 myRuler.x = 500;
 myRuler.y = 350;`,
+        },
+        {
+          image: "plot.png",
+          title: "Chart (Plot)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Chart: top left corner, width, height, xMin, xMax, yMin, yMax
+let chart = new Plot(120, 80, 760, 420, 0, 10, -2, 2);
+chart.setTicks(1, 0.5);
+chart.setGrid(true);
+chart.setAxisLabels("<i>t</i> in s", "<i>y</i> in cm");
+
+// Function: drawn over the whole range
+let amplitude = 1.5;
+let curve = chart.addFunction(t => amplitude * Math.sin(t), 0xc0392b, 3);
+
+// Moving point and measured curve with area
+let dot = chart.addPoint(0, 0);
+let measurement = chart.addCurve(0x2e86c1, 3);
+measurement.setFill(0x2e86c1, 0.15);
+
+// Slider for the amplitude
+let sliderText = new Text("Amplitude in cm", "Arial", 20, 0x444444);
+sliderText.x = 110;
+sliderText.y = 580;
+let slider = new ButtonSlider(0.5, 2, 1.5, 0.1, 40, 300);
+slider.x = 120;
+slider.y = 620;
+slider.enableValueDisplay();
+slider.onChange(changeAmplitude);
+
+function changeAmplitude(e) {
+    amplitude = e.value;
+    chart.update();
+    measurement.clear();
+}
+
+let timer = new Timer();
+timer.onUpdate(measure);
+timer.start();
+
+function measure() {
+    let t = (timer.getElapsedTime() / 1000) % 10;
+    let y = amplitude * Math.sin(t);
+    if (t < 0.05) measurement.clear();
+    dot.setPosition(t, y);
+    measurement.addPoint(t, y);
+}`,
+        },
+        {
+          image: "calc.png",
+          title: "Number formatting (Calc)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Calc: helper functions without new – for example Calc.format(number, digits, unit)
+// English animations get a decimal point, German ones a decimal comma.
+
+// Thermometer
+let tube = new Rectangle(40, 400, 0xffffff);
+tube.setBorder(0x333333, 2);
+tube.x = 200;
+tube.y = 100;
+let column = new Rectangle(28, 200, 0xc0392b);
+column.x = 206;
+column.y = 300;
+let bulb = new Circle(36, 0xc0392b);
+bulb.setBorder(0x333333, 2);
+bulb.x = 220;
+bulb.y = 530;
+
+let display = new Text("", "Arial", 36, 0x444444);
+display.x = 320;
+display.y = 260;
+let explanation = new Text("", "Arial", 22, 0x444444);
+explanation.x = 320;
+explanation.y = 340;
+
+// Slider for the temperature
+let sliderText = new Text("Temperature in °C", "Arial", 20, 0x444444);
+sliderText.x = 310;
+sliderText.y = 560;
+let slider = new ButtonSlider(-20, 100, 21.5, 0.5, 40, 400);
+slider.x = 320;
+slider.y = 600;
+slider.enableValueDisplay();
+slider.onChange(show);
+show({ value: 21.5 });
+
+function show(e) {
+    let temperature = e.value;
+    // map: convert -20 … 100 °C into a height of 10 … 390 pixels
+    let height = Calc.map(temperature, -20, 100, 10, 390);
+    column.setHeight(height);
+    column.y = 490 - height;
+    // mixColor: blend from blue (cold) to red (hot)
+    let colour = Calc.mixColor(0x2e86c1, 0xc0392b, Calc.map(temperature, -20, 100, 0, 1));
+    column.setFillColor(colour);
+    bulb.setFillColor(colour);
+    // format: number with decimal point and unit
+    display.setText(Calc.format(temperature, 1, "°C"));
+    explanation.setText("That is " + Calc.format(temperature + 273.15, 2, "K") + " or " + Calc.format(temperature * 1.8 + 32, 1, "°F") + ".");
+}`,
         },
         {
           image: "arrow.png",

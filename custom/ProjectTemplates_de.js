@@ -96,6 +96,85 @@ let myLine = new Line(400, 200, 800, 500, 0x555555, 2);
 myLine.x = 0;
 myLine.y = 0;`,
         },
+        {
+          image: "spring.png",
+          title: "Feder (Spring)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Aufhängung
+let decke = new Rectangle(240, 20, 0xcfd8dc);
+decke.setBorder(0x333333, 1);
+decke.x = 520;
+decke.y = 60;
+
+// Feder: Anfang (x1, y1), Ende (x2, y2), Windungen, Breite, Farbe, Linienstärke
+let feder = new Spring(640, 80, 640, 380, 12, 44, 0x444444, 2);
+
+// Masse
+let masse = new Rectangle(120, 90, 0x2e86c1);
+masse.setBorder(0x333333, 1);
+masse.x = 580;
+masse.y = 380;
+
+// Schwingung: Feder und Masse bewegen sich gemeinsam
+let timer = new Timer();
+timer.onUpdate(schwingen);
+timer.start();
+
+function schwingen() {
+    let t = timer.getElapsedTime() / 1000;
+    let y = 380 + 90 * Math.sin(2 * Math.PI * 0.5 * t);
+    feder.setEnd(640, y);
+    masse.y = y;
+}`,
+        },
+        {
+          image: "arc.png",
+          title: "Kreisbogen (Arc)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Kreisbogen: Radius, Startwinkel, Endwinkel, Farbe, Linienstärke
+// Winkel in Grad: 0 = rechts, 90 = unten (im Uhrzeigersinn)
+let bogen = new Arc(110, 180, 360, 0x444444, 3);
+bogen.x = 200;
+bogen.y = 300;
+
+// Drehpfeil
+let drehpfeil = new Arc(110, -60, 240, 0xc0392b, 4);
+drehpfeil.x = 490;
+drehpfeil.y = 300;
+drehpfeil.setArrowhead(true);
+
+// Tortenstück
+let torte = new Arc(110, -90, 30, 0x333333, 1);
+torte.x = 780;
+torte.y = 300;
+torte.setFillColor(0xf5b041);
+
+// Ringstück
+let ring = new Arc(110, -90, 30, 0x333333, 1);
+ring.x = 1070;
+ring.y = 300;
+ring.setFillColor(0xaed6f1);
+ring.setInnerRadius(70);
+
+// Regler: Endwinkel von Tortenstück und Ringstück
+let reglerText = new Text("Endwinkel in Grad", "Arial", 20, 0x444444);
+reglerText.x = 470;
+reglerText.y = 500;
+let regler = new ButtonSlider(-80, 270, 30, 1, 40, 300);
+regler.x = 480;
+regler.y = 540;
+regler.enableValueDisplay();
+regler.onChange(winkelAendern);
+
+function winkelAendern(e) {
+    torte.setEndAngle(e.value);
+    ring.setEndAngle(e.value);
+}`,
+        },
       ],
     },
     {
@@ -147,6 +226,48 @@ mySlider.enableValueDisplay()
 
 mySlider.x = 100;
 mySlider.y = 100;`,
+        },
+        {
+          image: "play-button.png",
+          title: "Start-/Pause-Knopf (PlayButton)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Ein Windrad aus drei Tortenstücken, das sich dreht, solange der Timer läuft
+let mast = new Rectangle(16, 300, 0xcfd8dc);
+mast.setBorder(0x333333, 1);
+mast.x = 632;
+mast.y = 300;
+let rotor = new Group();
+rotor.x = 640;
+rotor.y = 300;
+for (let i = 0; i < 3; i++) {
+    let fluegel = new Arc(170, i * 120 - 10, i * 120 + 25, 0x333333, 1);
+    fluegel.setFillColor(0xaed6f1);
+    rotor.addChild(fluegel);
+}
+let nabe = new Circle(16, 0x444444);
+nabe.x = 640;
+nabe.y = 300;
+
+let timer = new Timer();
+timer.onUpdate(drehen);
+
+function drehen() {
+    rotor.rotation = timer.getElapsedTime() / 10;
+}
+
+// Start-/Pause-Knopf: startet, pausiert und setzt den Timer fort
+let knopf = new PlayButton(timer, 130, 40);
+knopf.x = 575;
+knopf.y = 630;
+
+// Optional: auf den Klick reagieren (e.value ist true, wenn es läuft)
+knopf.onChange(geklickt);
+
+function geklickt(e) {
+    console.log("Läuft: " + e.value);
+}`,
         },
         {
           image: "radiobutton.png",
@@ -266,6 +387,112 @@ let myRuler = new Ruler("right", [2, 4, 6], 50, 50, 0x444444, 1, 10, 21, 0x44444
 
 myRuler.x = 500;
 myRuler.y = 350;`,
+        },
+        {
+          image: "plot.png",
+          title: "Diagramm (Plot)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Diagramm: linke obere Ecke, Breite, Höhe, xMin, xMax, yMin, yMax
+let diagramm = new Plot(120, 80, 760, 420, 0, 10, -2, 2);
+diagramm.setTicks(1, 0.5);
+diagramm.setGrid(true);
+diagramm.setAxisLabels("<i>t</i> in s", "<i>y</i> in cm");
+
+// Funktion: wird über den ganzen Bereich gezeichnet
+let amplitude = 1.5;
+let kurve = diagramm.addFunction(t => amplitude * Math.sin(t), 0xc0392b, 3);
+
+// Wandernder Punkt und Messkurve mit Fläche
+let punkt = diagramm.addPoint(0, 0);
+let messung = diagramm.addCurve(0x2e86c1, 3);
+messung.setFill(0x2e86c1, 0.15);
+
+// Regler für die Amplitude
+let reglerText = new Text("Amplitude in cm", "Arial", 20, 0x444444);
+reglerText.x = 110;
+reglerText.y = 580;
+let regler = new ButtonSlider(0.5, 2, 1.5, 0.1, 40, 300);
+regler.x = 120;
+regler.y = 620;
+regler.enableValueDisplay();
+regler.setDecimalSeparator(",");
+regler.onChange(amplitudeAendern);
+
+function amplitudeAendern(e) {
+    amplitude = e.value;
+    diagramm.update();
+    messung.clear();
+}
+
+let timer = new Timer();
+timer.onUpdate(messen);
+timer.start();
+
+function messen() {
+    let t = (timer.getElapsedTime() / 1000) % 10;
+    let y = amplitude * Math.sin(t);
+    if (t < 0.05) messung.clear();
+    punkt.setPosition(t, y);
+    messung.addPoint(t, y);
+}`,
+        },
+        {
+          image: "calc.png",
+          title: "Zahlen formatieren (Calc)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Calc: Hilfsfunktionen ohne new – zum Beispiel Calc.format(Zahl, Stellen, Einheit)
+// Deutsche Animationen erhalten ein Dezimalkomma, englische einen Dezimalpunkt.
+
+// Thermometer
+let roehre = new Rectangle(40, 400, 0xffffff);
+roehre.setBorder(0x333333, 2);
+roehre.x = 200;
+roehre.y = 100;
+let saeule = new Rectangle(28, 200, 0xc0392b);
+saeule.x = 206;
+saeule.y = 300;
+let kugel = new Circle(36, 0xc0392b);
+kugel.setBorder(0x333333, 2);
+kugel.x = 220;
+kugel.y = 530;
+
+let anzeige = new Text("", "Arial", 36, 0x444444);
+anzeige.x = 320;
+anzeige.y = 260;
+let erklaerung = new Text("", "Arial", 22, 0x444444);
+erklaerung.x = 320;
+erklaerung.y = 340;
+
+// Regler für die Temperatur
+let reglerText = new Text("Temperatur in °C", "Arial", 20, 0x444444);
+reglerText.x = 310;
+reglerText.y = 560;
+let regler = new ButtonSlider(-20, 100, 21.5, 0.5, 40, 400);
+regler.x = 320;
+regler.y = 600;
+regler.enableValueDisplay();
+regler.setDecimalSeparator(",");
+regler.onChange(anzeigen);
+anzeigen({ value: 21.5 });
+
+function anzeigen(e) {
+    let temperatur = e.value;
+    // map: von -20 … 100 °C auf eine Höhe von 10 … 390 Pixeln umrechnen
+    let hoehe = Calc.map(temperatur, -20, 100, 10, 390);
+    saeule.setHeight(hoehe);
+    saeule.y = 490 - hoehe;
+    // mixColor: von Blau (kalt) nach Rot (heiß) mischen
+    let farbe = Calc.mixColor(0x2e86c1, 0xc0392b, Calc.map(temperatur, -20, 100, 0, 1));
+    saeule.setFillColor(farbe);
+    kugel.setFillColor(farbe);
+    // format: Zahl mit Komma und Einheit
+    anzeige.setText(Calc.format(temperatur, 1, "°C"));
+    erklaerung.setText("Das sind " + Calc.format(temperatur + 273.15, 2, "K") + " und " + Calc.format(temperatur * 1.8 + 32, 1, "°F") + ".");
+}`,
         },
         {
           image: "arrow.png",

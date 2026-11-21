@@ -783,6 +783,13 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
       },
     },
     methods: {
+      setFillColor: {
+        example: "setFillColor(0xff0000)",
+        info: {
+          en: "Sets the fill colour of the rectangle",
+          de: "Setzt die Füllfarbe des Rechtecks",
+        },
+      },
       setBorder: {
         example: "setBorder(0xff0000, 2)",
         info: {
@@ -1148,6 +1155,15 @@ PixiJSEdu.Rectangle = class Rectangle extends PixiJSElement {
       bottomLeft: bottomLeft,
     };
     this._draw();
+  }
+
+  // 3.27.0: wie Circle.setFillColor (fehlte im PixiJS-Renderer)
+  setFillColor(color) {
+    this._color = color;
+    this._gradientStops = null;
+    this._gradientType = null;
+    this._draw();
+    return this;
   }
 
   setWidth(width) {
@@ -10072,808 +10088,10 @@ PixiJSEdu.Timer = class Timer extends PIXI.Container {
     super.destroy();
   }
 };
-PixiJSEdu.ParticleSystem = class ParticleSystem extends PIXI.Container {
-  static serializationMap = {
-    description: {
-      de: "Partikelsystem für Simulationen",
-      en: "Particle system for simulations",
-    },
-    weblink: {
-      de: "https://www.educational-animation.org",
-      en: "https://www.educational-animation.org",
-    },
-    example:
-      "let myParticleSystem = new ParticleSystem({maxParticles: 100, gravity: 0.5});",
-    constructor: {
-      options: {
-        name: "options",
-        info: {
-          en: "Configuration object for particle system (maxParticles, gravity, friction, etc.)",
-          de: "Konfigurationsobjekt für Partikelsystem (maxParticles, gravity, friction, etc.)",
-        },
-      },
-    },
-    setter: {
-      x: {
-        name: "x",
-        info: {
-          en: "Horizontal position of the element in pixels",
-          de: "Horizontale Position des Elements in Pixeln",
-        },
-        example: "x = 100",
-      },
-      y: {
-        name: "y",
-        info: {
-          en: "Vertical position of the element in pixels",
-          de: "Vertikale Position des Elements in Pixeln",
-        },
-        example: "y = 200",
-      },
-      visible: {
-        name: "visible",
-        info: {
-          en: "Visibility of the element (true = visible, false = hidden)",
-          de: "Sichtbarkeit des Elements (true = sichtbar, false = unsichtbar)",
-        },
-        example: "visible = false",
-      },
-      debug: {
-        name: "debug",
-        info: {
-          en: "Enable/disable debug visualization",
-          de: "Debug-Visualisierung aktivieren/deaktivieren",
-        },
-        example: "debug = true",
-      },
-    },
-    methods: {
-      setMainContainer: {
-        example: "setMainContainer(containerShape)",
-        info: {
-          en: "Sets the main container that defines movement boundaries with collision",
-          de: "Setzt den Haupt-Container, der die Bewegungsgrenzen mit Kollision definiert",
-        },
-      },
-      setSpawnContainer: {
-        example:
-          "setSpawnContainer(containerShape, {rate: 10, initialVelocity: {x:0, y:0}})",
-        info: {
-          en: "Sets the spawn area for particle creation with spawn configuration",
-          de: "Setzt den Spawn-Bereich für Partikelerzeugung mit Spawn-Konfiguration",
-        },
-      },
-      setDeathContainer: {
-        example: "setDeathContainer(containerShape)",
-        info: {
-          en: "Sets the death zone where particles are destroyed",
-          de: "Setzt die Todeszone, in der Partikel zerstört werden",
-        },
-      },
-      addPropertyContainer: {
-        example:
-          'addPropertyContainer(containerShape, {vx: (v) => v*2}, {onEnter: (p) => console.log("entered")})',
-        info: {
-          en: "Adds a property container that modifies particle properties and triggers callbacks",
-          de: "Fügt einen Eigenschafts-Container hinzu, der Partikeleigenschaften verändert und Callbacks auslöst",
-        },
-      },
-      createParticle: {
-        example:
-          "createParticle(100, 200, {radius: 10, color: 0xFF0000, vx: 2, vy: -1})",
-        info: {
-          en: "Manually creates a single particle at specified position with options",
-          de: "Erstellt manuell ein einzelnes Partikel an angegebener Position mit Optionen",
-        },
-      },
-      setGravity: {
-        example: "setGravity(0, 0.5)",
-        info: {
-          en: "Sets gravity force affecting all particles (x and y components)",
-          de: "Setzt die Gravitationskraft, die alle Partikel beeinflusst (x- und y-Komponenten)",
-        },
-      },
-      setFriction: {
-        example: "setFriction(0.99)",
-        info: {
-          en: "Sets global friction coefficient (0-1, where 1 = no friction)",
-          de: "Setzt den globalen Reibungskoeffizienten (0-1, wobei 1 = keine Reibung)",
-        },
-      },
-      setRestitution: {
-        example: "setRestitution(0.8)",
-        info: {
-          en: "Sets bounce coefficient for collisions (0 = no bounce, 1 = perfect bounce)",
-          de: "Setzt den Abprallkoeffizienten für Kollisionen (0 = kein Abprall, 1 = perfekter Abprall)",
-        },
-      },
-      clearParticles: {
-        example: "clearParticles()",
-        info: {
-          en: "Removes all active particles from the system",
-          de: "Entfernt alle aktiven Partikel aus dem System",
-        },
-      },
-      pause: {
-        example: "pause()",
-        info: {
-          en: "Pauses the particle simulation",
-          de: "Pausiert die Partikelsimulation",
-        },
-      },
-      resume: {
-        example: "resume()",
-        info: {
-          en: "Resumes the particle simulation",
-          de: "Setzt die Partikelsimulation fort",
-        },
-      },
-    },
-  };
-  constructor(options = {}) {
-    super();
-    this.config = {
-      maxParticles: options.maxParticles || 1000,
-      gravity: options.gravity || { x: 0, y: 0.1 },
-      friction: options.friction || 0.99,
-      restitution: options.restitution || 0.8,
-      particleRadius: options.particleRadius || 5,
-      particleColor: options.particleColor || 0xffffff,
-      useSpatialHash: options.useSpatialHash !== false,
-      cellSize: options.cellSize || 50,
-      debug: options.debug || false,
-    };
-    this.containers = new Map();
-    this.mainContainer = null;
-    this.spawnContainer = null;
-    this.deathContainer = null;
-    this.propertyContainers = [];
-    this.particles = [];
-    this.particlePool = [];
-    this.activeParticles = 0;
-    this.paused = false;
-    this.spatialHash = new SpatialHash(this.config.cellSize);
-    this.quadTree = null;
-    this.particleContainer = new PIXI.Container();
-    this.addChild(this.particleContainer);
-    this.debugGraphics = null;
-    if (this.config.debug) {
-      this.debugGraphics = new PIXI.Graphics();
-      this.addChild(this.debugGraphics);
-    }
-    this.textureCache = new Map();
-    this._texturesReady = false;
-    this._lastTime = performance.now();
-    if (typeof app !== "undefined" && app.ticker) {
-      app.ticker.add(this.update, this);
-    } else {
-      this._useRAF = true;
-      this._rafUpdate = () => {
-        this.update();
-        if (this._useRAF) {
-          requestAnimationFrame(this._rafUpdate);
-        }
-      };
-      requestAnimationFrame(this._rafUpdate);
-    }
-  }
-  _ensureTexturesReady() {
-    if (this._texturesReady) return;
-    if (typeof app === "undefined" || !app.renderer) {
-      return;
-    }
-    this._prepareTextures();
-    this._texturesReady = true;
-  }
-  _prepareTextures() {
-    const radii = [3, 5, 8, 10, 15, 20, 30];
-    radii.forEach((radius) => {
-      this._createCircleTexture(radius);
-    });
-  }
-  _createCircleTexture(radius, color = 0xffffff) {
-    const key = radius + "_" + color;
-    if (this.textureCache.has(key)) {
-      return this.textureCache.get(key);
-    }
-    if (typeof app === "undefined" || !app.renderer) {
-      return null;
-    }
-    const graphics = new PIXI.Graphics();
-    graphics.beginFill(color);
-    graphics.drawCircle(0, 0, radius);
-    graphics.endFill();
-    const texture = app.renderer.generateTexture(graphics);
-    graphics.destroy();
-    this.textureCache.set(key, texture);
-    return texture;
-  }
-  setMainContainer(container) {
-    this.mainContainer = {
-      shape: container,
-      type: "main",
-      vertices: this._extractVertices(container),
-      bounds: this._calculateBounds(container),
-    };
-    this.containers.set("main", this.mainContainer);
-  }
-  setSpawnContainer(container, spawnConfig = {}) {
-    this.spawnContainer = {
-      shape: container,
-      type: "spawn",
-      vertices: this._extractVertices(container),
-      bounds: this._calculateBounds(container),
-      config: {
-        rate: spawnConfig.rate || 10,
-        burst: spawnConfig.burst || false,
-        initialVelocity: spawnConfig.initialVelocity || { x: 0, y: 0 },
-        velocityVariation: spawnConfig.velocityVariation || { x: 2, y: 2 },
-        properties: spawnConfig.properties || {},
-      },
-    };
-    this.containers.set("spawn", this.spawnContainer);
-  }
-  setDeathContainer(container) {
-    this.deathContainer = {
-      shape: container,
-      type: "death",
-      vertices: this._extractVertices(container),
-      bounds: this._calculateBounds(container),
-    };
-    this.containers.set("death", this.deathContainer);
-  }
-  addPropertyContainer(container, properties = {}, callbacks = {}) {
-    const propertyContainer = {
-      shape: container,
-      type: "property",
-      vertices: this._extractVertices(container),
-      bounds: this._calculateBounds(container),
-      properties: properties,
-      callbacks: callbacks,
-      affectedParticles: new Set(),
-    };
-    this.propertyContainers.push(propertyContainer);
-    this.containers.set(
-      "property_" + this.propertyContainers.length,
-      propertyContainer,
-    );
-    return propertyContainer;
-  }
-  _extractVertices(container) {
-    const vertices = [];
-    if (container.geometry) {
-      const points = container.geometry.points;
-      for (let i = 0; i < points.length; i += 2) {
-        vertices.push({
-          x: points[i] + container.x,
-          y: points[i + 1] + container.y,
-        });
-      }
-    } else if (container.points) {
-      for (let i = 0; i < container.points.length; i += 2) {
-        vertices.push({
-          x: container.points[i],
-          y: container.points[i + 1],
-        });
-      }
-    }
-    return vertices;
-  }
-  _calculateBounds(container) {
-    const vertices = this._extractVertices(container);
-    let minX = Infinity,
-      minY = Infinity;
-    let maxX = -Infinity,
-      maxY = -Infinity;
-    vertices.forEach((v) => {
-      minX = Math.min(minX, v.x);
-      minY = Math.min(minY, v.y);
-      maxX = Math.max(maxX, v.x);
-      maxY = Math.max(maxY, v.y);
-    });
-    return { minX, minY, maxX, maxY };
-  }
-  createParticle(x, y, options = {}) {
-    this._ensureTexturesReady();
-    let particle;
-    if (this.particlePool.length > 0) {
-      particle = this.particlePool.pop();
-      particle.reset(x, y);
-      particle.sprite.visible = true;
-    } else {
-      particle = new Particle(
-        x,
-        y,
-        options.radius || this.config.particleRadius,
-      );
-      const texture = this._createCircleTexture(
-        particle.radius,
-        options.color || this.config.particleColor,
-      );
-      if (texture) {
-        particle.sprite = new PIXI.Sprite(texture);
-        particle.sprite.anchor.set(0.5);
-      } else {
-        particle.sprite = new PIXI.Graphics();
-        particle.sprite.beginFill(options.color || this.config.particleColor);
-        particle.sprite.drawCircle(0, 0, particle.radius);
-        particle.sprite.endFill();
-      }
-      this.particleContainer.addChild(particle.sprite);
-    }
-    particle.vx = options.vx || 0;
-    particle.vy = options.vy || 0;
-    particle.mass = options.mass || 1;
-    particle.restitution = options.restitution || this.config.restitution;
-    this.particles.push(particle);
-    this.activeParticles++;
-    return particle;
-  }
-  update(ticker) {
-    if (this.paused) return;
-    this._ensureTexturesReady();
-    const currentTime = performance.now();
-    const deltaTime = Math.min((currentTime - this._lastTime) / 1000, 0.1);
-    this._lastTime = currentTime;
-    this._spawnParticles(deltaTime);
-    if (this.config.useSpatialHash) {
-      this.spatialHash.clear();
-      this.particles.forEach((p) => {
-        if (p.active) this.spatialHash.insert(p);
-      });
-    }
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const particle = this.particles[i];
-      if (!particle.active) continue;
-      this._updateParticlePhysics(particle, deltaTime);
-      this._checkContainerInteractions(particle);
-      this._checkCollisions(particle);
-      if (
-        this.deathContainer &&
-        this._isInContainer(particle, this.deathContainer)
-      ) {
-        this._destroyParticle(particle, i);
-      }
-      particle.sprite.x = particle.x;
-      particle.sprite.y = particle.y;
-    }
-    if (this.config.debug) {
-      this._drawDebug();
-    }
-  }
-  _spawnParticles(deltaTime) {
-    if (
-      !this.spawnContainer ||
-      this.activeParticles >= this.config.maxParticles
-    )
-      return;
-    const config = this.spawnContainer.config;
-    const particlesToSpawn = Math.floor(config.rate * deltaTime);
-    for (let i = 0; i < particlesToSpawn; i++) {
-      const pos = this._getRandomPositionInContainer(this.spawnContainer);
-      if (pos) {
-        const vx =
-          config.initialVelocity.x +
-          (Math.random() - 0.5) * config.velocityVariation.x;
-        const vy =
-          config.initialVelocity.y +
-          (Math.random() - 0.5) * config.velocityVariation.y;
-        this.createParticle(pos.x, pos.y, {
-          vx: vx,
-          vy: vy,
-          ...config.properties,
-        });
-      }
-    }
-  }
-  _updateParticlePhysics(particle, deltaTime) {
-    particle.vx += this.config.gravity.x * deltaTime;
-    particle.vy += this.config.gravity.y * deltaTime;
-    particle.vx *= this.config.friction;
-    particle.vy *= this.config.friction;
-    particle.x += particle.vx * deltaTime * 60;
-    particle.y += particle.vy * deltaTime * 60;
-  }
-  _checkContainerInteractions(particle) {
-    if (this.mainContainer) {
-      if (!this._isInContainer(particle, this.mainContainer)) {
-        this._handleContainerCollision(particle, this.mainContainer);
-      }
-    }
-    this.propertyContainers.forEach((container) => {
-      const isInside = this._isInContainer(particle, container);
-      const wasInside = container.affectedParticles.has(particle);
-      if (isInside && !wasInside) {
-        container.affectedParticles.add(particle);
-        this._applyContainerProperties(particle, container);
-        if (container.callbacks.onEnter) {
-          container.callbacks.onEnter(particle, container);
-        }
-      } else if (!isInside && wasInside) {
-        container.affectedParticles.delete(particle);
-        if (container.callbacks.onExit) {
-          container.callbacks.onExit(particle, container);
-        }
-      } else if (isInside && wasInside) {
-        if (container.callbacks.onStay) {
-          container.callbacks.onStay(particle, container);
-        }
-      }
-    });
-  }
-  _checkCollisions(particle) {
-    let candidates;
-    if (this.config.useSpatialHash) {
-      candidates = this.spatialHash.getNearby(particle);
-    } else {
-      candidates = this.particles;
-    }
-    candidates.forEach((other) => {
-      if (other === particle || !other.active) return;
-      const dx = other.x - particle.x;
-      const dy = other.y - particle.y;
-      const distSq = dx * dx + dy * dy;
-      const minDist = particle.radius + other.radius;
-      if (distSq < minDist * minDist) {
-        this._resolveParticleCollision(particle, other, Math.sqrt(distSq));
-      }
-    });
-  }
-  _resolveParticleCollision(p1, p2, distance) {
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const nx = dx / distance;
-    const ny = dy / distance;
-    const dvx = p2.vx - p1.vx;
-    const dvy = p2.vy - p1.vy;
-    const dvn = dvx * nx + dvy * ny;
-    if (dvn > 0) return;
-    const restitution = (p1.restitution + p2.restitution) / 2;
-    const impulse = (2 * dvn) / (p1.mass + p2.mass);
-    p1.vx -= impulse * p2.mass * nx * restitution;
-    p1.vy -= impulse * p2.mass * ny * restitution;
-    p2.vx += impulse * p1.mass * nx * restitution;
-    p2.vy += impulse * p1.mass * ny * restitution;
-    const overlap = p1.radius + p2.radius - distance;
-    const separationX = nx * overlap * 0.5;
-    const separationY = ny * overlap * 0.5;
-    p1.x -= separationX;
-    p1.y -= separationY;
-    p2.x += separationX;
-    p2.y += separationY;
-  }
-  _isInContainer(particle, container) {
-    return this._pointInPolygon(particle.x, particle.y, container.vertices);
-  }
-  _pointInPolygon(x, y, vertices) {
-    let inside = false;
-    for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-      const xi = vertices[i].x,
-        yi = vertices[i].y;
-      const xj = vertices[j].x,
-        yj = vertices[j].y;
-      const intersect =
-        yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-      if (intersect) inside = !inside;
-    }
-    return inside;
-  }
-  _handleContainerCollision(particle, container) {
-    let minDist = Infinity;
-    let closestEdge = null;
-    let closestPoint = null;
-    const vertices = container.vertices;
-    for (let i = 0; i < vertices.length; i++) {
-      const v1 = vertices[i];
-      const v2 = vertices[(i + 1) % vertices.length];
-      const point = this._closestPointOnSegment(particle.x, particle.y, v1, v2);
-      const dist = Math.sqrt(
-        (point.x - particle.x) ** 2 + (point.y - particle.y) ** 2,
-      );
-      if (dist < minDist) {
-        minDist = dist;
-        closestEdge = { v1, v2 };
-        closestPoint = point;
-      }
-    }
-    if (closestEdge && minDist < particle.radius) {
-      const edge = {
-        x: closestEdge.v2.x - closestEdge.v1.x,
-        y: closestEdge.v2.y - closestEdge.v1.y,
-      };
-      const edgeLength = Math.sqrt(edge.x ** 2 + edge.y ** 2);
-      edge.x /= edgeLength;
-      edge.y /= edgeLength;
-      const normal = { x: -edge.y, y: edge.x };
-      const center = this._getPolygonCenter(vertices);
-      const toCenter = {
-        x: center.x - closestPoint.x,
-        y: center.y - closestPoint.y,
-      };
-      if (normal.x * toCenter.x + normal.y * toCenter.y < 0) {
-        normal.x *= -1;
-        normal.y *= -1;
-      }
-      const dot = particle.vx * normal.x + particle.vy * normal.y;
-      particle.vx -= 2 * dot * normal.x;
-      particle.vy -= 2 * dot * normal.y;
-      particle.vx *= particle.restitution;
-      particle.vy *= particle.restitution;
-      const penetration = particle.radius - minDist;
-      particle.x += normal.x * penetration;
-      particle.y += normal.y * penetration;
-    }
-  }
-  _closestPointOnSegment(px, py, v1, v2) {
-    const dx = v2.x - v1.x;
-    const dy = v2.y - v1.y;
-    if (dx === 0 && dy === 0) {
-      return { x: v1.x, y: v1.y };
-    }
-    const t = Math.max(
-      0,
-      Math.min(1, ((px - v1.x) * dx + (py - v1.y) * dy) / (dx * dx + dy * dy)),
-    );
-    return {
-      x: v1.x + t * dx,
-      y: v1.y + t * dy,
-    };
-  }
-  _getPolygonCenter(vertices) {
-    let x = 0,
-      y = 0;
-    vertices.forEach((v) => {
-      x += v.x;
-      y += v.y;
-    });
-    return { x: x / vertices.length, y: y / vertices.length };
-  }
-  _applyContainerProperties(particle, container) {
-    Object.entries(container.properties).forEach(([key, value]) => {
-      if (typeof value === "function") {
-        particle[key] = value(particle[key], particle);
-      } else {
-        particle[key] = value;
-      }
-    });
-  }
-  _getRandomPositionInContainer(container) {
-    const bounds = container.bounds;
-    let attempts = 0;
-    while (attempts < 100) {
-      const x = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
-      const y = bounds.minY + Math.random() * (bounds.maxY - bounds.minY);
-      if (this._pointInPolygon(x, y, container.vertices)) {
-        return { x, y };
-      }
-      attempts++;
-    }
-    return null;
-  }
-  _destroyParticle(particle, index) {
-    particle.active = false;
-    particle.sprite.visible = false;
-    this.propertyContainers.forEach((container) => {
-      container.affectedParticles.delete(particle);
-    });
-    this.particles.splice(index, 1);
-    this.activeParticles--;
-    this.particlePool.push(particle);
-  }
-  _drawDebug() {
-    if (!this.debugGraphics) return;
-    this.debugGraphics.clear();
-    this.containers.forEach((container, name) => {
-      this.debugGraphics.lineStyle(
-        2,
-        this._getContainerColor(container.type),
-        0.5,
-      );
-      if (container.vertices.length > 0) {
-        this.debugGraphics.moveTo(
-          container.vertices[0].x,
-          container.vertices[0].y,
-        );
-        container.vertices.forEach((v, i) => {
-          if (i > 0) this.debugGraphics.lineTo(v.x, v.y);
-        });
-        this.debugGraphics.closePath();
-      }
-    });
-    if (this.config.useSpatialHash) {
-      this.debugGraphics.lineStyle(1, 0x333333, 0.2);
-      this.spatialHash.drawGrid(this.debugGraphics);
-    }
-  }
-  _getContainerColor(type) {
-    switch (type) {
-      case "main":
-        return 0x0000ff;
-      case "spawn":
-        return 0x00ff00;
-      case "death":
-        return 0xff0000;
-      case "property":
-        return 0xffff00;
-      default:
-        return 0xffffff;
-    }
-  }
-  set debug(value) {
-    this.config.debug = Boolean(value);
-    if (this.config.debug && !this.debugGraphics) {
-      this.debugGraphics = new PIXI.Graphics();
-      this.addChild(this.debugGraphics);
-    } else if (!this.config.debug && this.debugGraphics) {
-      this.debugGraphics.visible = false;
-    } else if (this.debugGraphics) {
-      this.debugGraphics.visible = this.config.debug;
-    }
-  }
-  get debug() {
-    return this.config.debug;
-  }
-  setGravity(x, y) {
-    this.config.gravity.x = x;
-    this.config.gravity.y = y;
-  }
-  setFriction(value) {
-    this.config.friction = Math.max(0, Math.min(1, value));
-  }
-  setRestitution(value) {
-    this.config.restitution = Math.max(0, Math.min(1, value));
-  }
-  clearParticles() {
-    this.particles.forEach((particle) => {
-      if (particle.sprite) {
-        particle.sprite.visible = false;
-      }
-      particle.active = false;
-      this.particlePool.push(particle);
-    });
-    this.particles = [];
-    this.activeParticles = 0;
-    this.propertyContainers.forEach((container) => {
-      container.affectedParticles.clear();
-    });
-  }
-  pause() {
-    this.paused = true;
-  }
-  resume() {
-    this.paused = false;
-    this._lastTime = performance.now();
-  }
-  getSerializableMethods() {
-    const methods = {};
-    if (this.config.gravity.x !== 0 || this.config.gravity.y !== 0.1) {
-      methods.setGravity =
-        "setGravity(" +
-        this.config.gravity.x +
-        ", " +
-        this.config.gravity.y +
-        ")";
-    }
-    if (this.config.friction !== 0.99) {
-      methods.setFriction = "setFriction(" + this.config.friction + ")";
-    }
-    if (this.config.restitution !== 0.8) {
-      methods.setRestitution =
-        "setRestitution(" + this.config.restitution + ")";
-    }
-    if (this.config.debug) {
-      methods.debug = "debug = true";
-    }
-    if (this.mainContainer) {
-      methods.mainContainer = "setMainContainer()";
-    }
-    if (this.spawnContainer) {
-      methods.spawnContainer =
-        "setSpawnContainer(, " +
-        JSON.stringify(this.spawnContainer.config) +
-        ")";
-    }
-    if (this.deathContainer) {
-      methods.deathContainer = "setDeathContainer()";
-    }
-    if (this.propertyContainers.length > 0) {
-      methods.propertyContainers = "propertyContainers";
-    }
-    return methods;
-  }
-  destroy() {
-    if (typeof app !== "undefined" && app.ticker) {
-      app.ticker.remove(this.update, this);
-    } else if (this._useRAF) {
-      this._useRAF = false;
-    }
-    this.particles.forEach((p) => {
-      if (p.sprite) p.sprite.destroy();
-    });
-    this.textureCache.forEach((texture) => texture.destroy());
-    if (this.debugGraphics) {
-      this.debugGraphics.destroy();
-    }
-    super.destroy();
-  }
-};
-class Particle {
-  constructor(x, y, radius) {
-    this.x = x;
-    this.y = y;
-    this.vx = 0;
-    this.vy = 0;
-    this.radius = radius;
-    this.mass = 1;
-    this.restitution = 0.8;
-    this.active = true;
-    this.sprite = null;
-    this.properties = {};
-  }
-  reset(x, y) {
-    this.x = x;
-    this.y = y;
-    this.vx = 0;
-    this.vy = 0;
-    this.active = true;
-    this.sprite.visible = true;
-    this.properties = {};
-  }
-}
-class SpatialHash {
-  constructor(cellSize) {
-    this.cellSize = cellSize;
-    this.grid = new Map();
-  }
-  clear() {
-    this.grid.clear();
-  }
-  hash(x, y) {
-    const cellX = Math.floor(x / this.cellSize);
-    const cellY = Math.floor(y / this.cellSize);
-    return cellX + "," + cellY;
-  }
-  insert(particle) {
-    const key = this.hash(particle.x, particle.y);
-    if (!this.grid.has(key)) {
-      this.grid.set(key, []);
-    }
-    this.grid.get(key).push(particle);
-  }
-  getNearby(particle) {
-    const nearby = [];
-    const cellX = Math.floor(particle.x / this.cellSize);
-    const cellY = Math.floor(particle.y / this.cellSize);
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
-        const key = cellX + dx + "," + (cellY + dy);
-        const cell = this.grid.get(key);
-        if (cell) {
-          nearby.push(...cell);
-        }
-      }
-    }
-    return nearby;
-  }
-  drawGrid(graphics) {
-    this.grid.forEach((particles, key) => {
-      const [cellX, cellY] = key.split(",").map(Number);
-      graphics.drawRect(
-        cellX * this.cellSize,
-        cellY * this.cellSize,
-        this.cellSize,
-        this.cellSize,
-      );
-    });
-  }
-}
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = { ParticleSystem, Particle, SpatialHash };
-}
 // ==========================================================================
 // Particles – High-performance renderer for large numbers of particles
 //
-// Unlike Circle or ParticleSystem, this class stores every particle as a
+// Unlike Circle, this class stores every particle as a
 // lightweight PIXI.Sprite that shares a single pre-rendered texture.
 // All sprites are batched into one draw call by the PixiJS renderer,
 // giving an order-of-magnitude speed-up over individual Circle objects.
@@ -11435,5 +10653,1539 @@ PixiJSEdu.SimplePNG = class SimplePNG extends PIXI.Container {
       this.sprite.destroy();
     }
     super.destroy();
+  }
+};
+
+// ============================================================================
+// Plot – Diagramm mit Wertebereich, Achsen, Strichen, Gitter und Kurven (3.27.0)
+// Gleiche Schnittstelle wie SvgJSEdu.Plot.
+// ============================================================================
+
+PixiJSEdu.Plot = class Plot extends PixiJSElement {
+  static serializationMap = {
+    description: {
+      de: "Diagramm mit Wertebereich: zeichnet Achsen mit Pfeilen, Striche mit Zahlen, Gitter, Funktionen, Messkurven und wandernde Punkte. Die Kurven werden in Werten angegeben, nicht in Pixeln",
+      en: "Chart with a value range: draws axes with arrows, ticks with numbers, a grid, functions, measured curves and moving points. Curves are given in values, not in pixels",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example: "let myPlot = new Plot(100, 100, 600, 400, 0, 10, -5, 5);",
+    constructor: {
+      x: {
+        name: "x",
+        info: {
+          en: "X coordinate of the top left corner of the chart area in pixels",
+          de: "X-Koordinate der linken oberen Ecke der Diagrammfläche in Pixeln",
+        },
+      },
+      y: {
+        name: "y",
+        info: {
+          en: "Y coordinate of the top left corner of the chart area in pixels",
+          de: "Y-Koordinate der linken oberen Ecke der Diagrammfläche in Pixeln",
+        },
+      },
+      width: {
+        name: "width",
+        info: {
+          en: "Width of the chart area in pixels (the arrow and the axis title are drawn to the right of it)",
+          de: "Breite der Diagrammfläche in Pixeln (Pfeil und Achsentitel stehen rechts daneben)",
+        },
+      },
+      height: {
+        name: "height",
+        info: {
+          en: "Height of the chart area in pixels (the arrow and the axis title are drawn above it)",
+          de: "Höhe der Diagrammfläche in Pixeln (Pfeil und Achsentitel stehen darüber)",
+        },
+      },
+      xMin: {
+        name: "xMin",
+        info: {
+          en: "Smallest value on the horizontal axis",
+          de: "Kleinster Wert auf der waagerechten Achse",
+        },
+      },
+      xMax: {
+        name: "xMax",
+        info: {
+          en: "Largest value on the horizontal axis",
+          de: "Größter Wert auf der waagerechten Achse",
+        },
+      },
+      yMin: {
+        name: "yMin",
+        info: {
+          en: "Smallest value on the vertical axis",
+          de: "Kleinster Wert auf der senkrechten Achse",
+        },
+      },
+      yMax: {
+        name: "yMax",
+        info: {
+          en: "Largest value on the vertical axis",
+          de: "Größter Wert auf der senkrechten Achse",
+        },
+      },
+    },
+    setter: {
+      x: {
+        name: "x",
+        info: {
+          en: "Horizontal position of the chart area in pixels",
+          de: "Horizontale Position der Diagrammfläche in Pixeln",
+        },
+        example: "x = 100",
+      },
+      y: {
+        name: "y",
+        info: {
+          en: "Vertical position of the chart area in pixels",
+          de: "Vertikale Position der Diagrammfläche in Pixeln",
+        },
+        example: "y = 100",
+      },
+      visible: {
+        name: "visible",
+        info: {
+          en: "Visibility of the element (true/false)",
+          de: "Sichtbarkeit des Elements (true/false)",
+        },
+        example: "visible = true",
+      },
+      alpha: {
+        name: "alpha",
+        info: {
+          en: "Transparency of the element (0.0 to 1.0)",
+          de: "Transparenz des Elements (0.0 bis 1.0)",
+        },
+        example: "alpha = 0.5",
+      },
+    },
+    methods: {
+      addFunction: {
+        example: "let curve = myPlot.addFunction(x => Math.sin(x), 0xc0392b, 3)",
+        info: {
+          en: "Draws a function y = f(x) over the whole range and returns the curve. If the function uses a variable (for example from a slider), call update() after changing it",
+          de: "Zeichnet eine Funktion y = f(x) über den ganzen Bereich und gibt die Kurve zurück. Verwendet die Funktion eine Variable (zum Beispiel von einem Regler), danach update() aufrufen",
+        },
+      },
+      addCurve: {
+        example: "let curve = myPlot.addCurve(0x2e86c1, 3)",
+        info: {
+          en: "Creates an empty curve for measured values and returns it. Curve methods: addPoint(x, y), setPoints(list), clear(), setMaxPoints(n), setColor, setThickness, setDashed(true), setFill(color, alpha), setVisible, remove()",
+          de: "Erzeugt eine leere Kurve für Messwerte und gibt sie zurück. Methoden der Kurve: addPoint(x, y), setPoints(liste), clear(), setMaxPoints(n), setColor, setThickness, setDashed(true), setFill(farbe, alpha), setVisible, remove()",
+        },
+      },
+      addPoint: {
+        example: "let dot = myPlot.addPoint(2, 1, 0xc0392b, 7)",
+        info: {
+          en: "Draws a point at the values (x | y) and returns it. Move it with dot.setPosition(x, y). Outside the range it is hidden",
+          de: "Zeichnet einen Punkt bei den Werten (x | y) und gibt ihn zurück. Verschieben mit punkt.setPosition(x, y). Außerhalb des Bereichs ist er unsichtbar",
+        },
+      },
+      update: {
+        example: "update()",
+        info: {
+          en: "Recalculates all functions, for example after a slider has changed a parameter",
+          de: "Berechnet alle Funktionen neu, zum Beispiel nachdem ein Regler einen Parameter geändert hat",
+        },
+      },
+      setRange: {
+        example: "setRange(0, 20, -10, 10)",
+        info: {
+          en: "Changes the value range (xMin, xMax, yMin, yMax). Axes, ticks, curves and points follow",
+          de: "Ändert den Wertebereich (xMin, xMax, yMin, yMax). Achsen, Striche, Kurven und Punkte passen sich an",
+        },
+      },
+      setTicks: {
+        example: "setTicks(1, 2)",
+        info: {
+          en: "Draws ticks with numbers every xStep and yStep. 0 or null switches the ticks of an axis off. Numbers use a decimal comma in German animations",
+          de: "Zeichnet Striche mit Zahlen im Abstand xStep und yStep. 0 oder null schaltet die Striche einer Achse aus. Zahlen in deutschen Animationen mit Dezimalkomma",
+        },
+      },
+      setGrid: {
+        example: "setGrid(true, 0xdddddd)",
+        info: {
+          en: "Shows or hides grid lines at the ticks. Optional colour",
+          de: "Zeigt oder verbirgt Gitterlinien an den Strichen. Optional mit Farbe",
+        },
+      },
+      setAxisLabels: {
+        example: 'setAxisLabels("<i>t</i> in s", "<i>s</i> in m")',
+        info: {
+          en: "Sets the axis titles next to the arrowheads (supports <b>, <i>, <sub> and <sup>)",
+          de: "Setzt die Achsentitel neben den Pfeilspitzen (unterstützt <b>, <i>, <sub> und <sup>)",
+        },
+      },
+      setColor: {
+        example: "setColor(0x444444)",
+        info: {
+          en: "Colour of the axes and ticks",
+          de: "Farbe der Achsen und Striche",
+        },
+      },
+      setTextColor: {
+        example: "setTextColor(0x444444)",
+        info: {
+          en: "Colour of the numbers and axis titles",
+          de: "Farbe der Zahlen und Achsentitel",
+        },
+      },
+      setFont: {
+        example: 'setFont("Arial", 18)',
+        info: {
+          en: "Font family and size of the numbers and axis titles",
+          de: "Schriftart und -größe der Zahlen und Achsentitel",
+        },
+      },
+      setArrows: {
+        example: "setArrows(false)",
+        info: {
+          en: "Shows or hides the arrowheads at the ends of the axes",
+          de: "Zeigt oder verbirgt die Pfeilspitzen an den Enden der Achsen",
+        },
+      },
+      setSize: {
+        example: "setSize(600, 400)",
+        info: {
+          en: "Changes the size of the chart area in pixels",
+          de: "Ändert die Größe der Diagrammfläche in Pixeln",
+        },
+      },
+      toPixelX: {
+        example: "toPixelX(5)",
+        info: {
+          en: "Returns the x coordinate on the board in pixels for a value, for example to place a text or a picture",
+          de: "Gibt die x-Koordinate auf der Zeichenfläche in Pixeln für einen Wert zurück, zum Beispiel um einen Text oder ein Bild zu platzieren",
+        },
+      },
+      toPixelY: {
+        example: "toPixelY(2.5)",
+        info: {
+          en: "Returns the y coordinate on the board in pixels for a value",
+          de: "Gibt die y-Koordinate auf der Zeichenfläche in Pixeln für einen Wert zurück",
+        },
+      },
+      toValueX: {
+        example: "toValueX(board.mouseX)",
+        info: {
+          en: "Converts an x coordinate on the board in pixels into a value of the chart",
+          de: "Rechnet eine x-Koordinate auf der Zeichenfläche in Pixeln in einen Wert des Diagramms um",
+        },
+      },
+      toValueY: {
+        example: "toValueY(300)",
+        info: {
+          en: "Converts a y coordinate on the board in pixels into a value of the chart",
+          de: "Rechnet eine y-Koordinate auf der Zeichenfläche in Pixeln in einen Wert des Diagramms um",
+        },
+      },
+      clear: {
+        example: "clear()",
+        info: {
+          en: "Removes all curves and points. Axes and ticks remain",
+          de: "Entfernt alle Kurven und Punkte. Achsen und Striche bleiben",
+        },
+      },
+      setAlpha: {
+        example: "setAlpha(0.5)",
+        info: {
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
+        },
+      },
+    },
+  };
+
+  static _segments(text) {
+    const src = text === undefined || text === null ? "" : String(text);
+    const segments = [];
+    const tagRegex = /<\/?(b|i|sub|sup)>/gi;
+    let lastIndex = 0;
+    let bold = false;
+    let italic = false;
+    let type = "normal";
+    const typeStack = [];
+    let match;
+    while ((match = tagRegex.exec(src)) !== null) {
+      if (match.index > lastIndex) {
+        segments.push({ text: src.substring(lastIndex, match.index), type, bold, italic });
+      }
+      const closing = match[0].charAt(1) === "/";
+      const tag = match[1].toLowerCase();
+      if (!closing) {
+        if (tag === "b") bold = true;
+        else if (tag === "i") italic = true;
+        else {
+          typeStack.push(type);
+          type = tag;
+        }
+      } else if (tag === "b") bold = false;
+      else if (tag === "i") italic = false;
+      else type = typeStack.pop() || "normal";
+      lastIndex = tagRegex.lastIndex;
+    }
+    if (lastIndex < src.length) {
+      segments.push({ text: src.substring(lastIndex), type, bold, italic });
+    }
+    return segments;
+  }
+
+  static _decimals(step) {
+    for (let d = 0; d <= 6; d++) {
+      const v = step * Math.pow(10, d);
+      if (Math.abs(v - Math.round(v)) < 1e-6 * Math.max(1, Math.abs(v))) return d;
+    }
+    return 6;
+  }
+
+  constructor(x = 100, y = 100, width = 500, height = 300, xMin = 0, xMax = 10, yMin = 0, yMax = 10) {
+    super();
+    this._w = Math.max(1, Number(width) || 1);
+    this._h = Math.max(1, Number(height) || 1);
+    this._xMin = Number(xMin);
+    this._xMax = Number(xMax);
+    this._yMin = Number(yMin);
+    this._yMax = Number(yMax);
+    this._fixRange();
+    this._color = 0x444444;
+    this._axisThickness = 1.5;
+    this._textColor = 0x444444;
+    this._font = "Arial";
+    this._fontSize = 18;
+    this._xStep = null;
+    this._yStep = null;
+    this._grid = false;
+    this._gridColor = 0xdddddd;
+    this._xLabel = "";
+    this._yLabel = "";
+    this._arrows = true;
+    this._curves = [];
+    this._points = [];
+
+    this._gridGraphics = new PIXI.Graphics();
+    this._dataLayer = new PIXI.Container();
+    this._axisGraphics = new PIXI.Graphics();
+    this._labelLayer = new PIXI.Container();
+    this._pointLayer = new PIXI.Container();
+    this._maskGraphics = new PIXI.Graphics();
+    this.addChild(this._gridGraphics);
+    this.addChild(this._dataLayer);
+    this.addChild(this._axisGraphics);
+    this.addChild(this._labelLayer);
+    this.addChild(this._pointLayer);
+    this.addChild(this._maskGraphics);
+    this._dataLayer.mask = this._maskGraphics;
+
+    this.x = Number(x) || 0;
+    this.y = Number(y) || 0;
+    this._drawAxes();
+
+    this.eventMode = "static";
+    app.stage.addChild(this);
+    Board[INSTANCE_KEY].addChild(this);
+  }
+
+  _fixRange() {
+    if (!(this._xMax > this._xMin)) this._xMax = this._xMin + 1;
+    if (!(this._yMax > this._yMin)) this._yMax = this._yMin + 1;
+  }
+
+  _vx(v) {
+    return ((v - this._xMin) / (this._xMax - this._xMin)) * this._w;
+  }
+  _vy(v) {
+    return this._h - ((v - this._yMin) / (this._yMax - this._yMin)) * this._h;
+  }
+  _axisY() {
+    return this._yMin <= 0 && this._yMax >= 0 ? this._vy(0) : this._h;
+  }
+  _axisX() {
+    return this._xMin <= 0 && this._xMax >= 0 ? this._vx(0) : 0;
+  }
+
+  toPixelX(value) {
+    return this.x + this._vx(Number(value));
+  }
+  toPixelY(value) {
+    return this.y + this._vy(Number(value));
+  }
+  toValueX(px) {
+    return this._xMin + ((Number(px) - this.x) / this._w) * (this._xMax - this._xMin);
+  }
+  toValueY(py) {
+    return this._yMin + ((this._h - (Number(py) - this.y)) / this._h) * (this._yMax - this._yMin);
+  }
+
+  // Text mit Tags; baseline = Grundlinie, anchor = start | middle | end
+  _text(text, x, baseline, anchor) {
+    const segments = Plot._segments(text);
+    if (segments.length === 0) return null;
+    const fs = this._fontSize;
+    const box = new PIXI.Container();
+    let cx = 0;
+    segments.forEach((seg) => {
+      const small = seg.type !== "normal";
+      const size = small ? fs * 0.7 : fs;
+      const t = new PIXI.Text({
+        text: seg.text,
+        style: {
+          fontFamily: this._font,
+          fontSize: size,
+          fill: this._textColor,
+          fontWeight: seg.bold ? "bold" : "normal",
+          fontStyle: seg.italic ? "italic" : "normal",
+        },
+      });
+      t.resolution = 2;
+      t.x = cx;
+      // Oberkante so, dass die Grundlinie bei 0 liegt (Arial: Oberlänge ≈ 0,9)
+      let base = 0;
+      if (seg.type === "sub") base = 0.4 * fs;
+      else if (seg.type === "sup") base = -0.5 * fs;
+      t.y = base - size * 0.9 - (t.height - size * 1.15) / 2;
+      cx += t.width;
+      box.addChild(t);
+    });
+    box.x = anchor === "middle" ? x - cx / 2 : anchor === "end" ? x - cx : x;
+    box.y = baseline;
+    this._labelLayer.addChild(box);
+    return box;
+  }
+
+  _drawAxes() {
+    const g = this._axisGraphics;
+    const gg = this._gridGraphics;
+    g.clear();
+    gg.clear();
+    this._labelLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
+    const w = this._w;
+    const h = this._h;
+    const ay = this._axisY();
+    const ax = this._axisX();
+    const fs = this._fontSize;
+    const ext = this._arrows ? 14 : 0;
+    const lw = pixiEffectiveStrokeWidth(this, this._axisThickness);
+    const xTicks = this._tickValues(this._xMin, this._xMax, this._xStep);
+    const yTicks = this._tickValues(this._yMin, this._yMax, this._yStep);
+
+    if (this._grid && (xTicks.length || yTicks.length)) {
+      xTicks.forEach((v) => {
+        const px = this._vx(v);
+        gg.moveTo(px, 0).lineTo(px, h);
+      });
+      yTicks.forEach((v) => {
+        const py = this._vy(v);
+        gg.moveTo(0, py).lineTo(w, py);
+      });
+      gg.stroke({ width: pixiEffectiveStrokeWidth(this, 1), color: this._gridColor });
+    }
+
+    g.moveTo(0, ay).lineTo(w + ext, ay);
+    g.moveTo(ax, h).lineTo(ax, -ext);
+    const tickLen = 5;
+    xTicks.forEach((v) => {
+      const px = this._vx(v);
+      g.moveTo(px, ay - tickLen).lineTo(px, ay + tickLen);
+    });
+    yTicks.forEach((v) => {
+      const py = this._vy(v);
+      g.moveTo(ax - tickLen, py).lineTo(ax + tickLen, py);
+    });
+    g.stroke({ width: lw, color: this._color, cap: "butt" });
+    if (this._arrows) {
+      const L = 12;
+      const B = 4.5;
+      g.poly([w + ext + 2, ay, w + ext + 2 - L, ay - B, w + ext + 2 - L, ay + B]).fill(this._color);
+      g.poly([ax, -ext - 2, ax - B, -ext - 2 + L, ax + B, -ext - 2 + L]).fill(this._color);
+    }
+
+    const origin0 =
+      this._xMin <= 0 && this._xMax >= 0 && this._yMin <= 0 && this._yMax >= 0;
+    const xd = this._xStep ? Plot._decimals(this._xStep) : 0;
+    const yd = this._yStep ? Plot._decimals(this._yStep) : 0;
+    const fmt = (v, dd) =>
+      typeof HtmlSvgEdu !== "undefined" && HtmlSvgEdu.Calc
+        ? HtmlSvgEdu.Calc.format(v, dd)
+        : v.toFixed(dd);
+    xTicks.forEach((v) => {
+      if (origin0 && Math.abs(v) < 1e-9) return;
+      this._text(fmt(v, xd), this._vx(v), ay + tickLen + 3 + fs * 0.85, "middle");
+    });
+    yTicks.forEach((v) => {
+      if (origin0 && Math.abs(v) < 1e-9) return;
+      this._text(fmt(v, yd), ax - tickLen - 4, this._vy(v) + fs * 0.35, "end");
+    });
+    if (origin0 && (this._xStep || this._yStep)) {
+      this._text("0", ax - tickLen - 2, ay + tickLen + 3 + fs * 0.85, "end");
+    }
+    if (this._xLabel !== "") this._text(this._xLabel, w + ext + 10, ay + fs * 0.35, "start");
+    if (this._yLabel !== "") this._text(this._yLabel, ax + 12, -ext + fs * 0.35, "start");
+
+    this._maskGraphics.clear();
+    this._maskGraphics.rect(0, 0, w, h).fill(0xffffff);
+  }
+
+  _tickValues(min, max, step) {
+    const s = Number(step);
+    if (!(s > 0)) return [];
+    const values = [];
+    const first = Math.ceil(min / s - 1e-9);
+    const last = Math.floor(max / s + 1e-9);
+    if (last - first > 500) return [];
+    for (let k = first; k <= last; k++) {
+      values.push(Math.round(k * s * 1e9) / 1e9);
+    }
+    return values;
+  }
+
+  _newCurve(color, thickness) {
+    const plot = this;
+    const curve = {
+      _fn: null,
+      _data: [],
+      _max: 0,
+      _color: color === undefined ? 0xc0392b : color,
+      _thickness: thickness === undefined ? 3 : thickness,
+      _dash: null,
+      _fillColor: null,
+      _fillAlpha: 0.3,
+      _visible: true,
+      _g: null,
+      setFunction(fn) {
+        this._fn = typeof fn === "function" ? fn : null;
+        plot._drawCurve(this);
+        return this;
+      },
+      update() {
+        plot._drawCurve(this);
+        return this;
+      },
+      addPoint(x, y) {
+        this._data.push([Number(x), Number(y)]);
+        if (this._max > 0 && this._data.length > this._max) {
+          this._data.splice(0, this._data.length - this._max);
+        }
+        plot._drawCurve(this);
+        return this;
+      },
+      setPoints(points) {
+        this._data = Array.isArray(points)
+          ? points.map((p) => (Array.isArray(p) ? [Number(p[0]), Number(p[1])] : [Number(p.x), Number(p.y)]))
+          : [];
+        if (this._max > 0 && this._data.length > this._max) {
+          this._data.splice(0, this._data.length - this._max);
+        }
+        plot._drawCurve(this);
+        return this;
+      },
+      getPoints() {
+        return this._data.map((p) => [p[0], p[1]]);
+      },
+      clear() {
+        this._data = [];
+        plot._drawCurve(this);
+        return this;
+      },
+      setMaxPoints(n) {
+        this._max = Math.max(0, Math.round(Number(n) || 0));
+        if (this._max > 0 && this._data.length > this._max) {
+          this._data.splice(0, this._data.length - this._max);
+          plot._drawCurve(this);
+        }
+        return this;
+      },
+      setColor(c) {
+        this._color = c;
+        plot._drawCurve(this);
+        return this;
+      },
+      setThickness(t) {
+        this._thickness = Number(t);
+        plot._drawCurve(this);
+        return this;
+      },
+      setDashed(on = true, dash = 8, gap = 6) {
+        this._dash = on ? [Number(dash), Number(gap)] : null;
+        plot._drawCurve(this);
+        return this;
+      },
+      setFill(c, alpha = 0.3) {
+        this._fillColor = c === undefined ? null : c;
+        this._fillAlpha = Number(alpha);
+        plot._drawCurve(this);
+        return this;
+      },
+      setVisible(v) {
+        this._visible = !!v;
+        plot._drawCurve(this);
+        return this;
+      },
+      remove() {
+        plot._removeCurve(this);
+      },
+    };
+    curve._g = new PIXI.Graphics();
+    this._dataLayer.addChild(curve._g);
+    this._curves.push(curve);
+    return curve;
+  }
+
+  _curveRuns(curve) {
+    const runs = [];
+    let run = [];
+    const lim = (v, a) => Math.max(-10 * a, Math.min(11 * a, v));
+    const push = (x, y) => {
+      if (isFinite(x) && isFinite(y)) {
+        run.push([lim(this._vx(x), this._w), lim(this._vy(y), this._h)]);
+      } else if (run.length) {
+        runs.push(run);
+        run = [];
+      }
+    };
+    if (curve._fn) {
+      const n = Math.max(2, Math.ceil(this._w));
+      for (let i = 0; i <= n; i++) {
+        const x = this._xMin + ((this._xMax - this._xMin) * i) / n;
+        let y;
+        try {
+          y = Number(curve._fn(x));
+        } catch (e) {
+          y = NaN;
+        }
+        push(x, y);
+      }
+    } else {
+      curve._data.forEach((p) => push(p[0], p[1]));
+    }
+    if (run.length) runs.push(run);
+    return runs;
+  }
+
+  // Flächen zwischen Kurve und x-Achse, an Nulldurchgängen getrennt
+  // (sonst überschneidet sich das Vieleck und die Füllung wird falsch)
+  _fillPolygons(runs) {
+    const base = Math.max(0, Math.min(this._h, this._axisY()));
+    const polys = [];
+    runs.forEach((r) => {
+      if (r.length < 2) return;
+      let cur = [[r[0][0], base], r[0]];
+      for (let i = 1; i < r.length; i++) {
+        const a = r[i - 1];
+        const b = r[i];
+        const da = a[1] - base;
+        const db = b[1] - base;
+        if ((da < 0 && db > 0) || (da > 0 && db < 0)) {
+          const cx = a[0] + ((b[0] - a[0]) * da) / (da - db);
+          cur.push([cx, base]);
+          polys.push(cur);
+          cur = [[cx, base]];
+        }
+        cur.push(b);
+      }
+      cur.push([r[r.length - 1][0], base]);
+      polys.push(cur);
+    });
+    return polys;
+  }
+
+  _drawCurve(curve) {
+    const g = curve._g;
+    if (!g) return;
+    g.clear();
+    if (!curve._visible) return;
+    const runs = this._curveRuns(curve).filter((r) => r.length > 0);
+    if (runs.length === 0) return;
+    if (curve._fillColor !== null && curve._fillColor !== undefined) {
+      this._fillPolygons(runs).forEach((poly) => {
+        const flat = [];
+        poly.forEach((p) => flat.push(p[0], p[1]));
+        g.poly(flat).fill({ color: curve._fillColor, alpha: curve._fillAlpha });
+      });
+    }
+    if (curve._thickness > 0) {
+      runs.forEach((r) => {
+        if (curve._dash) {
+          this._dashedRun(g, r, curve._dash[0], curve._dash[1]);
+        } else {
+          g.moveTo(r[0][0], r[0][1]);
+          if (r.length === 1) g.lineTo(r[0][0] + 0.01, r[0][1]);
+          for (let i = 1; i < r.length; i++) g.lineTo(r[i][0], r[i][1]);
+        }
+      });
+      g.stroke({
+        width: pixiEffectiveStrokeWidth(this, curve._thickness),
+        color: curve._color,
+        cap: curve._dash ? "butt" : "round",
+        join: "round",
+      });
+    }
+  }
+
+  // Gestrichelte Linie entlang eines Abschnitts
+  _dashedRun(g, r, dash, gap) {
+    const period = dash + gap;
+    if (!(period > 0)) return;
+    let pos = 0;
+    for (let i = 1; i < r.length; i++) {
+      const x0 = r[i - 1][0];
+      const y0 = r[i - 1][1];
+      const dx = r[i][0] - x0;
+      const dy = r[i][1] - y0;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      let s = 0;
+      while (s < len) {
+        const phase = pos % period;
+        const onDash = phase < dash;
+        const left = (onDash ? dash : period) - phase;
+        const step = Math.min(left, len - s);
+        if (onDash) {
+          g.moveTo(x0 + (dx * s) / len, y0 + (dy * s) / len);
+          g.lineTo(x0 + (dx * (s + step)) / len, y0 + (dy * (s + step)) / len);
+        }
+        s += step;
+        pos += step;
+      }
+    }
+  }
+
+  _removeCurve(curve) {
+    if (curve._g) {
+      this._dataLayer.removeChild(curve._g);
+      curve._g.destroy();
+      curve._g = null;
+    }
+    this._curves = this._curves.filter((c) => c !== curve);
+  }
+
+  addFunction(fn, color = 0xc0392b, thickness = 3) {
+    const curve = this._newCurve(color, thickness);
+    curve.setFunction(fn);
+    return curve;
+  }
+
+  addCurve(color = 0x2e86c1, thickness = 3) {
+    return this._newCurve(color, thickness);
+  }
+
+  addPoint(x = 0, y = 0, color = 0xc0392b, radius = 7) {
+    const plot = this;
+    const point = {
+      _x: Number(x),
+      _y: Number(y),
+      _color: color,
+      _radius: Number(radius),
+      _visible: true,
+      _g: new PIXI.Graphics(),
+      setPosition(px, py) {
+        this._x = Number(px);
+        this._y = Number(py);
+        plot._drawPoint(this);
+        return this;
+      },
+      getX() {
+        return this._x;
+      },
+      getY() {
+        return this._y;
+      },
+      setColor(c) {
+        this._color = c;
+        plot._drawPoint(this);
+        return this;
+      },
+      setRadius(r) {
+        this._radius = Number(r);
+        plot._drawPoint(this);
+        return this;
+      },
+      setVisible(v) {
+        this._visible = !!v;
+        plot._drawPoint(this);
+        return this;
+      },
+      remove() {
+        if (this._g) {
+          plot._pointLayer.removeChild(this._g);
+          this._g.destroy();
+          this._g = null;
+        }
+        plot._points = plot._points.filter((p) => p !== this);
+      },
+    };
+    this._pointLayer.addChild(point._g);
+    this._points.push(point);
+    this._drawPoint(point);
+    return point;
+  }
+
+  _pointInside(p) {
+    const ex = (this._xMax - this._xMin) * 1e-6;
+    const ey = (this._yMax - this._yMin) * 1e-6;
+    return (
+      isFinite(p._x) && isFinite(p._y) &&
+      p._x >= this._xMin - ex && p._x <= this._xMax + ex &&
+      p._y >= this._yMin - ey && p._y <= this._yMax + ey
+    );
+  }
+
+  _drawPoint(p) {
+    const g = p._g;
+    if (!g) return;
+    g.clear();
+    g.visible = p._visible && this._pointInside(p);
+    if (!g.visible) return;
+    g.circle(this._vx(p._x), this._vy(p._y), Math.max(0, p._radius))
+      .fill(p._color)
+      .stroke({ width: pixiEffectiveStrokeWidth(this, 1), color: 0x333333 });
+  }
+
+  _redrawAll() {
+    this._drawAxes();
+    this._curves.forEach((c) => this._drawCurve(c));
+    this._points.forEach((p) => this._drawPoint(p));
+  }
+
+  _redrawStrokes() {
+    this._redrawAll();
+  }
+
+  update() {
+    this._curves.forEach((c) => this._drawCurve(c));
+    return this;
+  }
+
+  setRange(xMin, xMax, yMin, yMax) {
+    this._xMin = Number(xMin);
+    this._xMax = Number(xMax);
+    this._yMin = Number(yMin);
+    this._yMax = Number(yMax);
+    this._fixRange();
+    this._redrawAll();
+    return this;
+  }
+
+  setSize(width, height) {
+    this._w = Math.max(1, Number(width) || 1);
+    this._h = Math.max(1, Number(height) || 1);
+    this._redrawAll();
+    return this;
+  }
+
+  getWidth() {
+    return this._w;
+  }
+
+  getHeight() {
+    return this._h;
+  }
+
+  setTicks(xStep, yStep) {
+    this._xStep = Number(xStep) > 0 ? Number(xStep) : null;
+    this._yStep = Number(yStep) > 0 ? Number(yStep) : null;
+    this._drawAxes();
+    return this;
+  }
+
+  setGrid(visible = true, color) {
+    this._grid = !!visible;
+    if (color !== undefined) this._gridColor = color;
+    this._drawAxes();
+    return this;
+  }
+
+  setAxisLabels(xLabel = "", yLabel = "") {
+    this._xLabel = xLabel === undefined || xLabel === null ? "" : String(xLabel);
+    this._yLabel = yLabel === undefined || yLabel === null ? "" : String(yLabel);
+    this._drawAxes();
+    return this;
+  }
+
+  setColor(color) {
+    this._color = color;
+    this._drawAxes();
+    return this;
+  }
+
+  setTextColor(color) {
+    this._textColor = color;
+    this._drawAxes();
+    return this;
+  }
+
+  setFont(font = "Arial", fontSize = 18) {
+    this._font = font;
+    this._fontSize = Number(fontSize) || 18;
+    this._drawAxes();
+    return this;
+  }
+
+  setArrows(visible = true) {
+    this._arrows = !!visible;
+    this._drawAxes();
+    return this;
+  }
+
+  clear() {
+    this._curves.slice().forEach((c) => this._removeCurve(c));
+    this._points.slice().forEach((p) => p.remove());
+    return this;
+  }
+
+  destroy() {
+    this._unregisterEventHandlers();
+    super.destroy({ children: true });
+  }
+};
+
+// ============================================================================
+// Spring – Feder als Zickzack zwischen zwei Punkten (3.27.0)
+// ============================================================================
+
+PixiJSEdu.Spring = class Spring extends PixiJSElement {
+  static serializationMap = {
+    description: {
+      de: "Feder als Zickzacklinie zwischen zwei Punkten. Die Zahl der Windungen bleibt gleich: wird die Feder kürzer, rücken die Windungen zusammen",
+      en: "Spring as a zigzag line between two points. The number of coils stays the same: when the spring gets shorter, the coils move closer together",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example: "let mySpring = new Spring(640, 100, 640, 400, 10, 30, 0x444444, 2);",
+    constructor: {
+      x1: {
+        name: "x1",
+        info: {
+          en: "X coordinate of the start point (for example the fixing point)",
+          de: "X-Koordinate des Anfangspunkts (zum Beispiel der Aufhängung)",
+        },
+      },
+      y1: {
+        name: "y1",
+        info: {
+          en: "Y coordinate of the start point",
+          de: "Y-Koordinate des Anfangspunkts",
+        },
+      },
+      x2: {
+        name: "x2",
+        info: {
+          en: "X coordinate of the end point (for example the mass)",
+          de: "X-Koordinate des Endpunkts (zum Beispiel der Masse)",
+        },
+      },
+      y2: {
+        name: "y2",
+        info: {
+          en: "Y coordinate of the end point",
+          de: "Y-Koordinate des Endpunkts",
+        },
+      },
+      coils: {
+        name: "coils",
+        info: {
+          en: "Number of coils (zigzags)",
+          de: "Zahl der Windungen (Zacken)",
+        },
+      },
+      width: {
+        name: "width",
+        info: {
+          en: "Width of the spring in pixels",
+          de: "Breite der Feder in Pixeln",
+        },
+      },
+      lineColor: {
+        name: "lineColor",
+        info: {
+          en: "Line colour in hexadecimal format (e.g. 0x444444)",
+          de: "Linienfarbe im Hexadezimalformat (z.B. 0x444444)",
+        },
+      },
+      lineThickness: {
+        name: "lineThickness",
+        info: {
+          en: "Line thickness in pixels",
+          de: "Linienstärke in Pixeln",
+        },
+      },
+    },
+    setter: {
+      visible: {
+        name: "visible",
+        info: {
+          en: "Visibility of the element (true/false)",
+          de: "Sichtbarkeit des Elements (true/false)",
+        },
+        example: "visible = true",
+      },
+      alpha: {
+        name: "alpha",
+        info: {
+          en: "Transparency of the element (0.0 to 1.0)",
+          de: "Transparenz des Elements (0.0 bis 1.0)",
+        },
+        example: "alpha = 0.5",
+      },
+    },
+    methods: {
+      setEnds: {
+        example: "setEnds(640, 100, 640, 450)",
+        info: {
+          en: "Sets start and end point at once (x1, y1, x2, y2) – the usual way to move a spring in a timer",
+          de: "Setzt Anfangs- und Endpunkt auf einmal (x1, y1, x2, y2) – so bewegt man eine Feder im Timer",
+        },
+      },
+      setStart: {
+        example: "setStart(640, 100)",
+        info: {
+          en: "Sets the start point",
+          de: "Setzt den Anfangspunkt",
+        },
+      },
+      setEnd: {
+        example: "setEnd(640, 450)",
+        info: {
+          en: "Sets the end point",
+          de: "Setzt den Endpunkt",
+        },
+      },
+      setCoils: {
+        example: "setCoils(12)",
+        info: {
+          en: "Sets the number of coils",
+          de: "Setzt die Zahl der Windungen",
+        },
+      },
+      setWidth: {
+        example: "setWidth(40)",
+        info: {
+          en: "Sets the width of the spring in pixels",
+          de: "Setzt die Breite der Feder in Pixeln",
+        },
+      },
+      setLeadLength: {
+        example: "setLeadLength(20)",
+        info: {
+          en: "Length of the straight pieces at both ends in pixels (default 12)",
+          de: "Länge der geraden Stücke an beiden Enden in Pixeln (Standard 12)",
+        },
+      },
+      setLineColor: {
+        example: "setLineColor(0x2e86c1)",
+        info: {
+          en: "Sets the line colour",
+          de: "Setzt die Linienfarbe",
+        },
+      },
+      setLineThickness: {
+        example: "setLineThickness(3)",
+        info: {
+          en: "Sets the line thickness",
+          de: "Setzt die Linienstärke",
+        },
+      },
+      getLength: {
+        example: "getLength()",
+        info: {
+          en: "Returns the distance between start and end point in pixels",
+          de: "Gibt den Abstand zwischen Anfangs- und Endpunkt in Pixeln zurück",
+        },
+      },
+      setAlpha: {
+        example: "setAlpha(0.5)",
+        info: {
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
+        },
+      },
+    },
+  };
+
+  static _points(x1, y1, x2, y2, coils, width, lead) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 1e-6) return [[x1, y1], [x2, y2]];
+    const ux = dx / len;
+    const uy = dy / len;
+    const nx = -uy;
+    const ny = ux;
+    const l = Math.max(0, Math.min(lead, len * 0.15));
+    const body = len - 2 * l;
+    const n = Math.max(1, Math.round(coils)) * 2;
+    const half = width / 2;
+    const pts = [[x1, y1]];
+    const ax = x1 + ux * l;
+    const ay = y1 + uy * l;
+    pts.push([ax, ay]);
+    for (let i = 0; i < n; i++) {
+      const t = ((i + 0.5) / n) * body;
+      const s = i % 2 === 0 ? half : -half;
+      pts.push([ax + ux * t + nx * s, ay + uy * t + ny * s]);
+    }
+    pts.push([x2 - ux * l, y2 - uy * l]);
+    pts.push([x2, y2]);
+    return pts;
+  }
+
+  constructor(x1 = 100, y1 = 100, x2 = 100, y2 = 300, coils = 8, width = 24, lineColor = 0x444444, lineThickness = 2) {
+    super();
+    this._x1 = Number(x1);
+    this._y1 = Number(y1);
+    this._x2 = Number(x2);
+    this._y2 = Number(y2);
+    this._coils = Number(coils) || 8;
+    this._width = Number(width);
+    this._lead = 12;
+    this._lineColor = lineColor;
+    this._lineThickness = Number(lineThickness);
+    this._graphics = new PIXI.Graphics();
+    this.addChild(this._graphics);
+    this._draw();
+    this.eventMode = "static";
+    app.stage.addChild(this);
+    Board[INSTANCE_KEY].addChild(this);
+  }
+
+  _draw() {
+    const g = this._graphics;
+    g.clear();
+    if (!(this._lineThickness > 0)) return;
+    const pts = Spring._points(this._x1, this._y1, this._x2, this._y2, this._coils, this._width, this._lead);
+    g.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+    g.stroke({
+      width: this._effectiveStrokeWidth(this._lineThickness),
+      color: this._lineColor,
+      cap: "round",
+      join: "round",
+    });
+  }
+
+  setEnds(x1, y1, x2, y2) {
+    this._x1 = Number(x1);
+    this._y1 = Number(y1);
+    this._x2 = Number(x2);
+    this._y2 = Number(y2);
+    this._draw();
+    return this;
+  }
+
+  setStart(x, y) {
+    this._x1 = Number(x);
+    this._y1 = Number(y);
+    this._draw();
+    return this;
+  }
+
+  setEnd(x, y) {
+    this._x2 = Number(x);
+    this._y2 = Number(y);
+    this._draw();
+    return this;
+  }
+
+  setCoils(coils) {
+    this._coils = Math.max(1, Number(coils) || 1);
+    this._draw();
+    return this;
+  }
+
+  setWidth(width) {
+    this._width = Number(width);
+    this._draw();
+    return this;
+  }
+
+  setLeadLength(length) {
+    this._lead = Math.max(0, Number(length) || 0);
+    this._draw();
+    return this;
+  }
+
+  setLineColor(color) {
+    this._lineColor = color;
+    this._draw();
+    return this;
+  }
+
+  setLineThickness(thickness) {
+    this._lineThickness = Number(thickness);
+    this._draw();
+    return this;
+  }
+
+  getLength() {
+    const dx = this._x2 - this._x1;
+    const dy = this._y2 - this._y1;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  destroy() {
+    this._unregisterEventHandlers();
+    super.destroy({ children: true });
+  }
+};
+
+// ============================================================================
+// Arc – Kreisbogen, Tortenstück oder Ringstück, optional mit Pfeilspitze (3.27.0)
+// ============================================================================
+
+PixiJSEdu.Arc = class Arc extends PixiJSElement {
+  static serializationMap = {
+    description: {
+      de: "Kreisbogen um den Bezugspunkt (Mitte). Mit Füllfarbe ein Tortenstück, mit Innenradius ein Ringstück, mit Pfeilspitze ein Drehpfeil. Winkel in Grad: 0 = rechts, positive Winkel im Uhrzeigersinn",
+      en: "Circular arc around the origin (centre). With a fill colour a pie slice, with an inner radius a ring segment, with an arrowhead a rotation arrow. Angles in degrees: 0 = right, positive angles clockwise",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example: "let myArc = new Arc(80, -90, 90, 0x444444, 3);",
+    constructor: {
+      radius: {
+        name: "radius",
+        info: {
+          en: "Radius in pixels",
+          de: "Radius in Pixeln",
+        },
+      },
+      startAngle: {
+        name: "startAngle",
+        info: {
+          en: "Start angle in degrees (0 = right, 90 = down)",
+          de: "Startwinkel in Grad (0 = rechts, 90 = unten)",
+        },
+      },
+      endAngle: {
+        name: "endAngle",
+        info: {
+          en: "End angle in degrees. Larger than the start angle = clockwise, smaller = anticlockwise",
+          de: "Endwinkel in Grad. Größer als der Startwinkel = im Uhrzeigersinn, kleiner = gegen den Uhrzeigersinn",
+        },
+      },
+      lineColor: {
+        name: "lineColor",
+        info: {
+          en: "Line colour in hexadecimal format (e.g. 0x444444)",
+          de: "Linienfarbe im Hexadezimalformat (z.B. 0x444444)",
+        },
+      },
+      lineThickness: {
+        name: "lineThickness",
+        info: {
+          en: "Line thickness in pixels (0 = no line)",
+          de: "Linienstärke in Pixeln (0 = keine Linie)",
+        },
+      },
+    },
+    setter: {
+      x: {
+        name: "x",
+        info: {
+          en: "Horizontal position of the centre in pixels",
+          de: "Horizontale Position des Mittelpunkts in Pixeln",
+        },
+        example: "x = 640",
+      },
+      y: {
+        name: "y",
+        info: {
+          en: "Vertical position of the centre in pixels",
+          de: "Vertikale Position des Mittelpunkts in Pixeln",
+        },
+        example: "y = 360",
+      },
+      rotation: {
+        name: "rotation",
+        info: {
+          en: "Rotation around the centre in degrees (clockwise)",
+          de: "Drehung um den Mittelpunkt in Grad (im Uhrzeigersinn)",
+        },
+        example: "rotation = 45",
+      },
+      visible: {
+        name: "visible",
+        info: {
+          en: "Visibility of the element (true/false)",
+          de: "Sichtbarkeit des Elements (true/false)",
+        },
+        example: "visible = true",
+      },
+      alpha: {
+        name: "alpha",
+        info: {
+          en: "Transparency of the element (0.0 to 1.0)",
+          de: "Transparenz des Elements (0.0 bis 1.0)",
+        },
+        example: "alpha = 0.5",
+      },
+    },
+    methods: {
+      setAngles: {
+        example: "setAngles(0, 270)",
+        info: {
+          en: "Sets start and end angle in degrees",
+          de: "Setzt Start- und Endwinkel in Grad",
+        },
+      },
+      setStartAngle: {
+        example: "setStartAngle(-90)",
+        info: {
+          en: "Sets the start angle in degrees",
+          de: "Setzt den Startwinkel in Grad",
+        },
+      },
+      setEndAngle: {
+        example: "setEndAngle(180)",
+        info: {
+          en: "Sets the end angle in degrees",
+          de: "Setzt den Endwinkel in Grad",
+        },
+      },
+      setRadius: {
+        example: "setRadius(100)",
+        info: {
+          en: "Sets the radius in pixels",
+          de: "Setzt den Radius in Pixeln",
+        },
+      },
+      setInnerRadius: {
+        example: "setInnerRadius(60)",
+        info: {
+          en: "Inner radius in pixels: turns a pie slice into a ring segment (0 = pie slice)",
+          de: "Innenradius in Pixeln: macht aus dem Tortenstück ein Ringstück (0 = Tortenstück)",
+        },
+      },
+      setFillColor: {
+        example: "setFillColor(0xf5b041)",
+        info: {
+          en: "Fills the arc as a pie slice (or ring segment). null = no fill",
+          de: "Füllt den Bogen als Tortenstück (oder Ringstück). null = keine Füllung",
+        },
+      },
+      setLineColor: {
+        example: "setLineColor(0xc0392b)",
+        info: {
+          en: "Sets the line colour",
+          de: "Setzt die Linienfarbe",
+        },
+      },
+      setLineThickness: {
+        example: "setLineThickness(3)",
+        info: {
+          en: "Sets the line thickness (0 = no line)",
+          de: "Setzt die Linienstärke (0 = keine Linie)",
+        },
+      },
+      setArrowhead: {
+        example: "setArrowhead(true, 14)",
+        info: {
+          en: "Shows an arrowhead at the end of the arc, for example for a direction of rotation. Optional size in pixels",
+          de: "Zeigt eine Pfeilspitze am Ende des Bogens, zum Beispiel für eine Drehrichtung. Optional mit Größe in Pixeln",
+        },
+      },
+      setAlpha: {
+        example: "setAlpha(0.5)",
+        info: {
+          en: "Sets the transparency of the element (0.0 = fully transparent, 1.0 = fully opaque)",
+          de: "Setzt die Transparenz des Elements (0.0 = vollständig transparent, 1.0 = vollständig sichtbar)",
+        },
+      },
+    },
+  };
+
+  static _geometry(r, ri, a0, a1, fill, arrow, arrowSize, thickness) {
+    const rad = Math.PI / 180;
+    let sweep = a1 - a0;
+    const full = Math.abs(sweep) >= 360;
+    if (full) sweep = sweep > 0 ? 360 : -360;
+    const dir = sweep >= 0 ? 1 : -1;
+    const pt = (radius, deg) => [radius * Math.cos(deg * rad), radius * Math.sin(deg * rad)];
+    const sample = (radius, from, to) => {
+      const steps = Math.max(2, Math.ceil((Math.abs(to - from) / 360) * Math.max(24, radius * 1.5)));
+      const out = [];
+      for (let i = 0; i <= steps; i++) out.push(pt(radius, from + ((to - from) * i) / steps));
+      return out;
+    };
+    const result = { full, sweep, line: [], outline: null, inner: null, arrow: null };
+    // Pfeilspitze: Spitze genau am Endwinkel, Linie endet unter der Spitze
+    let lineEnd = a0 + sweep;
+    if (arrow && r > 0 && !full) {
+      const s = arrowSize > 0 ? arrowSize : 10 + thickness * 2;
+      const baseDeg = a0 + sweep - (dir * (s / r)) / rad;
+      const tip = pt(r, a0 + sweep);
+      const base = pt(r, baseDeg);
+      let ux = tip[0] - base[0];
+      let uy = tip[1] - base[1];
+      const ul = Math.sqrt(ux * ux + uy * uy) || 1;
+      ux /= ul;
+      uy /= ul;
+      const hw = s * 0.4;
+      const bx = tip[0] - ux * s;
+      const by = tip[1] - uy * s;
+      result.arrow = [tip, [bx - uy * hw, by + ux * hw], [bx + uy * hw, by - ux * hw]];
+      lineEnd = a0 + sweep - (dir * ((s * 0.6) / r)) / rad;
+      if ((lineEnd - a0) * dir < 0) lineEnd = a0;
+    }
+    if (r > 0) result.line = sample(r, a0, lineEnd);
+    if (fill) {
+      if (ri > 0) {
+        result.outline = sample(r, a0, a0 + sweep).concat(sample(ri, a0 + sweep, a0));
+        if (full) {
+          result.outline = sample(r, a0, a0 + sweep);
+          result.inner = sample(ri, a0, a0 + sweep);
+        }
+      } else if (full) {
+        result.outline = sample(r, a0, a0 + sweep);
+      } else {
+        result.outline = [[0, 0]].concat(sample(r, a0, a0 + sweep));
+      }
+    }
+    return result;
+  }
+
+  constructor(radius = 60, startAngle = 0, endAngle = 90, lineColor = 0x444444, lineThickness = 2) {
+    super();
+    this._radius = Math.max(0, Number(radius) || 0);
+    this._innerRadius = 0;
+    this._startAngle = Number(startAngle) || 0;
+    this._endAngle = Number(endAngle) || 0;
+    this._lineColor = lineColor;
+    this._lineThickness = Number(lineThickness);
+    this._fillColor = null;
+    this._arrow = false;
+    this._arrowSize = 0;
+    this._graphics = new PIXI.Graphics();
+    this.addChild(this._graphics);
+    this._draw();
+    this.eventMode = "static";
+    app.stage.addChild(this);
+    Board[INSTANCE_KEY].addChild(this);
+  }
+
+  _draw() {
+    const gr = this._graphics;
+    gr.clear();
+    const hasFill = this._fillColor !== null && this._fillColor !== undefined;
+    const g = Arc._geometry(
+      this._radius,
+      Math.min(this._innerRadius, this._radius),
+      this._startAngle,
+      this._endAngle,
+      hasFill,
+      this._arrow,
+      this._arrowSize,
+      this._lineThickness,
+    );
+    const flat = (pts) => {
+      const out = [];
+      pts.forEach((p) => out.push(p[0], p[1]));
+      return out;
+    };
+    const showLine = this._lineThickness > 0;
+    const stroke = {
+      width: this._effectiveStrokeWidth(this._lineThickness),
+      color: this._lineColor,
+      cap: "butt",
+      join: "round",
+    };
+    if (hasFill && g.outline) {
+      gr.poly(flat(g.outline)).fill(this._fillColor);
+      if (g.inner) gr.poly(flat(g.inner)).cut();
+      if (showLine) {
+        gr.poly(flat(g.outline)).stroke(stroke);
+        if (g.inner) gr.poly(flat(g.inner)).stroke(stroke);
+      }
+    }
+    if (showLine && !(hasFill && g.outline) && g.line.length > 1) {
+      const l = g.line;
+      gr.moveTo(l[0][0], l[0][1]);
+      for (let i = 1; i < l.length; i++) gr.lineTo(l[i][0], l[i][1]);
+      if (g.full) gr.closePath();
+      gr.stroke(stroke);
+    }
+    if (g.arrow) {
+      gr.poly(flat(g.arrow)).fill(this._lineColor);
+    }
+  }
+
+  setAngles(startAngle, endAngle) {
+    this._startAngle = Number(startAngle) || 0;
+    this._endAngle = Number(endAngle) || 0;
+    this._draw();
+    return this;
+  }
+
+  setStartAngle(angle) {
+    this._startAngle = Number(angle) || 0;
+    this._draw();
+    return this;
+  }
+
+  setEndAngle(angle) {
+    this._endAngle = Number(angle) || 0;
+    this._draw();
+    return this;
+  }
+
+  getStartAngle() {
+    return this._startAngle;
+  }
+
+  getEndAngle() {
+    return this._endAngle;
+  }
+
+  setRadius(radius) {
+    this._radius = Math.max(0, Number(radius) || 0);
+    this._draw();
+    return this;
+  }
+
+  getRadius() {
+    return this._radius;
+  }
+
+  setInnerRadius(radius) {
+    this._innerRadius = Math.max(0, Number(radius) || 0);
+    this._draw();
+    return this;
+  }
+
+  setFillColor(color) {
+    this._fillColor = color === undefined ? null : color;
+    this._draw();
+    return this;
+  }
+
+  setLineColor(color) {
+    this._lineColor = color;
+    this._draw();
+    return this;
+  }
+
+  setLineThickness(thickness) {
+    this._lineThickness = Number(thickness) || 0;
+    this._draw();
+    return this;
+  }
+
+  setArrowhead(visible = true, size) {
+    this._arrow = !!visible;
+    if (size !== undefined) this._arrowSize = Math.max(0, Number(size) || 0);
+    this._draw();
+    return this;
+  }
+
+  destroy() {
+    this._unregisterEventHandlers();
+    super.destroy({ children: true });
   }
 };

@@ -77,6 +77,16 @@ function getActiveRendererType() {
   return "pixi"; // default
 }
 
+// Klassen ab 3.27.0 werden nur nach "new" ersetzt ("new Spring(" →
+// "new SvgJSEdu.Spring("). So bleiben Kommentare wie "// Spring (gedämpft)" in
+// älteren Animationen unberührt und ihre Exporte byte-gleich.
+const REPLACER_NEW_ONLY = ["Plot", "Spring", "Arc", "PlayButton"];
+
+function replaceAfterNew(code, word, ns) {
+  const regex = new RegExp(`(\\bnew\\s+)(${word})\\b(?=\\s*\\()`, "g");
+  return code.replace(regex, `$1${ns}.$2`);
+}
+
 // Replace bare class names with their fully qualified namespace equivalents
 function replacer(code) {
   const rendererType = getActiveRendererType();
@@ -97,6 +107,10 @@ function replacer(code) {
     });
 
     pixiReplacements.forEach((word) => {
+      if (REPLACER_NEW_ONLY.includes(word)) {
+        code = replaceAfterNew(code, word, "PixiJSEdu");
+        return;
+      }
       const regex = new RegExp(`\\b(${word})\\b(?=\\s*\\()`, "g");
       code = code.replace(regex, `PixiJSEdu.$1`);
     });
@@ -110,6 +124,10 @@ function replacer(code) {
     svgReplacements.forEach((word) => {
       // Skip BoardGUI – the Board alias is handled separately
       if (word === "BoardGUI") return;
+      if (REPLACER_NEW_ONLY.includes(word)) {
+        code = replaceAfterNew(code, word, "SvgJSEdu");
+        return;
+      }
       const regex = new RegExp(`\\b(${word})\\b(?=\\s*\\()`, "g");
       code = code.replace(regex, `SvgJSEdu.$1`);
     });
@@ -126,9 +144,21 @@ function replacer(code) {
     });
 
     uiReplacements.forEach((word) => {
+      if (REPLACER_NEW_ONLY.includes(word)) {
+        code = replaceAfterNew(code, word, "HtmlSvgEdu");
+        return;
+      }
       const regex = new RegExp(`\\b(${word})\\b(?=\\s*\\()`, "g");
       code = code.replace(regex, `HtmlSvgEdu.$1`);
     });
+
+    // Calc ist eine statische Hilfsklasse ohne "new" (3.27.0):
+    // Calc.format(…) → HtmlSvgEdu.Calc.format(…). Nur vor einem Punkt und nicht
+    // als Teil eines anderen Namens (meinCalc., obj.Calc.) – Code ohne Calc bleibt
+    // unverändert.
+    if (HtmlSvgEdu.Calc) {
+      code = code.replace(/(^|[^\w$.])Calc(?=\s*\.)/g, "$1HtmlSvgEdu.Calc");
+    }
   }
 
   return code;
@@ -729,6 +759,17 @@ function runCode() {
 
   code = editor.getValue();
 
+  // Sprache der Animation für Calc.format und PlayButton (3.27.0) – wie beim
+  // Export, der <html lang> nach derselben Regel setzt.
+  if (
+    typeof HtmlSvgEdu !== "undefined" &&
+    HtmlSvgEdu.Calc &&
+    typeof detectAnimationLanguage === "function"
+  ) {
+    HtmlSvgEdu.Calc._lang = null;
+    HtmlSvgEdu.Calc._autoLang = detectAnimationLanguage(code);
+  }
+
   // Double lone backslashes so that escape sequences like \n in user strings
   // become literal \\n (the Text component renders \\n as a line break).
   // Only exclude \\ so that already-escaped backslashes are not doubled again.
@@ -958,7 +999,7 @@ CodeMirror.registerHelper("hint", "custom", function (editor) {
 
     // Classes to hide from autocomplete suggestions
     var excludedClasses = [
-      "BoardGUI", "Component", "Particle", "Particles", "Preloader", "SpatialHash",
+      "BoardGUI", "Component", "Particles", "Preloader",
     ];
 
     if (graphicsNs) {

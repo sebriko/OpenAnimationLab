@@ -2929,6 +2929,13 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
         },
         example: 'setValueDisplayFont("Arial", 16)',
       },
+      setDecimalSeparator: {
+        info: {
+          en: 'Sets the decimal separator of the value display ("." or ","), e.g. "," for German',
+          de: 'Setzt das Dezimaltrennzeichen der Wertanzeige ("." oder ","), z. B. "," für Deutsch',
+        },
+        example: 'setDecimalSeparator(",")',
+      },
       setThumbShape: {
         info: {
           en: 'Sets the shape of the thumb ("rectangle", "circle", "triangle-A", "triangle-B")',
@@ -2978,6 +2985,7 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
     this._trackLength = trackLength || 200;
     this._showValue = false;
     this._valueFormatter = null;
+    this._decimalSeparator = ".";
     this._font = "Arial";
     this._fontSize = 16;
     this._snapValues = null;
@@ -3264,6 +3272,9 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
     }
 
     let displayString = roundedValue.toFixed(decimalPlaces);
+    if (this._decimalSeparator === ",") {
+      displayString = displayString.replace(".", ",");
+    }
 
     if (this._valueFormatter) {
       displayString = String(this._valueFormatter(roundedValue, displayString));
@@ -3730,6 +3741,14 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
     this._fontSize = fontSize;
     if (this._valueDisplay) {
       this._applyStyles();
+    }
+  }
+  setDecimalSeparator(separator) {
+    if (separator === "," || separator === ".") {
+      this._decimalSeparator = separator;
+      if (this._valueDisplay) {
+        this._valueDisplay.textContent = this._formatDisplayValue(this._value);
+      }
     }
   }
   setThumbShape(shape) {
@@ -8027,5 +8046,420 @@ HtmlSvgEdu.SimpleMP3 = class SimpleMP3 extends HtmlSvgEdu.Component {
       this._audio = null;
     }
     SimpleMP3._instances.delete(this);
+  }
+};
+
+// ============================================================================
+// Calc – Hilfsfunktionen für Zahlen und Farben (3.27.0)
+// Statische Klasse: Calc.format(…), Calc.clamp(…) … – kein "new".
+// ============================================================================
+
+HtmlSvgEdu.Calc = class Calc {
+  static serializationMap = {
+    description: {
+      de: "Hilfsfunktionen für Zahlen und Farben: Zahlen mit Dezimalkomma ausgeben, Werte begrenzen, umrechnen und mischen. Aufruf ohne new, zum Beispiel Calc.format(3.14159, 2)",
+      en: "Helper functions for numbers and colours: format numbers with the right decimal separator, limit, convert and blend values. Call without new, for example Calc.format(3.14159, 2)",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example: 'let text = Calc.format(9.81, 2, "m/s²");',
+    constructor: {},
+    methods: {
+      format: {
+        info: {
+          en: "Returns a number as text with the given number of decimal places and an optional unit. German animations get a decimal comma, English ones a decimal point. Negative numbers get a real minus sign, between number and unit there is a non-breaking space (not for ° and, in English, not for %)",
+          de: "Gibt eine Zahl als Text mit der angegebenen Zahl an Nachkommastellen und optionaler Einheit zurück. Deutsche Animationen erhalten ein Dezimalkomma, englische einen Dezimalpunkt. Negative Zahlen erhalten ein echtes Minuszeichen, zwischen Zahl und Einheit steht ein geschütztes Leerzeichen (nicht bei ° und im Englischen nicht bei %)",
+        },
+        example: 'Calc.format(3.14159, 2, "m")',
+      },
+      setLanguage: {
+        info: {
+          en: "Sets the language for Calc.format: de (decimal comma) or en (decimal point). Without this call the language of the animation is used",
+          de: "Legt die Sprache für Calc.format fest: de (Dezimalkomma) oder en (Dezimalpunkt). Ohne diesen Aufruf gilt die Sprache der Animation",
+        },
+        example: 'Calc.setLanguage("de")',
+      },
+      getLanguage: {
+        info: {
+          en: "Returns the language used by Calc.format (de or en)",
+          de: "Gibt die Sprache zurück, die Calc.format verwendet (de oder en)",
+        },
+        example: "Calc.getLanguage()",
+      },
+      round: {
+        info: {
+          en: "Rounds a number to the given number of decimal places",
+          de: "Rundet eine Zahl auf die angegebene Zahl an Nachkommastellen",
+        },
+        example: "Calc.round(2.345, 1)",
+      },
+      clamp: {
+        info: {
+          en: "Limits a value to the range from min to max",
+          de: "Begrenzt einen Wert auf den Bereich von min bis max",
+        },
+        example: "Calc.clamp(value, 0, 100)",
+      },
+      lerp: {
+        info: {
+          en: "Linear interpolation: returns the value between a and b for t from 0 to 1 (t = 0.5 is the middle)",
+          de: "Lineare Interpolation: gibt den Wert zwischen a und b für t von 0 bis 1 zurück (t = 0.5 ist die Mitte)",
+        },
+        example: "Calc.lerp(100, 300, 0.5)",
+      },
+      map: {
+        info: {
+          en: "Converts a value from one range to another, for example a temperature from 0 to 100 °C into a height from 600 to 100 pixels",
+          de: "Rechnet einen Wert von einem Bereich in einen anderen um, zum Beispiel eine Temperatur von 0 bis 100 °C in eine Höhe von 600 bis 100 Pixeln",
+        },
+        example: "Calc.map(temperature, 0, 100, 600, 100)",
+      },
+      rad: {
+        info: {
+          en: "Converts degrees to radians (for Math.sin and Math.cos)",
+          de: "Rechnet Grad in Bogenmaß um (für Math.sin und Math.cos)",
+        },
+        example: "Math.sin(Calc.rad(30))",
+      },
+      deg: {
+        info: {
+          en: "Converts radians to degrees",
+          de: "Rechnet Bogenmaß in Grad um",
+        },
+        example: "Calc.deg(Math.PI)",
+      },
+      mixColor: {
+        info: {
+          en: "Blends two colours: t = 0 gives the first, t = 1 the second colour, t = 0.5 the mixture. Returns a colour such as 0x7f007f",
+          de: "Mischt zwei Farben: t = 0 ergibt die erste, t = 1 die zweite Farbe, t = 0.5 die Mischung. Gibt eine Farbe wie 0x7f007f zurück",
+        },
+        example: "Calc.mixColor(0x3366cc, 0xcc3333, 0.5)",
+      },
+    },
+  };
+
+  static _lang = null;
+  static _autoLang = null;
+
+  static setLanguage(lang) {
+    const l = String(lang || "").toLowerCase().slice(0, 2);
+    Calc._lang = l === "de" || l === "en" ? l : null;
+  }
+
+  static getLanguage() {
+    if (Calc._lang) return Calc._lang;
+    if (Calc._autoLang) return Calc._autoLang;
+    try {
+      const l = String(document.documentElement.lang || "").toLowerCase().slice(0, 2);
+      if (l === "en") return "en";
+    } catch (e) {
+      // kein document
+    }
+    return "de";
+  }
+
+  static format(value, digits = 2, unit = "") {
+    const n = Number(value);
+    if (!isFinite(n)) return "\u2013";
+    let d = Math.round(Number(digits));
+    if (!isFinite(d) || d < 0) d = 0;
+    if (d > 10) d = 10;
+    let s = n.toFixed(d);
+    let negative = s.charAt(0) === "-";
+    if (negative) s = s.slice(1);
+    // -0, -0,00 … ohne Vorzeichen
+    if (negative && Number(s) === 0) negative = false;
+    const lang = Calc.getLanguage();
+    if (lang === "de") s = s.replace(".", ",");
+    if (negative) s = "\u2212" + s;
+    const u = unit === undefined || unit === null ? "" : String(unit).trim();
+    if (u === "") return s;
+    const noSpace =
+      (u.charAt(0) === "\u00B0" && u !== "\u00B0C" && u !== "\u00B0F") ||
+      (u === "%" && lang === "en");
+    return s + (noSpace ? "" : "\u00A0") + u;
+  }
+
+  static round(value, digits = 0) {
+    const f = Math.pow(10, Math.max(0, Math.min(10, Math.round(digits) || 0)));
+    return Math.round(Number(value) * f) / f;
+  }
+
+  static clamp(value, min, max) {
+    let lo = Number(min);
+    let hi = Number(max);
+    if (lo > hi) {
+      const t = lo;
+      lo = hi;
+      hi = t;
+    }
+    return Math.min(hi, Math.max(lo, Number(value)));
+  }
+
+  static lerp(a, b, t) {
+    return Number(a) + (Number(b) - Number(a)) * Number(t);
+  }
+
+  static map(value, inMin, inMax, outMin, outMax) {
+    if (inMax === inMin) return Number(outMin);
+    return (
+      Number(outMin) +
+      ((Number(value) - inMin) / (inMax - inMin)) * (outMax - outMin)
+    );
+  }
+
+  static rad(degrees) {
+    return (Number(degrees) * Math.PI) / 180;
+  }
+
+  static deg(radians) {
+    return (Number(radians) * 180) / Math.PI;
+  }
+
+  static mixColor(color1, color2, t) {
+    const k = Calc.clamp(Number(t), 0, 1);
+    const toNum = (c) =>
+      typeof c === "string" ? parseInt(c.replace("#", ""), 16) : Number(c);
+    const a = toNum(color1) & 0xffffff;
+    const b = toNum(color2) & 0xffffff;
+    const mix = (shift) =>
+      Math.round(((a >> shift) & 0xff) + ((((b >> shift) & 0xff) - ((a >> shift) & 0xff)) * k));
+    return (mix(16) << 16) | (mix(8) << 8) | mix(0);
+  }
+};
+
+// ============================================================================
+// PlayButton – Start/Pause-Knopf, der einen Timer steuert (3.27.0)
+// ============================================================================
+
+HtmlSvgEdu.PlayButton = class PlayButton extends HtmlSvgEdu.Button {
+  static serializationMap = {
+    description: {
+      de: "Start-/Pause-Knopf: startet, pausiert und setzt einen Timer fort und zeigt dabei ▶ Start oder ❚❚ Pause (englisch ▶ Play)",
+      en: "Play/pause button: starts, pauses and resumes a timer and shows ▶ Play or ❚❚ Pause (German ▶ Start)",
+    },
+    weblink: {
+      de: "https://www.educational-animation.org",
+      en: "https://www.educational-animation.org",
+    },
+    example: "let myPlayButton = new PlayButton(myTimer, 130, 40);",
+    constructor: {
+      timer: {
+        name: "timer",
+        info: {
+          en: "Timer that the button controls. Without a timer (null) the button only switches between play and pause, ask it with isPlaying()",
+          de: "Timer, den der Knopf steuert. Ohne Timer (null) wechselt der Knopf nur zwischen Start und Pause, abfragen mit isPlaying()",
+        },
+      },
+      width: {
+        name: "width",
+        info: {
+          en: "Width of the button in pixels",
+          de: "Breite des Knopfs in Pixeln",
+        },
+      },
+      height: {
+        name: "height",
+        info: {
+          en: "Height of the button in pixels",
+          de: "Höhe des Knopfs in Pixeln",
+        },
+      },
+      font: {
+        name: "font",
+        info: {
+          en: "Font family of the text",
+          de: "Schriftart des Textes",
+        },
+      },
+      fontSize: {
+        name: "fontSize",
+        info: {
+          en: "Font size in pixels",
+          de: "Schriftgröße in Pixeln",
+        },
+      },
+    },
+    setter: {
+      x: {
+        name: "x",
+        info: {
+          en: "Horizontal position of the element",
+          de: "Horizontale Position des Elements",
+        },
+        example: "x = 100",
+      },
+      y: {
+        name: "y",
+        info: {
+          en: "Vertical position of the element",
+          de: "Vertikale Position des Elements",
+        },
+        example: "y = 200",
+      },
+      visible: {
+        name: "visible",
+        info: {
+          en: "Visibility of the element (true/false)",
+          de: "Sichtbarkeit des Elements (true/false)",
+        },
+        example: "visible = true",
+      },
+    },
+    methods: {
+      onChange: {
+        info: {
+          en: "Registers a function that is called when the button is clicked. e.value is true when the animation is playing",
+          de: "Registriert eine Funktion, die beim Klick aufgerufen wird. e.value ist true, wenn die Animation läuft",
+        },
+        example:
+          "onChange(changed); \n\nfunction changed(e) { console.log(e.value); }",
+      },
+      isPlaying: {
+        info: {
+          en: "Returns true when the animation is playing",
+          de: "Gibt true zurück, wenn die Animation läuft",
+        },
+        example: "isPlaying()",
+      },
+      setPlaying: {
+        info: {
+          en: "Starts (true) or pauses (false) the animation from the code. Does not call onChange",
+          de: "Startet (true) oder pausiert (false) die Animation aus dem Code. Ruft onChange nicht auf",
+        },
+        example: "setPlaying(true)",
+      },
+      setLabels: {
+        info: {
+          en: "Sets the two labels: shown while paused and shown while playing",
+          de: "Setzt die beiden Beschriftungen: angezeigt in der Pause und angezeigt, während die Animation läuft",
+        },
+        example: 'setLabels("▶ Los", "❚❚ Halt")',
+      },
+      setTimer: {
+        info: {
+          en: "Connects the button to another timer",
+          de: "Verbindet den Knopf mit einem anderen Timer",
+        },
+        example: "setTimer(myTimer)",
+      },
+      setTooltip: {
+        info: {
+          en: "Shows a short hint when the mouse rests on the element. Optional position: top, bottom, left or right",
+          de: "Zeigt einen kurzen Hinweistext, wenn die Maus auf dem Element ruht. Optionale Position: top, bottom, left oder right",
+        },
+        example: 'setTooltip("Startet die Animation")',
+      },
+    },
+  };
+
+  constructor(timer = null, width = 130, height = 40, font = "Arial", fontSize = 18) {
+    super("", width, height, font, fontSize);
+    this._timer = null;
+    this._labels = null;
+    this._changeHandler = null;
+    this._userClickHandler = null;
+    this._playing = false;
+    this._wasConnected = false;
+    // Der Klick schaltet um; eigene onClick-Funktionen laufen danach
+    this._clickHandler = () => this._toggle();
+    this.setTimer(timer);
+    this._startSync();
+  }
+
+  _defaultLabels() {
+    const en = HtmlSvgEdu.Calc.getLanguage() === "en";
+    // U+FE0E: Pfeil als Schriftzeichen, nicht als farbiges Emoji
+    return [en ? "\u25B6\uFE0E Play" : "\u25B6\uFE0E Start", "\u275A\u275A Pause"];
+  }
+
+  _updateLabel() {
+    const labels = this._labels || this._defaultLabels();
+    this._renderLabel(this._playing ? labels[1] : labels[0]);
+  }
+
+  _timerPlaying() {
+    const t = this._timer;
+    if (!t || typeof t.isRunning !== "function") return this._playing;
+    return !!t.isRunning() && !(typeof t.isPaused === "function" && t.isPaused());
+  }
+
+  // Zeigt den Zustand des Timers, auch wenn der Code ihn startet oder er endet
+  _startSync() {
+    const step = () => {
+      if (!this._element) return;
+      if (this._element.isConnected) {
+        this._wasConnected = true;
+      } else if (this._wasConnected) {
+        return;
+      }
+      if (this._timer) {
+        const p = this._timerPlaying();
+        if (p !== this._playing) {
+          this._playing = p;
+          this._updateLabel();
+        }
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  _toggle() {
+    this.setPlaying(!this._playing);
+    const e = { value: this._playing, playing: this._playing, target: this };
+    if (typeof this._changeHandler === "function") this._changeHandler(e);
+    if (typeof this._userClickHandler === "function") this._userClickHandler(e);
+  }
+
+  setTimer(timer) {
+    this._timer = timer && typeof timer.start === "function" ? timer : null;
+    if (this._timer) this._playing = this._timerPlaying();
+    this._updateLabel();
+  }
+
+  setPlaying(playing) {
+    const p = !!playing;
+    const t = this._timer;
+    if (t) {
+      if (p) {
+        if (typeof t.isPaused === "function" && t.isPaused() && typeof t.resume === "function") {
+          t.resume();
+        } else {
+          t.start();
+        }
+      } else if (typeof t.pause === "function") {
+        t.pause();
+      }
+    }
+    this._playing = p;
+    this._updateLabel();
+  }
+
+  isPlaying() {
+    return this._playing;
+  }
+
+  setLabels(playLabel, pauseLabel) {
+    this._labels = [
+      playLabel === undefined || playLabel === null ? "" : String(playLabel),
+      pauseLabel === undefined || pauseLabel === null ? "" : String(pauseLabel),
+    ];
+    this._updateLabel();
+  }
+
+  setText(label) {
+    // Beschriftungen gehören setLabels; setText ändert beide gleich
+    this.setLabels(label, label);
+  }
+
+  onChange(handler) {
+    this._changeHandler = handler;
+  }
+
+  onClick(handler) {
+    this._userClickHandler = handler;
   }
 };
