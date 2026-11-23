@@ -1,6 +1,263 @@
 const projectTemplates = {
   categories: [
     {
+      name: "Tutorials",
+      description:
+        "Hier fangen Sie an: eine fertige Animation zum Verändern und drei kleine Spielplätze, die zeigen, wie das Open Animation Lab tickt. Ziehen, schieben, ausprobieren – kaputt machen kann man nichts.",
+      templates: [
+        {
+          image: "first-steps-animation.png",
+          title: "Meine erste Animation",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Meine erste Animation: ein Windrad im Wind.
+// So geht's: Ändern Sie eine der drei Zahlen unter einem Pfeil ←
+// und drücken Sie dann ► (oder Strg + Enter).
+
+// ← 1. Farbe der Flügel, z. B. 0xe74c3c (rot) oder 0xf1c40f (gelb)
+let farbe = 0xffffff;
+
+// ← 2. Wie viele Flügel? Probieren Sie 2, 4 oder 8.
+let anzahl = 3;
+
+// ← 3. Wind am Anfang: 0 (Flaute) bis 10 (Sturm)
+let wind = 4;
+
+// Himmel und Hügel
+let himmel = new Rectangle(1280, 720, 0xd6eaf8);
+let huegel = new Circle(700, 0x82c46c);
+huegel.x = 640;
+huegel.y = 1250;
+
+// Mast
+let mast = new Rectangle(24, 330, 0xf4f6f7);
+mast.setBorder(0x5d6d7e, 2);
+mast.x = 628;
+mast.y = 230;
+
+// Rotor: eine Gruppe, die sich als Ganzes dreht
+let rotor = new Group();
+rotor.x = 640;
+rotor.y = 230;
+for (let i = 0; i < anzahl; i++) {
+    let winkel = i * 360 / anzahl;
+    let fluegel = new Arc(190, winkel - 6, winkel + 6, 0x5d6d7e, 2);
+    fluegel.setFillColor(farbe);
+    rotor.addChild(fluegel);
+}
+let nabe = new Circle(20, 0x5d6d7e);
+nabe.x = 640;
+nabe.y = 230;
+
+// Regler für den Wind
+let beschriftung = new Text("Wind", "Arial", 24, 0x2c3e50);
+beschriftung.x = 140;
+beschriftung.y = 570;
+let regler = new ButtonSlider(0, 10, wind, 1, 40, 300);
+regler.x = 150;
+regler.y = 615;
+regler.enableValueDisplay();
+regler.onChange(e => wind = e.value);
+
+// Drehen: pro Sekunde 30 Grad je Windstufe
+let drehwinkel = 0;
+let letzteZeit = 0;
+let timer = new Timer();
+timer.onUpdate(drehen);
+timer.start();
+
+function drehen() {
+    let jetzt = timer.getElapsedTime();
+    drehwinkel += (jetzt - letzteZeit) / 1000 * 30 * wind;
+    letzteZeit = jetzt;
+    rotor.rotation = drehwinkel;
+}`,
+        },
+        {
+          image: "first-steps-coordinates-de.png",
+          title: "Koordinaten und Bezugspunkte",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Koordinaten und Bezugspunkte
+// Die Fläche ist 1280 × 720 Pixel groß. (0 | 0) liegt oben links.
+// x wächst nach rechts, y wächst nach UNTEN – anders als im Mathebuch.
+
+// Raster alle 100 Pixel
+for (let x = 100; x < 1280; x += 100) {
+    let linie = new Line(x, 0, x, 720, 0xd5d8dc, 1);
+    let zahl = new Text(String(x), "Arial", 14, 0x7f8c8d, "center");
+    zahl.x = x;
+    zahl.y = 0;
+}
+for (let y = 100; y < 720; y += 100) {
+    let linie = new Line(0, y, 1280, y, 0xd5d8dc, 1);
+    let zahl = new Text(String(y), "Arial", 14, 0x7f8c8d);
+    zahl.x = 0;
+    zahl.y = y - 20;
+}
+let ursprung = new Text("<b>(0 | 0)</b>", "Arial", 16, 0xc0392b);
+ursprung.x = 0;
+ursprung.y = 0;
+
+// Rechteck: (x, y) ist die linke OBERE Ecke
+let rechteck = new Rectangle(240, 150, 0xfad7a0);
+rechteck.setBorder(0x333333, 1);
+rechteck.x = 200;
+rechteck.y = 200;
+let punkt1 = new Circle(7, 0xc0392b);
+punkt1.x = 200;
+punkt1.y = 200;
+let text1 = new Text("<b>Rectangle</b>\\n(x, y) = Ecke oben links", "Arial", 20, 0x333333);
+text1.x = 190;
+text1.y = 360;
+
+// Kreis: (x, y) ist die MITTE
+let kreis = new Circle(90, 0xaed6f1);
+kreis.setBorder(0x333333, 1);
+kreis.x = 700;
+kreis.y = 280;
+let punkt2 = new Circle(7, 0xc0392b);
+punkt2.x = 700;
+punkt2.y = 280;
+let text2 = new Text("<b>Circle</b>\\n(x, y) = Mitte", "Arial", 20, 0x333333, "center");
+text2.x = 700;
+text2.y = 380;
+
+// y wächst nach unten
+let pfeil = new Arrow(1180, 150, 1180, 600, 0x2c3e50, 3, 20, 12);
+let text3 = new Text("y wächst\\nnach unten", "Arial", 20, 0x2c3e50, "right");
+text3.x = 1170;
+text3.y = 330;
+
+// Ein Punkt zum Ziehen – er zeigt seine Koordinaten
+let zugpunkt = new Circle(16, 0x27ae60);
+zugpunkt.setBorder(0x1e8449, 2);
+zugpunkt.x = 400;
+zugpunkt.y = 560;
+zugpunkt.setDragging(20, 20, 1260, 700);
+let anzeige = new Text("", "Arial", 22, 0x1e8449);
+let hinweis = new Text("Ziehen Sie den grünen Punkt!", "Arial", 22, 0x1e8449);
+hinweis.x = 40;
+hinweis.y = 640;
+
+zugpunkt.onDrag(zeigen);
+zeigen();
+
+function zeigen() {
+    anzeige.setText("<b>x = " + Math.round(zugpunkt.x) + ", y = " + Math.round(zugpunkt.y) + "</b>");
+    anzeige.x = zugpunkt.x + 20;
+    anzeige.y = zugpunkt.y - 50;
+}`,
+        },
+        {
+          image: "first-steps-textbox-de.png",
+          title: "Der Text-Kasten",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Der Text-Kasten
+// Ein Text sitzt in einem unsichtbaren Kasten.
+// (x, y) ist die Ecke OBEN LINKS dieses Kastens – nicht die Grundlinie der Schrift.
+// Mit setSize(breite, höhe) bricht der Text innerhalb des Kastens um,
+// die erste Zeile beginnt dann direkt an der Oberkante.
+// Eigene Zeilenwechsel: \\n oder <br> in den Text schreiben.
+
+let breite = 600;
+let hoehe = 300;
+
+// Rahmen, damit man den Kasten sieht (gleiches x, y, gleiche Breite wie der Text)
+let rahmen = new Rectangle(breite, hoehe, 0xfef9e7);
+rahmen.setBorder(0xb7950b, 2);
+rahmen.x = 140;
+rahmen.y = 120;
+
+// Der Text selbst
+let text = new Text("Ziehen Sie am Regler unten: Der Kasten wird schmaler oder breiter, und der Text bricht von selbst neu um. Links und rechts hält er 10 Pixel Abstand zum Rand.", "Arial", 28, 0x333333);
+text.x = 140;
+text.y = 120;
+text.setSize(breite, hoehe);
+
+// Der Bezugspunkt
+let punkt = new Circle(8, 0xc0392b);
+punkt.x = 140;
+punkt.y = 120;
+let punktText = new Text("<b>(x, y)</b>", "Arial", 20, 0xc0392b, "right");
+punktText.x = 130;
+punktText.y = 70;
+
+// Regler für die Breite
+let reglerText = new Text("Breite des Kastens", "Arial", 22, 0x333333);
+reglerText.x = 130;
+reglerText.y = 560;
+let regler = new ButtonSlider(300, 1000, breite, 10, 40, 500);
+regler.x = 350;
+regler.y = 580;
+regler.enableValueDisplay();
+regler.onChange(breiteAendern);
+
+function breiteAendern(e) {
+    breite = e.value;
+    rahmen.width = breite;
+    text.setSize(breite, hoehe);
+}`,
+        },
+        {
+          image: "first-steps-layers-de.png",
+          title: "Was liegt oben?",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Was liegt oben?
+// Regel 1: Formen stapeln sich in der Reihenfolge, in der sie im Code stehen.
+//          Was später erzeugt wird, liegt weiter oben.
+// Regel 2: Texte und Bedienelemente (Text, Button, ButtonSlider …) liegen
+//          IMMER über allen Formen – egal, wo sie im Code stehen.
+
+let titel = new Text("<b>Ziehen Sie das gelbe Quadrat über die anderen Dinge.</b>", "Arial", 28, 0x333333);
+titel.x = 30;
+titel.y = 20;
+
+// Text und Knopf stehen im Code GANZ VORN – und liegen trotzdem oben
+let erklaerung = new Text("Texte und Bedienelemente liegen immer über allen Formen. Auch das gelbe Quadrat kommt nicht darüber.", "Arial", 24, 0x333333);
+erklaerung.x = 830;
+erklaerung.y = 170;
+erklaerung.setSize(400, 200);
+let knopf = new Button("Ich bleibe oben", 220, 50, "Arial", 22);
+knopf.x = 840;
+knopf.y = 400;
+
+// 1. Diese Form wird zuerst erzeugt
+let kreisBlau = new Circle(120, 0x85c1e9);
+kreisBlau.setBorder(0x333333, 1);
+kreisBlau.x = 260;
+kreisBlau.y = 300;
+
+// 2. Das gelbe Quadrat kommt als Zweites
+let quadrat = new Rectangle(160, 160, 0xf7dc6f);
+quadrat.setBorder(0x333333, 2);
+quadrat.x = 330;
+quadrat.y = 260;
+quadrat.setDragging(0, 0, 1120, 560);
+
+// 3. Diese Form wird zuletzt erzeugt
+let kreisRot = new Circle(120, 0xf1948a);
+kreisRot.setBorder(0x333333, 1);
+kreisRot.x = 600;
+kreisRot.y = 300;
+
+// Beschriftungen (Texte liegen immer oben)
+let text1 = new Text("1. erzeugt", "Arial", 22, 0x333333, "center");
+text1.x = 260;
+text1.y = 285;
+let text3 = new Text("3. erzeugt", "Arial", 22, 0x333333, "center");
+text3.x = 600;
+text3.y = 285;`,
+        },
+      ],
+    },
+    {
       name: "General",
       description:
         "Das 16:9-Format hat sich in vielen Zusammenhängen als das beste herausgestellt. Hinweis: Animationen werden unabhängig von den ursprünglich eingestellten Pixelwerten optimal skaliert.",

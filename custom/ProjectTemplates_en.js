@@ -1,6 +1,263 @@
 const projectTemplates = {
   categories: [
     {
+      name: "Tutorials",
+      description:
+        "Start here: a finished animation to change and three small playgrounds that show how the Open Animation Lab works. Drag, slide, try things out – you cannot break anything.",
+      templates: [
+        {
+          image: "first-steps-animation.png",
+          title: "My first animation",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// My first animation: a wind turbine in the wind.
+// How it works: change one of the three numbers below an arrow ←
+// and then press ► (or Ctrl + Enter).
+
+// ← 1. Colour of the blades, e.g. 0xe74c3c (red) or 0xf1c40f (yellow)
+let colour = 0xffffff;
+
+// ← 2. How many blades? Try 2, 4 or 8.
+let count = 3;
+
+// ← 3. Wind at the start: 0 (calm) to 10 (storm)
+let wind = 4;
+
+// Sky and hill
+let sky = new Rectangle(1280, 720, 0xd6eaf8);
+let hill = new Circle(700, 0x82c46c);
+hill.x = 640;
+hill.y = 1250;
+
+// Tower
+let tower = new Rectangle(24, 330, 0xf4f6f7);
+tower.setBorder(0x5d6d7e, 2);
+tower.x = 628;
+tower.y = 230;
+
+// Rotor: a group that turns as a whole
+let rotor = new Group();
+rotor.x = 640;
+rotor.y = 230;
+for (let i = 0; i < count; i++) {
+    let angle = i * 360 / count;
+    let blade = new Arc(190, angle - 6, angle + 6, 0x5d6d7e, 2);
+    blade.setFillColor(colour);
+    rotor.addChild(blade);
+}
+let hub = new Circle(20, 0x5d6d7e);
+hub.x = 640;
+hub.y = 230;
+
+// Slider for the wind
+let label = new Text("Wind", "Arial", 24, 0x2c3e50);
+label.x = 140;
+label.y = 570;
+let slider = new ButtonSlider(0, 10, wind, 1, 40, 300);
+slider.x = 150;
+slider.y = 615;
+slider.enableValueDisplay();
+slider.onChange(e => wind = e.value);
+
+// Turning: 30 degrees per second for each wind level
+let rotorAngle = 0;
+let lastTime = 0;
+let timer = new Timer();
+timer.onUpdate(turn);
+timer.start();
+
+function turn() {
+    let now = timer.getElapsedTime();
+    rotorAngle += (now - lastTime) / 1000 * 30 * wind;
+    lastTime = now;
+    rotor.rotation = rotorAngle;
+}`,
+        },
+        {
+          image: "first-steps-coordinates-en.png",
+          title: "Coordinates and reference points",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Coordinates and reference points
+// The board is 1280 × 720 pixels. (0 | 0) is at the top left.
+// x grows to the right, y grows DOWNWARDS – unlike in a maths book.
+
+// Grid every 100 pixels
+for (let x = 100; x < 1280; x += 100) {
+    let gridLine = new Line(x, 0, x, 720, 0xd5d8dc, 1);
+    let number = new Text(String(x), "Arial", 14, 0x7f8c8d, "center");
+    number.x = x;
+    number.y = 0;
+}
+for (let y = 100; y < 720; y += 100) {
+    let gridLine = new Line(0, y, 1280, y, 0xd5d8dc, 1);
+    let number = new Text(String(y), "Arial", 14, 0x7f8c8d);
+    number.x = 0;
+    number.y = y - 20;
+}
+let origin = new Text("<b>(0 | 0)</b>", "Arial", 16, 0xc0392b);
+origin.x = 0;
+origin.y = 0;
+
+// Rectangle: (x, y) is the TOP-left corner
+let rect = new Rectangle(240, 150, 0xfad7a0);
+rect.setBorder(0x333333, 1);
+rect.x = 200;
+rect.y = 200;
+let dot1 = new Circle(7, 0xc0392b);
+dot1.x = 200;
+dot1.y = 200;
+let text1 = new Text("<b>Rectangle</b>\\n(x, y) = top-left corner", "Arial", 20, 0x333333);
+text1.x = 190;
+text1.y = 360;
+
+// Circle: (x, y) is the CENTRE
+let circle = new Circle(90, 0xaed6f1);
+circle.setBorder(0x333333, 1);
+circle.x = 700;
+circle.y = 280;
+let dot2 = new Circle(7, 0xc0392b);
+dot2.x = 700;
+dot2.y = 280;
+let text2 = new Text("<b>Circle</b>\\n(x, y) = centre", "Arial", 20, 0x333333, "center");
+text2.x = 700;
+text2.y = 380;
+
+// y grows downwards
+let arrow = new Arrow(1180, 150, 1180, 600, 0x2c3e50, 3, 20, 12);
+let text3 = new Text("y grows\\ndownwards", "Arial", 20, 0x2c3e50, "right");
+text3.x = 1170;
+text3.y = 330;
+
+// A point to drag – it shows its coordinates
+let handle = new Circle(16, 0x27ae60);
+handle.setBorder(0x1e8449, 2);
+handle.x = 400;
+handle.y = 560;
+handle.setDragging(20, 20, 1260, 700);
+let readout = new Text("", "Arial", 22, 0x1e8449);
+let hint = new Text("Drag the green point!", "Arial", 22, 0x1e8449);
+hint.x = 40;
+hint.y = 640;
+
+handle.onDrag(show);
+show();
+
+function show() {
+    readout.setText("<b>x = " + Math.round(handle.x) + ", y = " + Math.round(handle.y) + "</b>");
+    readout.x = handle.x + 20;
+    readout.y = handle.y - 50;
+}`,
+        },
+        {
+          image: "first-steps-textbox-en.png",
+          title: "The text box",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// The text box
+// A text sits in an invisible box.
+// (x, y) is the TOP-left corner of this box – not the baseline of the letters.
+// With setSize(width, height) the text wraps inside the box,
+// and the first line then starts right at the top edge.
+// Your own line breaks: write \\n or <br> into the text.
+
+let boxWidth = 600;
+let boxHeight = 300;
+
+// A frame so you can see the box (same x, y and width as the text)
+let frame = new Rectangle(boxWidth, boxHeight, 0xfef9e7);
+frame.setBorder(0xb7950b, 2);
+frame.x = 140;
+frame.y = 120;
+
+// The text itself
+let text = new Text("Drag the slider below: the box gets narrower or wider, and the text wraps again by itself. On the left and right it keeps 10 pixels away from the edge.", "Arial", 28, 0x333333);
+text.x = 140;
+text.y = 120;
+text.setSize(boxWidth, boxHeight);
+
+// The reference point
+let dot = new Circle(8, 0xc0392b);
+dot.x = 140;
+dot.y = 120;
+let dotText = new Text("<b>(x, y)</b>", "Arial", 20, 0xc0392b, "right");
+dotText.x = 130;
+dotText.y = 70;
+
+// Slider for the width
+let sliderText = new Text("Width of the box", "Arial", 22, 0x333333);
+sliderText.x = 130;
+sliderText.y = 560;
+let slider = new ButtonSlider(300, 1000, boxWidth, 10, 40, 500);
+slider.x = 350;
+slider.y = 580;
+slider.enableValueDisplay();
+slider.onChange(changeWidth);
+
+function changeWidth(e) {
+    boxWidth = e.value;
+    frame.width = boxWidth;
+    text.setSize(boxWidth, boxHeight);
+}`,
+        },
+        {
+          image: "first-steps-layers-en.png",
+          title: "What is on top?",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// What is on top?
+// Rule 1: Shapes stack in the order in which they appear in the code.
+//         Whatever is created later lies further up.
+// Rule 2: Texts and UI components (Text, Button, ButtonSlider …) ALWAYS lie
+//         above all shapes – no matter where they are in the code.
+
+let title = new Text("<b>Drag the yellow square over the other things.</b>", "Arial", 28, 0x333333);
+title.x = 30;
+title.y = 20;
+
+// Text and button come FIRST in the code – and still lie on top
+let explanation = new Text("Texts and UI components always lie above all shapes. Even the yellow square cannot get over them.", "Arial", 24, 0x333333);
+explanation.x = 830;
+explanation.y = 170;
+explanation.setSize(400, 200);
+let button = new Button("I stay on top", 220, 50, "Arial", 22);
+button.x = 840;
+button.y = 400;
+
+// 1. This shape is created first
+let blueCircle = new Circle(120, 0x85c1e9);
+blueCircle.setBorder(0x333333, 1);
+blueCircle.x = 260;
+blueCircle.y = 300;
+
+// 2. The yellow square comes second
+let square = new Rectangle(160, 160, 0xf7dc6f);
+square.setBorder(0x333333, 2);
+square.x = 330;
+square.y = 260;
+square.setDragging(0, 0, 1120, 560);
+
+// 3. This shape is created last
+let redCircle = new Circle(120, 0xf1948a);
+redCircle.setBorder(0x333333, 1);
+redCircle.x = 600;
+redCircle.y = 300;
+
+// Labels (texts always lie on top)
+let text1 = new Text("created 1st", "Arial", 22, 0x333333, "center");
+text1.x = 260;
+text1.y = 285;
+let text3 = new Text("created 3rd", "Arial", 22, 0x333333, "center");
+text3.x = 600;
+text3.y = 285;`,
+        },
+      ],
+    },
+    {
       name: "General",
       description:
         "The 16:9 format has proven to be the best in many contexts. Note: Animations are optimally scaled regardless of the originally set pixel values.",

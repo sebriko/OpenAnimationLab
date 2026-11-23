@@ -403,6 +403,10 @@ class I18nManager {
         en: "Projects",
         de: "Projekte",
       },
+      category_tutorials: {
+        en: "Getting started",
+        de: "Erste Schritte",
+      },
 
       // Template interface
       no_templates_available: {
