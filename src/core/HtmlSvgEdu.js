@@ -613,7 +613,8 @@ HtmlSvgEdu.Component = class Component {
   _parseFormattedText(text, state) {
     const st = state || { bold: 0, italic: 0, typeStack: [] };
     const segments = [];
-    const tagRegex = /<(\/?)(b|i|sub|sup)>/gi;
+    const tagRegex = /<(\/?)(b|i|sub|sup|c)(?::([^>]*))?>/gi;
+    if (!st.colorStack) st.colorStack = [];
     let lastIndex = 0;
     let match;
     const pushText = (t) => {
@@ -625,13 +626,20 @@ HtmlSvgEdu.Component = class Component {
           : "normal",
         bold: st.bold > 0,
         italic: st.italic > 0,
+        color: st.colorStack.length
+          ? st.colorStack[st.colorStack.length - 1]
+          : null,
       });
     };
     while ((match = tagRegex.exec(text)) !== null) {
       pushText(text.substring(lastIndex, match.index));
       const closing = match[1] === "/";
       const tag = match[2].toLowerCase();
-      if (tag === "b") {
+      if (tag === "c") {
+        // Farbe (4.4.0), intern aus <span style="color:…"> erzeugt
+        if (closing) st.colorStack.pop();
+        else st.colorStack.push(match[3] || null);
+      } else if (tag === "b") {
         st.bold = closing ? Math.max(0, st.bold - 1) : st.bold + 1;
       } else if (tag === "i") {
         st.italic = closing ? Math.max(0, st.italic - 1) : st.italic + 1;
@@ -1049,6 +1057,15 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
         example:
           'onClick(handleClick); \n\nfunction handleClick(event) { console.log("Status:", event.value); }',
       },
+      onChange: {
+        name: "onChange",
+        info: {
+          en: "Registers a function that is called when the box is ticked or unticked. e.value is true or false (same as onClick)",
+          de: "Legt fest, welche Funktion beim An- oder Abhaken aufgerufen wird. e.value ist true oder false (wie onClick)",
+        },
+        example:
+          "onChange(handleChange); \n\nfunction handleChange(e) { console.log(e.value); }",
+      },
     },
   };
   constructor(
@@ -1392,6 +1409,10 @@ HtmlSvgEdu.Checkbox = class Checkbox extends HtmlSvgEdu.Component {
       this._element.addEventListener("checkbox-change", callback);
     }
   }
+  // 4.4.0: wie bei Regler, Zahlenfeld und Dropdown – e.value ist true/false
+  onChange(callback) {
+    this.onClick(callback);
+  }
 };
 
 HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
@@ -1499,6 +1520,15 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
         },
         example:
           'onClick(sendMessage); \n\nfunction sendMessage() { console.log("Hallo World"); }',
+      },
+      onChange: {
+        name: "onChange",
+        info: {
+          en: "Registers a function that is called when this option is selected. e.value is true",
+          de: "Legt fest, welche Funktion aufgerufen wird, wenn diese Option gewählt wird. e.value ist true",
+        },
+        example:
+          "onChange(handleChange); \n\nfunction handleChange(e) { console.log(e.value); }",
       },
     },
   };
@@ -1786,6 +1816,9 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
       if (this._clickCallback) {
         this._clickCallback();
       }
+      if (this._changeCallback) {
+        this._changeCallback({ value: this._checked, component: this });
+      }
     });
     this._container.tabIndex = 0;
     this._container.addEventListener("focus", () => {
@@ -1803,6 +1836,9 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
 
         if (this._clickCallback) {
           this._clickCallback();
+        }
+        if (this._changeCallback) {
+          this._changeCallback({ value: this._checked, component: this });
         }
       } else if (
         e.key === "ArrowUp" ||
@@ -1910,6 +1946,10 @@ HtmlSvgEdu.RadioButton = class RadioButton extends HtmlSvgEdu.Component {
   onClick(callback) {
     this._clickCallback = callback;
   }
+  // 4.4.0: Rückruf bei Auswahl, e.value ist true (wie bei Checkbox)
+  onChange(callback) {
+    this._changeCallback = callback;
+  }
   destroy() {
     this._unregisterFromGroup();
     if (this._element && this._element.parentNode) {
@@ -1984,8 +2024,8 @@ HtmlSvgEdu.NumericStepper = class NumericStepper extends HtmlSvgEdu.Component {
       decimalSeparator: {
         name: "decimalSeparator",
         info: {
-          en: "Decimal separator character (, or .)",
-          de: "Dezimaltrennzeichen (, oder .)",
+          en: "Decimal separator: comma or point. Default: comma in German, point in English animations",
+          de: "Dezimaltrennzeichen: Komma oder Punkt. Ohne Angabe: Komma in deutschen, Punkt in englischen Animationen",
         },
       },
     },
@@ -2016,6 +2056,20 @@ HtmlSvgEdu.NumericStepper = class NumericStepper extends HtmlSvgEdu.Component {
       },
     },
     methods: {
+      setValue: {
+        info: {
+          en: "Sets the value (does not call onChange)",
+          de: "Setzt den Wert (ruft onChange nicht auf)",
+        },
+        example: "setValue(1.5)",
+      },
+      setDecimalSeparator: {
+        info: {
+          en: "Sets the decimal separator: point or comma. Default: comma in German, point in English animations",
+          de: "Setzt das Dezimaltrennzeichen: Punkt oder Komma. Ohne Angabe: Komma in deutschen, Punkt in englischen Animationen",
+        },
+        example: 'setDecimalSeparator(",")',
+      },
       setTooltip: {
         name: "setTooltip",
         info: {
@@ -2044,7 +2098,10 @@ HtmlSvgEdu.NumericStepper = class NumericStepper extends HtmlSvgEdu.Component {
     this._width = width || 120;
     this._font = font || "Arial";
     this._fontSize = fontSize || 16;
-    this._decimalSeparator = decimalSeparator || ".";
+    this._decimalSeparator =
+      decimalSeparator === "," || decimalSeparator === "."
+        ? decimalSeparator
+        : HtmlSvgEdu.defaultDecimalSeparator();
     this._holdTimer = null;
     this._holdInterval = null;
     this._holdDirection = 0;
@@ -2860,8 +2917,8 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
       thumbShape: {
         name: "thumbShape",
         info: {
-          en: 'Shape of the thumb: "rectangle", "circle", "triangle-A", "triangle-B"',
-          de: 'Form des Knopfs: "rectangle", "circle", "triangle-A", "triangle-B"',
+          en: "Shape of the thumb: rectangle, circle, triangle-A, triangle-B",
+          de: "Form des Knopfs: rectangle, circle, triangle-A, triangle-B",
         },
       },
     },
@@ -2931,15 +2988,15 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
       },
       setDecimalSeparator: {
         info: {
-          en: 'Sets the decimal separator of the value display ("." or ","), e.g. "," for German',
-          de: 'Setzt das Dezimaltrennzeichen der Wertanzeige ("." oder ","), z. B. "," für Deutsch',
+          en: "Sets the decimal separator of the value display: point or comma. Default: comma in German, point in English animations",
+          de: "Setzt das Dezimaltrennzeichen der Wertanzeige: Punkt oder Komma. Ohne Angabe: Komma in deutschen, Punkt in englischen Animationen",
         },
         example: 'setDecimalSeparator(",")',
       },
       setThumbShape: {
         info: {
-          en: 'Sets the shape of the thumb ("rectangle", "circle", "triangle-A", "triangle-B")',
-          de: 'Setzt die Form des Knopfs ("rectangle", "circle", "triangle-A", "triangle-B")',
+          en: "Sets the shape of the thumb (rectangle, circle, triangle-A, triangle-B)",
+          de: "Setzt die Form des Knopfs (rectangle, circle, triangle-A, triangle-B)",
         },
         example: 'setThumbShape("triangle-A")',
       },
@@ -2985,7 +3042,7 @@ HtmlSvgEdu.ButtonSlider = class ButtonSlider extends HtmlSvgEdu.Component {
     this._trackLength = trackLength || 200;
     this._showValue = false;
     this._valueFormatter = null;
-    this._decimalSeparator = ".";
+    this._decimalSeparator = HtmlSvgEdu.defaultDecimalSeparator();
     this._font = "Arial";
     this._fontSize = 16;
     this._snapValues = null;
@@ -4211,8 +4268,8 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
       text: {
         name: "text",
         info: {
-          en: "Text content to display (\\n or <br> for line break; <b></b> bold, <i></i> italic, <sub></sub> subscript, <sup></sup> superscript – also combined and nested)",
-          de: "Anzuzeigender Textinhalt (\\n oder <br> für Zeilenwechsel; <b></b> fett, <i></i> kursiv, <sub></sub> tiefgestellt, <sup></sup> hochgestellt – auch kombiniert und verschachtelt)",
+          en: "Text content to display (\\n or <br> for line break; <b></b> bold, <i></i> italic, <sub></sub> subscript, <sup></sup> superscript, <span style=color:#c0392b></span> coloured – also combined and nested)",
+          de: "Anzuzeigender Textinhalt (\\n oder <br> für Zeilenwechsel; <b></b> fett, <i></i> kursiv, <sub></sub> tiefgestellt, <sup></sup> hochgestellt, <span style=color:#c0392b></span> farbig – auch kombiniert und verschachtelt)",
         },
       },
       font: {
@@ -4360,6 +4417,13 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
         },
         example: 'setHyphenation(true, "de")',
       },
+      setVerticalAlign: {
+        info: {
+          en: "Vertical alignment relative to y: top (default, y = top edge of the text box), middle (y = centre) or bottom. With textAlign center and middle the text is centred on (x, y), e.g. a letter in a circle",
+          de: "Senkrechte Ausrichtung zu y: top (Standard, y = Oberkante der Textbox), middle (y = Mitte) oder bottom. Mit textAlign center und middle steht der Text mittig auf (x, y), z. B. ein Buchstabe in einem Kreis",
+        },
+        example: 'setVerticalAlign("middle")',
+      },
     },
   };
   constructor(
@@ -4399,21 +4463,24 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     this._element = this._container;
   }
   _applyAlignmentTransform() {
-    switch (this._textAlign) {
-      case "center":
-        this._container.style.transform = "translateX(-50%)";
-        break;
-      case "right":
-        this._container.style.transform = "translateX(-100%)";
-        break;
-      default:
-        this._container.style.transform = "";
-        break;
-    }
+    const tx =
+      this._textAlign === "center"
+        ? "translateX(-50%)"
+        : this._textAlign === "right"
+          ? "translateX(-100%)"
+          : "";
+    // 4.4.0: setVerticalAlign("middle") – y ist die Mitte, "bottom" – y ist unten
+    const ty =
+      this._verticalAlign === "middle"
+        ? "translateY(-50%)"
+        : this._verticalAlign === "bottom"
+          ? "translateY(-100%)"
+          : "";
+    this._container.style.transform = [tx, ty].filter(Boolean).join(" ");
   }
   _calculateTextDimensions() {
     const lines = HtmlSvgEdu.Text.stripSoftHyphens(
-      HtmlSvgEdu.Text.brToNewline(this._text),
+      HtmlSvgEdu.Text.colorTags(HtmlSvgEdu.Text.brToNewline(this._text)),
     ).split("\\n");
     let maxLineWidth = 0;
     let totalHeight = 0;
@@ -4530,7 +4597,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     return width;
   }
   _getWrappedLines() {
-    const hardLines = HtmlSvgEdu.Text.brToNewline(this._text).split("\\n");
+    const hardLines = HtmlSvgEdu.Text.colorTags(HtmlSvgEdu.Text.brToNewline(this._text)).split("\\n");
     const result = [];
     for (const line of hardLines) {
       const wrapped = this._wrapLine(line);
@@ -4614,7 +4681,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
   // weiche Trennstriche (&shy;) zählen nicht mit; after[k] = Rohtext-Index
   // direkt hinter dem (k+1)-ten sichtbaren Zeichen, soft = Trennvorschläge.
   _scanWord(word) {
-    const tagRegex = /^<\/?(b|i|sub|sup)>/i;
+    const tagRegex = /^<\/?(b|i|sub|sup|c)(?::[^>]*)?>/i;
     let plain = "";
     const after = [];
     const soft = new Set();
@@ -4646,7 +4713,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
   // Rohtext-Index hinter k sichtbaren Zeichen. Schließende Tags direkt hinter
   // der Trennstelle bleiben in der ersten Zeile, öffnende wandern mit dem Rest.
   _rawIndex(word, info, k) {
-    const closingRegex = /^<\/(b|i|sub|sup)>/i;
+    const closingRegex = /^<\/(b|i|sub|sup|c)>/i;
     let r = info.after[k - 1];
     let m;
     while ((m = word.substring(r).match(closingRegex))) {
@@ -4778,7 +4845,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
     const lines =
       this._wrappedLines !== null
         ? this._wrappedLines
-        : HtmlSvgEdu.Text.brToNewline(this._text).split("\\n");
+        : HtmlSvgEdu.Text.colorTags(HtmlSvgEdu.Text.brToNewline(this._text)).split("\\n");
     const lineHeight = this._fontSize * this._lineHeightFactor;
     const totalTextHeight = lines.length * lineHeight;
     const textStartY =
@@ -4838,7 +4905,8 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
         (parsedLine.length === 1 &&
           parsedLine[0].type === "normal" &&
           !parsedLine[0].bold &&
-          !parsedLine[0].italic)
+          !parsedLine[0].italic &&
+          !parsedLine[0].color)
       ) {
         textElement.textContent = parsedLine.length ? parsedLine[0].text : "";
       } else {
@@ -4866,6 +4934,7 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
 
           if (part.bold) tspan.setAttribute("font-weight", "bold");
           if (part.italic) tspan.setAttribute("font-style", "italic");
+          if (part.color) tspan.setAttribute("fill", part.color);
 
           if (
             index > 0 &&
@@ -4907,6 +4976,17 @@ HtmlSvgEdu.Text = class Text extends HtmlSvgEdu.Component {
   setTextAlign(textAlign) {
     this._textAlign = textAlign;
     this._refreshText();
+  }
+  // 4.4.0: senkrechte Ausrichtung zu y: "top" (Standard), "middle", "bottom".
+  // Mit textAlign "center" und "middle" steht der Text mittig auf (x, y) –
+  // z. B. ein Buchstabe in einem Kreis.
+  setVerticalAlign(verticalAlign) {
+    this._verticalAlign =
+      verticalAlign === "middle" || verticalAlign === "bottom"
+        ? verticalAlign
+        : "top";
+    this._applyAlignmentTransform();
+    return this;
   }
   get width() {
     return this._boxWidth;
@@ -4980,6 +5060,25 @@ HtmlSvgEdu.Text.brToNewline = (s) =>
   s === null || s === undefined
     ? ""
     : String(s).replace(/<br\s*\/?>/gi, "\\n");
+
+// Farbiger Text (4.4.0): <span style="color:#c0392b">…</span> und
+// <font color="red">…</font> werden intern zu <c:Farbe>…</c> (ohne Leerzeichen,
+// damit der Zeilenumbruch das Tag nicht zerschneidet). <span> ohne Farbe
+// verschwindet still, statt als Text zu erscheinen.
+HtmlSvgEdu.Text.colorTags = (s) =>
+  typeof s !== "string" || s.indexOf("<") === -1
+    ? s
+    : s
+        .replace(
+          /<span\s+style\s*=\s*["']?[^>]*?color\s*:\s*([^;"'>]+)[^>]*>/gi,
+          (m, c) => "<c:" + c.replace(/\s+/g, "") + ">",
+        )
+        .replace(
+          /<font\s+color\s*=\s*["']?([^"'\s>]+)["']?[^>]*>/gi,
+          (m, c) => "<c:" + c + ">",
+        )
+        .replace(/<span[^>]*>/gi, "<c:>")
+        .replace(/<\/(span|font)>/gi, "</c>");
 
 HtmlSvgEdu.Preloader = class Preloader extends HtmlSvgEdu.Component {
   static serializationMap = {
@@ -5270,8 +5369,8 @@ HtmlSvgEdu.ParameterTable = class ParameterTable extends HtmlSvgEdu.Component {
       parameters: {
         name: "parameters",
         info: {
-          en: 'Array of parameter objects with name and value [{name: "Parameter", value: 123}]. Names support HTML tags: <b>, <i>, <sub>, <sup>',
-          de: 'Array von Parameter-Objekten mit Name und Wert [{name: "Parameter", value: 123}]. Namen unterstützen HTML-Tags: <b>, <i>, <sub>, <sup>',
+          en: "Array of parameter objects with name and value (list of objects with name and value, see example). Names support HTML tags: <b>, <i>, <sub>, <sup>",
+          de: "Array von Parameter-Objekten mit Name und Wert (Liste von Objekten mit name und value, siehe Beispiel). Namen unterstützen HTML-Tags: <b>, <i>, <sub>, <sup>",
         },
       },
       width: {
@@ -5373,8 +5472,8 @@ HtmlSvgEdu.ParameterTable = class ParameterTable extends HtmlSvgEdu.Component {
       setDecimalSeparator: {
         name: "setDecimalSeparator",
         info: {
-          en: 'Sets decimal separator ("." or ",")',
-          de: 'Setzt das Dezimaltrennzeichen ("." oder ",")',
+          en: "Sets the decimal separator: point or comma. Default: comma in German, point in English animations",
+          de: "Setzt das Dezimaltrennzeichen: Punkt oder Komma. Ohne Angabe: Komma in deutschen, Punkt in englischen Animationen",
         },
         example: 'setDecimalSeparator(",")',
       },
@@ -5428,7 +5527,7 @@ HtmlSvgEdu.ParameterTable = class ParameterTable extends HtmlSvgEdu.Component {
     this._fontSize = fontSize;
     this._textColor = textColor;
     this._title = "";
-    this._decimalSeparator = ".";
+    this._decimalSeparator = HtmlSvgEdu.defaultDecimalSeparator();
     this._valueLimits = new Map();
     this._rounding = new Map();
     this._defaultRounding = 0.001;
@@ -6135,8 +6234,8 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
       onObjectSelected: {
         name: "onObjectSelected",
         info: {
-          en: "Registers a callback that fires when a clickable object in the 3D scene is clicked. The callback receives an event object with a 'value' property containing the object name.",
-          de: "Registriert einen Callback, der ausgelöst wird, wenn ein anklickbares Objekt in der 3D-Szene angeklickt wird. Der Callback erhält ein Event-Objekt mit der Eigenschaft 'value', die den Objektnamen enthält.",
+          en: "Registers a callback that fires when a clickable object in the 3D scene is clicked. The callback receives an event object with a value property containing the object name.",
+          de: "Registriert einen Callback, der ausgelöst wird, wenn ein anklickbares Objekt in der 3D-Szene angeklickt wird. Der Callback erhält ein Event-Objekt mit der Eigenschaft value, die den Objektnamen enthält.",
         },
         example: "onObjectSelected((event) => { console.log(event.value); })",
       },
@@ -6919,7 +7018,7 @@ HtmlSvgEdu.HtmlRectangle = class HtmlRectangle extends HtmlSvgEdu.Component {
       setRotationPoint: {
         example: "setRotationPoint(0, 0)",
         info: {
-          en: "Sets the rotation pivot point (x, y in pixels relative to the element's origin)",
+          en: "Sets the rotation pivot point (x, y in pixels relative to the element’s origin)",
           de: "Setzt den Drehpunkt (x, y in Pixeln relativ zum Elementursprung)",
         },
       },
@@ -6927,8 +7026,8 @@ HtmlSvgEdu.HtmlRectangle = class HtmlRectangle extends HtmlSvgEdu.Component {
         example:
           'setGradient("linear", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])',
         info: {
-          en: "Creates a linear or radial color gradient. Parameters: type ('linear' or 'radial'), array of color stops [{offset: 0-1, color: '#hex'}], optional angle in degrees for linear gradients",
-          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ ('linear' oder 'radial'), Array von Farbstopps [{offset: 0-1, color: '#hex'}], optionaler Winkel in Grad für lineare Verläufe",
+          en: "Creates a linear or radial colour gradient. Parameters: type (linear or radial), a list of colour stops, each with offset (0 to 1) and color (#hex), optional angle in degrees for linear gradients",
+          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ (linear oder radial), eine Liste von Farbstopps mit offset (0 bis 1) und color (#hex), optional der Winkel in Grad für lineare Verläufe",
         },
       },
       setScale: {
@@ -8227,6 +8326,39 @@ HtmlSvgEdu.Calc = class Calc {
     const mix = (shift) =>
       Math.round(((a >> shift) & 0xff) + ((((b >> shift) & 0xff) - ((a >> shift) & 0xff)) * k));
     return (mix(16) << 16) | (mix(8) << 8) | mix(0);
+  }
+};
+
+// 4.4.0: Hinweis im Meldungsfenster des Lab (nicht im Export), Sprache der
+// Oberfläche. Für Fehler, die sonst still bleiben (z. B. Text in einer Group).
+HtmlSvgEdu.editorHint = (de, en, type = "error") => {
+  if (typeof window === "undefined" || typeof window.logEvalMessage !== "function") return;
+  let lang = "de";
+  try {
+    if (window.i18n && typeof window.i18n.getCurrentLanguage === "function") {
+      lang = window.i18n.getCurrentLanguage() === "de" ? "de" : "en";
+    }
+  } catch (e) {
+    // ignore
+  }
+  const text = lang === "de" ? de : en;
+  // Gleiche Meldung pro Lauf nur einmal
+  try {
+    if (typeof systemMessages !== "undefined" && systemMessages.some((m) => m.message === text)) return;
+  } catch (e) {
+    // ignore
+  }
+  window.logEvalMessage(text, type);
+};
+
+// 4.4.0: Dezimaltrennzeichen für Regler, Zahlenfeld und Parametertabelle aus der
+// Sprache der Animation (wie Calc.format): Deutsch Komma, Englisch Punkt.
+// setDecimalSeparator() überschreibt das wie bisher.
+HtmlSvgEdu.defaultDecimalSeparator = () => {
+  try {
+    return HtmlSvgEdu.Calc.getLanguage() === "en" ? "." : ",";
+  } catch (e) {
+    return ".";
   }
 };
 

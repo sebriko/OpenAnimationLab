@@ -165,13 +165,16 @@
     <!-- Daily Tips -->
     <link rel="stylesheet" href="src/daily-tips.css" />
 
+    <!-- Share and AI help -->
+    <link rel="stylesheet" href="src/share-ai.css" />
+
     <!-- Preloader Script -->
     <script src="src/preloader.js"></script>
 
     <script>
         window.APP_CONFIG = {
-            version: "4.1.1",
-            build: "2026-11-22",
+            version: "4.4.0",
+            build: "2026-11-24",
             status: "Release",
           };
     </script>
@@ -222,6 +225,12 @@
                 <span class="material-icons">folder_open</span>
             </label>
             <input type="file" id="loadFile" onchange="loadCode(event)" />
+            <button class="regular-button show-button" onclick="openShareWindow()" data-i18n-title="share_tooltip">
+                <span class="material-icons">share</span>
+            </button>
+            <button class="regular-button show-button sa-ai-button" onclick="openAiWindow()" data-i18n-title="ai_tooltip">
+                <span class="material-icons">auto_awesome</span><span class="sa-filebar-label" data-i18n="ai_short">KI</span>
+            </button>
             <div class="publish-dropdown">
                 <button class="regular-button publish-main-btn" onclick="exportWithTitle(publishCode)" data-i18n-title="publish_animation" data-i18n="publish">
                     Publish
@@ -322,6 +331,81 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Share Window -->
+    <div id="shareWindow" class="modal-window" role="dialog" aria-labelledby="shareWindowTitle">
+        <div class="modal-window-header" id="shareWindowHeader">
+            <div class="modal-window-title" id="shareWindowTitle">
+                <span class="material-icons">share</span>
+                <span data-i18n="share_title">Share</span>
+            </div>
+            <button class="modal-window-close" onclick="closeShareWindow()">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <div class="modal-window-content sa-content">
+            <div class="sa-section">
+                <h3><span class="material-icons">link</span><span data-i18n="share_link_heading">Copy link</span></h3>
+                <p data-i18n="share_link_text">Anyone who opens the link sees your code in the Lab.</p>
+                <div class="sa-row">
+                    <input type="text" id="shareLinkField" class="sa-link-field" readonly data-i18n-title="share_link_field" onclick="this.select()" />
+                    <button class="sa-button" onclick="copyShareLink()">
+                        <span class="material-icons">content_copy</span><span data-i18n="share_copy_button">Copy link</span>
+                    </button>
+                </div>
+                <div id="shareLongHint" class="sa-hint" data-i18n="share_long_hint">The link is very long.</div>
+                <div id="shareLinkStatus" class="sa-status" aria-live="polite"></div>
+                <p class="sa-note" data-i18n="share_privacy">The code is only inside the link itself – it is not stored anywhere.</p>
+            </div>
+            <div class="sa-section">
+                <h3><span class="material-icons">favorite</span><span data-i18n="share_submit_heading">Submit to educational-animation.org</span></h3>
+                <p data-i18n="share_submit_text">Happy with your animation? Send it to us.</p>
+                <div class="sa-row">
+                    <button class="sa-button sa-orange" onclick="submitShareLink()">
+                        <span class="material-icons">send</span><span data-i18n="share_submit_button">Submit</span>
+                    </button>
+                </div>
+                <div id="shareSubmitStatus" class="sa-status" aria-live="polite"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Window -->
+    <div id="aiWindow" class="modal-window" role="dialog" aria-labelledby="aiWindowTitle">
+        <div class="modal-window-header" id="aiWindowHeader">
+            <div class="modal-window-title" id="aiWindowTitle">
+                <span class="material-icons">auto_awesome</span>
+                <span data-i18n="ai_title">Build with AI</span>
+            </div>
+            <button class="modal-window-close" onclick="closeAiWindow()">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <div class="modal-window-content sa-content">
+            <p data-i18n="ai_intro">Describe your idea.</p>
+            <textarea id="aiIdea" class="sa-idea" data-i18n-placeholder="ai_placeholder" data-i18n-title="ai_idea_label"></textarea>
+            <p class="sa-tip" data-i18n="ai_image_tip">Tip: attach a sketch or screenshot in the AI chat.</p>
+            <label class="sa-check" id="aiWithCodeRow"><input type="checkbox" id="aiWithCode" /><span data-i18n="ai_with_code">Include my code</span></label>
+            <label class="sa-check" id="aiWithErrorsRow"><input type="checkbox" id="aiWithErrors" /><span data-i18n="ai_with_errors">Include the error messages</span></label>
+            <div class="sa-row">
+                <button class="sa-button" onclick="copyAiPrompt()">
+                    <span class="material-icons">content_copy</span><span data-i18n="ai_copy_button">Copy request</span>
+                </button>
+            </div>
+            <div id="aiStatus" class="sa-status" aria-live="polite"></div>
+            <ol class="sa-steps">
+                <li data-i18n="ai_step1">Paste into your AI assistant.</li>
+                <li data-i18n="ai_step2">Copy the code back into the Lab, press play.</li>
+                <li data-i18n="ai_step3">Error? Press the button again.</li>
+            </ol>
+            <p class="sa-note">
+                <span data-i18n="ai_note">Check the result. No personal data.</span>
+                <a id="aiQuickrefLink" href="#" target="_blank" rel="noopener" data-i18n="ai_quickref_link">Quick reference for AI</a> ·
+                <a id="aiReferenceLink" href="#" target="_blank" rel="noopener" data-i18n="ai_reference_link">Reference</a> ·
+                <a id="aiHelpLink" href="#" target="_blank" rel="noopener" data-i18n="ai_help_link">More about AI help</a>
+            </p>
         </div>
     </div>
 
@@ -656,6 +740,7 @@
     <script src="src/template-organizer.js"></script>
 
     <script src="src/autoLoad.js"></script>
+    <script src="src/share-ai.js"></script>
     <script src="src/undo-redo.js"></script>
 
     <script src="src/daily-tips.js"></script>
@@ -681,4 +766,4 @@
       document.addEventListener("DOMContentLoaded", setAppVersion);
     </script>
   </body>
-</html>
+</html>

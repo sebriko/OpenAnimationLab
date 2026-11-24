@@ -408,6 +408,152 @@ class I18nManager {
         de: "Erste Schritte",
       },
 
+      // Share and AI help (4.3.0)
+      share_tooltip: {
+        en: "Share – copy a link or submit your animation",
+        de: "Teilen – Link kopieren oder Animation einreichen",
+      },
+      share_title: {
+        en: "Share",
+        de: "Teilen",
+      },
+      share_link_heading: {
+        en: "Copy link",
+        de: "Link kopieren",
+      },
+      share_link_text: {
+        en: "Anyone who opens the link sees your code in the Lab and can change it.",
+        de: "Wer den Link öffnet, sieht Ihren Code im Lab und kann ihn verändern.",
+      },
+      share_link_field: {
+        en: "Link to your code",
+        de: "Link zu Ihrem Code",
+      },
+      share_copy_button: {
+        en: "Copy link",
+        de: "Link kopieren",
+      },
+      share_long_hint: {
+        en: "The link is very long. Some messengers cut long links. Safer: save the code (disk symbol) and send the file.",
+        de: "Der Link ist sehr lang. Manche Messenger kürzen lange Links. Sicherer: Code speichern (Disketten-Symbol) und die Datei verschicken.",
+      },
+      share_privacy: {
+        en: "The code is only inside the link itself – it is not stored anywhere.",
+        de: "Der Code steht nur im Link selbst – er wird nirgends gespeichert.",
+      },
+      share_submit_heading: {
+        en: "Submit to educational-animation.org",
+        de: "Bei educational-animation.org einreichen",
+      },
+      share_submit_text: {
+        en: "Happy with your animation? Send it to us – perhaps we will show it on the website.",
+        de: "Gefällt Ihnen Ihre Animation? Schicken Sie sie uns – vielleicht zeigen wir sie auf der Website.",
+      },
+      share_submit_button: {
+        en: "Submit",
+        de: "Einreichen",
+      },
+      share_submit_done: {
+        en: "Link copied. The form has opened in a new tab – paste the link into the “Code of animation” field.",
+        de: "Link kopiert. Das Formular ist in einem neuen Tab geöffnet – fügen Sie den Link ins Feld „Code der Animation“ ein.",
+      },
+      share_copied: {
+        en: "✓ Link copied ({n} characters).",
+        de: "✓ Link kopiert ({n} Zeichen).",
+      },
+      share_empty: {
+        en: "The editor is empty – there is nothing to share yet.",
+        de: "Der Editor ist leer – es gibt noch nichts zu teilen.",
+      },
+      share_too_long: {
+        en: "The code is too long for a link. Please save it (disk symbol) and send the file.",
+        de: "Der Code ist zu lang für einen Link. Bitte speichern (Disketten-Symbol) und die Datei verschicken.",
+      },
+      shared_loaded: {
+        en: "Shared code loaded. Have a look at it first, then start it with ▶.",
+        de: "Geteilter Code geladen. Sehen Sie ihn sich zuerst an und starten Sie ihn dann mit ▶.",
+      },
+      shared_broken: {
+        en: "The link is incomplete – the code could not be read. Ask for the link again.",
+        de: "Der Link ist unvollständig – der Code ließ sich nicht lesen. Bitten Sie um den Link noch einmal.",
+      },
+      copy_failed: {
+        en: "Copying did not work. Please select the text and copy it with Ctrl+C.",
+        de: "Kopieren hat nicht geklappt. Bitte den Text markieren und mit Strg+C kopieren.",
+      },
+      ai_tooltip: {
+        en: "Build with AI – turn your idea into a request for your AI assistant",
+        de: "Mit KI bauen – aus Ihrer Idee eine Anfrage für Ihren KI-Assistenten machen",
+      },
+      ai_short: {
+        en: "AI",
+        de: "KI",
+      },
+      ai_title: {
+        en: "Build with AI",
+        de: "Mit KI bauen",
+      },
+      ai_intro: {
+        en: "Describe your idea. The button turns it into a complete request for your AI assistant – with all the rules the Lab needs.",
+        de: "Beschreiben Sie Ihre Idee. Der Knopf macht daraus eine fertige Anfrage für Ihren KI-Assistenten – mit allen Regeln, die das Lab braucht.",
+      },
+      ai_idea_label: {
+        en: "Your idea",
+        de: "Ihre Idee",
+      },
+      ai_placeholder: {
+        en: "e.g. A pendulum with a slider for its length. Show the period.",
+        de: "z. B. Ein Pendel mit Regler für die Länge. Die Schwingungsdauer wird angezeigt.",
+      },
+      ai_with_code: {
+        en: "Include my code (the AI builds on it)",
+        de: "Meinen Code mitschicken (die KI baut darauf auf)",
+      },
+      ai_with_errors: {
+        en: "Include the current error messages",
+        de: "Die aktuellen Fehlermeldungen mitschicken",
+      },
+      ai_copy_button: {
+        en: "Copy request",
+        de: "Anfrage kopieren",
+      },
+      ai_copied: {
+        en: "✓ Copied. Now paste it into your AI assistant.",
+        de: "✓ Kopiert. Jetzt in Ihren KI-Assistenten einfügen.",
+      },
+      ai_step1: {
+        en: "Paste the request into your AI assistant.",
+        de: "Anfrage in Ihren KI-Assistenten einfügen.",
+      },
+      ai_step2: {
+        en: "Copy the code you get back into the Lab and press ▶.",
+        de: "Den Code, den Sie bekommen, ins Lab kopieren und ▶ drücken.",
+      },
+      ai_step3: {
+        en: "Something wrong? Open this window again – the error messages are included automatically.",
+        de: "Klappt etwas nicht? Dieses Fenster erneut öffnen – die Fehlermeldungen gehen automatisch mit.",
+      },
+      ai_note: {
+        en: "Check the result for accuracy. Do not enter personal data.",
+        de: "Prüfen Sie das Ergebnis fachlich. Geben Sie keine persönlichen Daten ein.",
+      },
+      ai_image_tip: {
+        en: "Tip: attach a sketch or a screenshot in the AI chat – the AI then gets positions and sizes much closer to what you have in mind.",
+        de: "Tipp: Eine Skizze oder ein Bildschirmfoto im KI-Chat anhängen – dann trifft die KI Lage und Größen viel besser.",
+      },
+      ai_quickref_link: {
+        en: "Quick reference for AI",
+        de: "Kurzreferenz für die KI",
+      },
+      ai_reference_link: {
+        en: "Reference",
+        de: "Referenz",
+      },
+      ai_help_link: {
+        en: "More about AI help",
+        de: "Mehr zur KI-Hilfe",
+      },
+
       // Template interface
       no_templates_available: {
         en: "No templates available",

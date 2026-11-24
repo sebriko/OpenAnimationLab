@@ -57,6 +57,22 @@ class BoardBase {
 
   // ── Available space calculation ───────────────────────────────────────────
 
+  // Sichtbare Fläche des Browserfensters. Auf dem Handy kann window.innerWidth
+  // größer sein als der Bildschirm: Ragt die Bühne beim Laden über den Rand,
+  // vergrößert der Browser den Layout-Viewport – die Animation wird dann zu groß
+  // berechnet und bleibt zu groß. visualViewport × scale liefert die echte Breite.
+  getVisibleViewport() {
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    const vv = window.visualViewport;
+    if (vv && vv.width > 0 && vv.height > 0) {
+      const s = vv.scale > 0 ? vv.scale : 1;
+      width = Math.min(width, Math.round(vv.width * s));
+      height = Math.min(height, Math.round(vv.height * s));
+    }
+    return { width: width, height: height };
+  }
+
   getAvailableSpace() {
     const preview = document.getElementById("preview");
     const container = this.canvasContainer;
@@ -72,10 +88,12 @@ class BoardBase {
       (typeof window.exportMode !== "undefined" && window.exportMode);
 
     if (isFullscreen) {
+      const vp = this.getVisibleViewport();
       return {
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: vp.width,
+        height: vp.height,
         margin: 0,
+        fullscreen: true,
       };
     }
 
@@ -456,5 +474,128 @@ class BoardBase {
       if (onMove && child.onDrag) child.onDrag(onMove);
       if (onEnd && child.onDragEnd) child.onDragEnd(onEnd);
     }
+  }
+
+  // ── Vollbild-Knopf im Export (4.2.0) ──────────────────────────────────────
+  // Nur im Export, nur als eigene Seite (nicht im iframe) und nur, wenn der
+  // Browser echtes Vollbild kann (iPhone nicht). Liegt der Knopf über der
+  // Bühne, blendet er sich nach 3 s aus und kommt bei Maus oder Tippen wieder.
+
+  setupExportFullscreenButton() {
+    if (this._fsButton) return;
+    if (typeof window.exportMode === "undefined" || !window.exportMode) return;
+    let topLevel = true;
+    try { topLevel = window.self === window.top; } catch (e) { topLevel = false; }
+    if (!topLevel) return;
+    const root = document.documentElement;
+    const canRequest = root.requestFullscreen || root.webkitRequestFullscreen;
+    const enabled = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+    if (!canRequest || !enabled) return;
+
+    const de = (root.lang || "").toLowerCase().indexOf("de") === 0;
+    this._fsTexts = de
+      ? { enter: "Vollbild", exit: "Vollbild beenden" }
+      : { enter: "Full screen", exit: "Exit full screen" };
+    const iconEnter =
+      '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="#444444" stroke-width="2" stroke-linecap="round"><path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5"/></svg>';
+    const iconExit =
+      '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="#444444" stroke-width="2" stroke-linecap="round"><path d="M7 2v5H2M18 7h-5V2M13 18v-5h5M2 13h5v5"/></svg>';
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "oal-fullscreen-button";
+    Object.assign(btn.style, {
+      position: "fixed", top: "6px", right: "6px", zIndex: "10001",
+      width: "36px", height: "36px", padding: "0", margin: "0",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      background: "rgba(255, 255, 255, 0.85)", border: "1px solid #cccccc",
+      borderRadius: "8px", cursor: "pointer", opacity: "0.6",
+      transition: "opacity 0.4s", touchAction: "manipulation",
+      WebkitTapHighlightColor: "transparent",
+    });
+
+    const isFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+    const update = () => {
+      const fs = isFs();
+      btn.innerHTML = fs ? iconExit : iconEnter;
+      btn.title = fs ? this._fsTexts.exit : this._fsTexts.enter;
+      btn.setAttribute("aria-label", btn.title);
+      btn.setAttribute("aria-pressed", fs ? "true" : "false");
+    };
+    update();
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      try {
+        if (isFs()) {
+          const exit = document.exitFullscreen || document.webkitExitFullscreen;
+          if (exit) { const p = exit.call(document); if (p && p.catch) p.catch(() => {}); }
+        } else {
+          const p = canRequest.call(root);
+          if (p && p.catch) p.catch(() => {});
+        }
+      } catch (err) {}
+    });
+    btn.addEventListener("mouseenter", () => { btn.style.opacity = "1"; });
+    btn.addEventListener("mouseleave", () => { this._fsShow(); });
+    btn.addEventListener("focus", () => { btn.style.opacity = "1"; });
+    btn.addEventListener("blur", () => { this._fsShow(); });
+
+    this._fsOnChange = () => { update(); this._fsShow(); this.resizeCanvas(); };
+    document.addEventListener("fullscreenchange", this._fsOnChange);
+    document.addEventListener("webkitfullscreenchange", this._fsOnChange);
+    this._fsOnActivity = () => this._fsShow();
+    document.addEventListener("pointermove", this._fsOnActivity, true);
+    document.addEventListener("pointerdown", this._fsOnActivity, true);
+
+    this._fsOverStage = true;
+    this._fsButton = btn;
+    document.body.appendChild(btn);
+    this._fsShow();
+  }
+
+  // Knopf zeigen; liegt er über der Bühne, nach 3 s ausblenden.
+  _fsShow() {
+    const btn = this._fsButton;
+    if (!btn) return;
+    if (this._fsHideTimer) { clearTimeout(this._fsHideTimer); this._fsHideTimer = null; }
+    btn.style.opacity = "0.6";
+    btn.style.pointerEvents = "auto";
+    btn.style.visibility = "visible";
+    if (this._fsOverStage) {
+      this._fsHideTimer = setTimeout(() => {
+        if (document.activeElement === btn) return;
+        btn.style.opacity = "0";
+        btn.style.pointerEvents = "none";
+      }, 3000);
+    }
+  }
+
+  // Nach jedem Größenwechsel: Ist rechts oder oben neben der Bühne Platz?
+  updateFullscreenButton(left, top, width, height, boxWidth) {
+    if (!this._fsButton) return;
+    // Im Hochformat steht oben der Hinweis „Gerät quer halten“ → Knopf unten rechts.
+    const portrait = window.matchMedia &&
+      window.matchMedia("(orientation: portrait) and (max-width: 700px)").matches;
+    this._fsButton.style.top = portrait ? "auto" : "6px";
+    this._fsButton.style.bottom = portrait ? "6px" : "auto";
+    const rightSpace = boxWidth - (left + width);
+    const bottomSpace = window.innerHeight - (top + height);
+    const over = portrait ? (rightSpace < 48 && bottomSpace < 48) : (rightSpace < 48 && top < 48);
+    if (over !== this._fsOverStage) {
+      this._fsOverStage = over;
+      this._fsShow();
+    }
+  }
+
+  destroyFullscreenButton() {
+    if (!this._fsButton) return;
+    if (this._fsHideTimer) clearTimeout(this._fsHideTimer);
+    document.removeEventListener("fullscreenchange", this._fsOnChange);
+    document.removeEventListener("webkitfullscreenchange", this._fsOnChange);
+    document.removeEventListener("pointermove", this._fsOnActivity, true);
+    document.removeEventListener("pointerdown", this._fsOnActivity, true);
+    if (this._fsButton.parentNode) this._fsButton.parentNode.removeChild(this._fsButton);
+    this._fsButton = null;
   }
 }

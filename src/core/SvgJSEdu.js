@@ -898,6 +898,14 @@ SvgJSEdu.Group = class Group extends SvgJSElement {
   // ---------- Child Management ----------
 
   addChild(element) {
+    if (
+      typeof HtmlSvgEdu !== "undefined" &&
+      HtmlSvgEdu.Component &&
+      element instanceof HtmlSvgEdu.Component
+    ) {
+      HtmlSvgEdu.editorHint("Text, Button, Regler und andere Bedienelemente können nicht in eine Group – sie liegen immer über den Grafiken. Position mit .x und .y selbst mitführen.", "Text, buttons, sliders and other UI components cannot be put into a Group – they always lie above the graphics. Move them yourself with .x and .y.", "info");
+      return this;
+    }
     if (!element || !element._group || !this._group) return this;
 
     this._group.add(element._group);
@@ -1232,8 +1240,8 @@ SvgJSEdu.Rectangle = class Rectangle extends SvgJSElement {
         example:
           'setGradient("linear", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])',
         info: {
-          en: "Creates a linear or radial color gradient. Parameters: type ('linear' or 'radial'), array of color stops [{offset: 0-1, color: '#hex'}], optional angle in degrees for linear gradients",
-          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ ('linear' oder 'radial'), Array von Farbstopps [{offset: 0-1, color: '#hex'}], optionaler Winkel in Grad für lineare Verläufe",
+          en: "Creates a linear or radial colour gradient. Parameters: type (linear or radial), a list of colour stops, each with offset (0 to 1) and color (#hex), optional angle in degrees for linear gradients",
+          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ (linear oder radial), eine Liste von Farbstopps mit offset (0 bis 1) und color (#hex), optional der Winkel in Grad für lineare Verläufe",
         },
       },
       setScale: {
@@ -1760,8 +1768,8 @@ SvgJSEdu.Circle = class Circle extends SvgJSElement {
         example:
           'setGradient("radial", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])',
         info: {
-          en: "Creates a radial color gradient. Parameters: type ('radial'), array of color stops [{offset: 0-1, color: '#hex'}]",
-          de: "Erstellt einen radialen Farbverlauf. Parameter: Typ ('radial'), Array von Farbstopps [{offset: 0-1, color: '#hex'}]",
+          en: "Creates a linear or radial colour gradient. Parameters: type (radial), a list of colour stops, each with offset (0 to 1) and color (#hex), optional angle in degrees for linear gradients",
+          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ (radial), eine Liste von Farbstopps mit offset (0 bis 1) und color (#hex), optional der Winkel in Grad für lineare Verläufe",
         },
       },
       setScale: {
@@ -2123,8 +2131,8 @@ SvgJSEdu.Ellipse = class Ellipse extends SvgJSElement {
         example:
           'setGradient("radial", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])',
         info: {
-          en: "Creates a linear or radial color gradient. Parameters: type ('linear' or 'radial'), array of color stops [{offset: 0-1, color: '#hex'}], optional angle in degrees for linear gradients",
-          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ ('linear' oder 'radial'), Array von Farbstopps [{offset: 0-1, color: '#hex'}], optionaler Winkel in Grad für lineare Verläufe",
+          en: "Creates a linear or radial colour gradient. Parameters: type (linear or radial), a list of colour stops, each with offset (0 to 1) and color (#hex), optional angle in degrees for linear gradients",
+          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ (linear oder radial), eine Liste von Farbstopps mit offset (0 bis 1) und color (#hex), optional der Winkel in Grad für lineare Verläufe",
         },
       },
       setScale: {
@@ -2727,6 +2735,13 @@ SvgJSEdu.Polygon = class Polygon {
       },
     },
     methods: {
+      setFillColor: {
+        example: "setFillColor(0xff0000)",
+        info: {
+          en: "Sets the fill color of the polygon",
+          de: "Setzt die Füllfarbe des Vielecks",
+        },
+      },
       setBorder: {
         example: "setBorder(0xff0000, 2)",
         info: {
@@ -2752,8 +2767,8 @@ SvgJSEdu.Polygon = class Polygon {
         example:
           'setGradient("radial", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])',
         info: {
-          en: "Creates a linear or radial color gradient. Parameters: type ('linear' or 'radial'), array of color stops [{offset: 0-1, color: '#hex'}], optional angle in degrees for linear gradients",
-          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ ('linear' oder 'radial'), Array von Farbstopps [{offset: 0-1, color: '#hex'}], optionaler Winkel in Grad für lineare Verläufe",
+          en: "Creates a linear or radial colour gradient. Parameters: type (linear or radial), a list of colour stops, each with offset (0 to 1) and color (#hex), optional angle in degrees for linear gradients",
+          de: "Erstellt einen linearen oder radialen Farbverlauf. Parameter: Typ (linear oder radial), eine Liste von Farbstopps mit offset (0 bis 1) und color (#hex), optional der Winkel in Grad für lineare Verläufe",
         },
       },
       setScale: {
@@ -3134,6 +3149,19 @@ SvgJSEdu.Polygon = class Polygon {
     this._startAngle = degrees;
     this._draw();
   }
+
+  // 4.4.0: Füllfarbe nachträglich ändern (wie bei Rectangle und Circle)
+  setFillColor(color) {
+    this._color = color;
+    this._gradientType = null;
+    this._gradientStops = null;
+    this._draw();
+    return this;
+  }
+
+  // 4.4.0: Polygon erbt nicht von SvgJSElement – setScale() rief _applyScale()
+  // ins Leere (Absturz). Die Skalierung steckt in _updateTransform().
+  _applyScale() {}
 
   // ---------- Events ----------
 
@@ -8226,8 +8254,8 @@ SvgJSEdu.Ruler = class Ruler extends SvgJSElement {
       direction: {
         name: "direction",
         info: {
-          en: 'Direction of the ruler ("top", "bottom", "left", "right")',
-          de: 'Richtung des Lineals ("top", "bottom", "left", "right")',
+          en: "Direction of the ruler (top, bottom, left, right)",
+          de: "Richtung des Lineals (top, bottom, left, right)",
         },
       },
       values: {
@@ -8303,8 +8331,8 @@ SvgJSEdu.Ruler = class Ruler extends SvgJSElement {
       decimalSeparator: {
         name: "decimalSeparator",
         info: {
-          en: 'Separator for decimal places (e.g. "." or ",")',
-          de: 'Trennzeichen für Dezimalstellen (z.B. "." oder ",")',
+          en: "Separator for decimal places: point or comma",
+          de: "Trennzeichen für Dezimalstellen: Punkt oder Komma",
         },
       },
     },
@@ -8366,7 +8394,7 @@ SvgJSEdu.Ruler = class Ruler extends SvgJSElement {
       setSubTicks: {
         example: "setSubTicks(4, 5, 0xff0000, 1)",
         info: {
-          en: "Adds sub tick marks between the main labeled ticks. Sub ticks are also drawn in the spacingOffset region between the ruler's origin and the first main tick. Parameters: count (number of sub ticks between main ticks), length (length of sub ticks in pixels), color (optional, hex color, defaults to main tick color), thickness (optional, line thickness, defaults to main tick thickness)",
+          en: "Adds sub tick marks between the main labeled ticks. Sub ticks are also drawn in the spacingOffset region between the ruler’s origin and the first main tick. Parameters: count (number of sub ticks between main ticks), length (length of sub ticks in pixels), color (optional, hex color, defaults to main tick color), thickness (optional, line thickness, defaults to main tick thickness)",
           de: "Fügt Zwischenteilstriche zwischen den beschrifteten Hauptteilstrichen hinzu. Zwischenteilstriche werden auch im spacingOffset-Bereich zwischen dem Nullpunkt des Lineals und dem ersten Hauptteilstrich gezeichnet. Parameter: count (Anzahl der Zwischenteilstriche zwischen zwei Hauptteilstrichen), length (Länge der Zwischenteilstriche in Pixeln), color (optional, Hex-Farbe, Standard ist die Farbe der Hauptteilstriche), thickness (optional, Linienstärke, Standard ist die Stärke der Hauptteilstriche)",
         },
       },
@@ -8767,6 +8795,13 @@ SvgJSEdu.CoordinateSystem = class CoordinateSystem extends SvgJSElement {
           de: "Setzt die Linienstärke",
         },
       },
+      setArrows: {
+        example: "setArrows(true, true, false, false)",
+        info: {
+          en: "Shows or hides the arrowheads at the ends of the axes: right, up, left, down (true = arrowhead)",
+          de: "Zeigt oder verbirgt die Pfeilspitzen an den Achsenenden: rechts, oben, links, unten (true = Pfeilspitze)",
+        },
+      },
     },
   };
 
@@ -8791,6 +8826,7 @@ SvgJSEdu.CoordinateSystem = class CoordinateSystem extends SvgJSElement {
     this._thickness = thickness;
 
     this._arrows = { top: null, bottom: null, left: null, right: null };
+    this._heads = { top: true, bottom: true, left: true, right: true };
 
     this._draw();
     BoardSVG[INSTANCE_KEY].addChild(this);
@@ -8813,8 +8849,8 @@ SvgJSEdu.CoordinateSystem = class CoordinateSystem extends SvgJSElement {
         -this._sizeTop,
         this._color,
         this._thickness,
-        this._arrowLength,
-        this._arrowWidth,
+        this._heads.top ? this._arrowLength : 0,
+        this._heads.top ? this._arrowWidth : 0,
       );
       this._group.add(this._arrows.top._group);
     }
@@ -8826,8 +8862,8 @@ SvgJSEdu.CoordinateSystem = class CoordinateSystem extends SvgJSElement {
         this._sizeBottom,
         this._color,
         this._thickness,
-        this._arrowLength,
-        this._arrowWidth,
+        this._heads.bottom ? this._arrowLength : 0,
+        this._heads.bottom ? this._arrowWidth : 0,
       );
       this._group.add(this._arrows.bottom._group);
     }
@@ -8839,8 +8875,8 @@ SvgJSEdu.CoordinateSystem = class CoordinateSystem extends SvgJSElement {
         0,
         this._color,
         this._thickness,
-        this._arrowLength,
-        this._arrowWidth,
+        this._heads.left ? this._arrowLength : 0,
+        this._heads.left ? this._arrowWidth : 0,
       );
       this._group.add(this._arrows.left._group);
     }
@@ -8852,8 +8888,8 @@ SvgJSEdu.CoordinateSystem = class CoordinateSystem extends SvgJSElement {
         0,
         this._color,
         this._thickness,
-        this._arrowLength,
-        this._arrowWidth,
+        this._heads.right ? this._arrowLength : 0,
+        this._heads.right ? this._arrowWidth : 0,
       );
       this._group.add(this._arrows.right._group);
     }
@@ -8872,6 +8908,14 @@ SvgJSEdu.CoordinateSystem = class CoordinateSystem extends SvgJSElement {
     for (const key of ["top", "bottom", "left", "right"]) {
       if (this._arrows[key]) this._arrows[key].setThickness(thickness);
     }
+    return this;
+  }
+
+  // 4.4.0: Pfeilspitzen einzeln an- und ausschalten (rechts, oben, links, unten),
+  // z. B. setArrows(true, true, false, false) für ein Zeigerdiagramm
+  setArrows(right = true, top = true, left = true, bottom = true) {
+    this._heads = { top: !!top, bottom: !!bottom, left: !!left, right: !!right };
+    this._draw();
     return this;
   }
 };
@@ -9591,8 +9635,8 @@ SvgJSEdu.Timer = class Timer {
       setEasing: {
         example: 'setEasing("easeInOut")',
         info: {
-          en: 'Sets the easing function: "linear", "easeIn", "easeOut", "easeInOut", "bounce"',
-          de: 'Setzt die Easing-Funktion: "linear", "easeIn", "easeOut", "easeInOut", "bounce"',
+          en: "Sets the easing function: linear, easeIn, easeOut, easeInOut, bounce",
+          de: "Setzt die Easing-Funktion: linear, easeIn, easeOut, easeInOut, bounce",
         },
       },
       onComplete: {
@@ -9686,9 +9730,16 @@ SvgJSEdu.Timer = class Timer {
     Timer._running.clear();
   }
 
+  // 4.4.0: Dauer 0, negativ, leer oder keine Zahl = endlos (null). Vorher blieb
+  // die Zeit bei new Timer(0, …) stehen – ein häufiger KI-Fehler.
+  static _normDuration(duration) {
+    const d = Number(duration);
+    return duration !== null && duration !== undefined && duration !== "" && isFinite(d) && d > 0 ? d : null;
+  }
+
   constructor(duration = null, loop = false, autoStart = false) {
     this._board = Timer._activeBoard();
-    this._duration = duration;
+    this._duration = Timer._normDuration(duration);
     this._loop = loop;
     this._autoStart = autoStart;
     this._isRunning = false;
@@ -9969,7 +10020,7 @@ SvgJSEdu.Timer = class Timer {
   }
 
   setDuration(duration) {
-    this._duration = duration;
+    this._duration = Timer._normDuration(duration);
     return this;
   }
 
@@ -10446,21 +10497,21 @@ SvgJSEdu.Plot = class Plot extends SvgJSElement {
     },
     methods: {
       addFunction: {
-        example: "let curve = myPlot.addFunction(x => Math.sin(x), 0xc0392b, 3)",
+        example: "addFunction(x => Math.sin(x), 0xc0392b, 3)",
         info: {
           en: "Draws a function y = f(x) over the whole range and returns the curve. If the function uses a variable (for example from a slider), call update() after changing it",
           de: "Zeichnet eine Funktion y = f(x) über den ganzen Bereich und gibt die Kurve zurück. Verwendet die Funktion eine Variable (zum Beispiel von einem Regler), danach update() aufrufen",
         },
       },
       addCurve: {
-        example: "let curve = myPlot.addCurve(0x2e86c1, 3)",
+        example: "addCurve(0x2e86c1, 3)",
         info: {
           en: "Creates an empty curve for measured values and returns it. Curve methods: addPoint(x, y), setPoints(list), clear(), setMaxPoints(n), setColor, setThickness, setDashed(true), setFill(color, alpha), setVisible, remove()",
           de: "Erzeugt eine leere Kurve für Messwerte und gibt sie zurück. Methoden der Kurve: addPoint(x, y), setPoints(liste), clear(), setMaxPoints(n), setColor, setThickness, setDashed(true), setFill(farbe, alpha), setVisible, remove()",
         },
       },
       addPoint: {
-        example: "let dot = myPlot.addPoint(2, 1, 0xc0392b, 7)",
+        example: "addPoint(2, 1, 0xc0392b, 7)",
         info: {
           en: "Draws a point at the values (x | y) and returns it. Move it with dot.setPosition(x, y). Outside the range it is hidden",
           de: "Zeichnet einen Punkt bei den Werten (x | y) und gibt ihn zurück. Verschieben mit punkt.setPosition(x, y). Außerhalb des Bereichs ist er unsichtbar",
@@ -10551,7 +10602,7 @@ SvgJSEdu.Plot = class Plot extends SvgJSElement {
         },
       },
       toValueX: {
-        example: "toValueX(board.mouseX)",
+        example: "toValueX(e.x)",
         info: {
           en: "Converts an x coordinate on the board in pixels into a value of the chart",
           de: "Rechnet eine x-Koordinate auf der Zeichenfläche in Pixeln in einen Wert des Diagramms um",
@@ -10635,6 +10686,9 @@ SvgJSEdu.Plot = class Plot extends SvgJSElement {
 
   constructor(x = 100, y = 100, width = 500, height = 300, xMin = 0, xMax = 10, yMin = 0, yMax = 10) {
     super();
+    if (arguments.length === 6 && typeof HtmlSvgEdu !== "undefined" && HtmlSvgEdu.editorHint) {
+      HtmlSvgEdu.editorHint("new Plot braucht 8 Zahlen: x, y, Breite, Höhe, xMin, xMax, yMin, yMax – hier sind es 6. Vorne fehlen wohl x und y.", "new Plot needs 8 numbers: x, y, width, height, xMin, xMax, yMin, yMax – here there are 6. x and y are probably missing at the front.");
+    }
     this._w = Math.max(1, Number(width) || 1);
     this._h = Math.max(1, Number(height) || 1);
     this._xMin = Number(xMin);

@@ -493,6 +493,9 @@ class Board extends BoardBase {
   destroy() {
     this.stopDrag();
     this._cleanupKeyboard();
+    if (typeof this.destroyFullscreenButton === "function") {
+      this.destroyFullscreenButton();
+    }
 
     if (this.maintenanceInterval) {
       clearInterval(this.maintenanceInterval);
@@ -979,6 +982,10 @@ class Board extends BoardBase {
 
     // Debounced via resizeCanvas() itself
     window.addEventListener("resize", () => this.resizeCanvas());
+
+    if (typeof this.setupExportFullscreenButton === "function") {
+      this.setupExportFullscreenButton();
+    }
   }
 
   handleGlobalMouseEvent(eventType, pixiEvent) {
@@ -1090,9 +1097,11 @@ class Board extends BoardBase {
       }
 
       const previewRect = preview.getBoundingClientRect();
+      const boxWidth = availableSpace.fullscreen ? availableSpace.width : previewRect.width;
+      const boxHeight = availableSpace.fullscreen ? availableSpace.height : previewRect.height;
 
-      const leftPos = Math.max(0, (previewRect.width - scaledWidth) / 2);
-      const topPos = Math.max(0, (previewRect.height - scaledHeight) / 2);
+      const leftPos = Math.max(0, (boxWidth - scaledWidth) / 2);
+      const topPos = Math.max(0, (boxHeight - scaledHeight) / 2);
 
       Object.assign(container.style, {
         position: "absolute",
@@ -1108,6 +1117,10 @@ class Board extends BoardBase {
         WebkitTransform: "translateZ(0)",
         willChange: "transform",
       });
+
+      if (typeof this.updateFullscreenButton === "function") {
+        this.updateFullscreenButton(leftPos, topPos, scaledWidth, scaledHeight, boxWidth);
+      }
 
       if (HtmlSvgEdu?.Component?.updateContainerScale) {
         HtmlSvgEdu.Component.updateContainerScale(this.scaleValue);

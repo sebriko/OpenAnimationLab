@@ -1,0 +1,544 @@
+# Open Animation Lab – quick reference for AI assistants
+
+Version 4.4.0
+
+All commands of the Open Animation Lab (OAL) in short form. The OAL is a free JavaScript editor in the browser: https://www.educational-animation.org/oal/ – full reference: https://www.educational-animation.org/en/editor-reference/
+
+Only use commands listed here. Classes are written without a namespace: new Rectangle(…), new Text(…).
+
+## Rules
+
+- Every animation starts with `let board = new Board(1280, 720);`. Coordinates in pixels, (0 | 0) is top left, y grows downwards. Angles in degrees, positive rotation is clockwise.
+- Reference points: Rectangle = top-left corner; Circle, Ellipse, Polygon, Arc = centre; Line, Arrow, LinePath = the given points.
+- Graphics stack in the order they are created. UI components (Text, Button, ButtonSlider, Checkbox, RadioButton, NumericStepper, Dropdown, MathForm, ParameterTable, Model3D, HtmlRectangle, PlayButton) always lie above all graphics, cannot be rotated and cannot be put into a Group.
+- Text: (x, y) is the top-left corner of a box with 10 px padding. Formatting: <b>, <i>, <sub>, <sup>, colour with <span style="color:#c0392b">…</span>. Line break with \n or <br>.
+- No backslashes except \n (they are doubled before the code runs). Write special characters directly. In MathForm (LaTeX) use a single backslash.
+- Blocked, also as names: window, document, fetch, eval, globalThis. Never name your own variables like classes (Line, Text, Group, Timer …).
+- Events: sliders, Checkbox, RadioButton, NumericStepper and PlayButton report changes with onChange(e => …), the new value is e.value. setValue() does not fire onChange. Mouse anywhere on the board: board.onMouseMove(e => …) with e.x and e.y; keyboard: board.onKeyDown(e => …) with e.key.
+- Motion: `let timer = new Timer(); timer.onUpdate(() => { … }); timer.start();` – without a duration the timer runs endlessly, timer.getElapsedTime() gives the time in ms.
+- Numbers: Calc.format(number, digits, "unit"). Sliders and number fields show a decimal point in English and a comma in German animations automatically.
+- Write `// lang: en` or `// lang: de` in the first line.
+
+## For almost all graphics
+
+Properties x, y, rotation, visible. Methods: setAlpha(0.5), setScale(1.5, 1.5), setRotationPoint(x, y), onClick(f), onMouseDown(f), onMouseUp(f), onMouseOver(f), onMouseOut(f), setDragging(x1, y1, x2, y2), onDragStart(f), onDrag(f), onDragEnd(f). UI components have x, y, visible and setTooltip("…").
+
+## Graphics
+
+### Board – Drawing area for the animation (Board – SVG renderer)
+`let board = new Board(1280, 720, 0xFFFFFF);`
+Parameters: width (Logical width of the board in pixels); height (Logical height of the board in pixels); backgroundColor (Background color in hex format (e.g. 0xFFFFFF))
+Properties: backgroundColor (Background color of the board in hexadecimal format)
+Methods:
+- `board.addChild(myElement)` – Adds an SvgJSEdu element to the board
+- `board.removeChild(myElement)` – Removes an element from the board
+- `board.setFramerate(30)` – Sets the animation framerate (for ticker-based animations)
+- `board.onMouseDown(e => console.log(e.x, e.y))` – Calls the function when pressing the mouse anywhere on the board. It receives e with e.x and e.y (position on the board in pixels)
+- `board.onMouseUp(e => console.log(e.x, e.y))` – Calls the function when releasing the mouse anywhere on the board. It receives e with e.x and e.y (position on the board in pixels)
+- `board.onMouseMove(e => console.log(e.x, e.y))` – Calls the function when moving the mouse anywhere on the board. It receives e with e.x and e.y (position on the board in pixels)
+- `board.onKeyDown(handler)` – Registers a keyboard key-down handler. The callback receives a safe event object with key, code, repeat, ctrlKey, shiftKey, altKey, metaKey.
+- `board.onKeyUp(handler)` – Registers a keyboard key-up handler. The callback receives a safe event object with key, code, repeat, ctrlKey, shiftKey, altKey, metaKey.
+- `board.isKeyDown('ArrowUp')` – Returns true if the specified key is currently pressed
+- `board.getKeysPressed()` – Returns an object with all currently pressed keys
+
+### Group – Group for combining objects
+`let myGroup = new Group();`
+Properties: x; y; rotation; visible
+Methods:
+- `obj.addChild(myRectangle)` – Adds an element to the group
+- `obj.removeChild(myRectangle)` – Detaches an element from the group. It stays visible on the board; to remove it completely use board.removeChild(element)
+- `obj.getBounds()` – Returns the bounding box of the group
+- `obj.setMask(10, 20, 100, 80)` – Sets a rectangular mask for the group
+- `obj.removeMask()` – Removes the mask from the group
+
+### Rectangle – Rectangular graphic element
+`let myRectangle = new Rectangle(100, 50, 0xff0000, 0x000000, 2);`
+Parameters: width (Width of the rectangle); height (Height of the rectangle); fillColor (Fill color in hexadecimal format (e.g. 0xff0000)); lineColor (Line color in hexadecimal format); lineThickness (Line thickness in pixels)
+Properties: x; y; rotation; visible
+Methods:
+- `obj.setFillColor(0xff0000)` – Sets the fill color of the rectangle
+- `obj.setLineColor(0x000000)` – Sets the line color of the rectangle
+- `obj.setLineThickness(2)` – Sets the line thickness
+- `obj.setBorder(0xff0000, 2)` – Sets a border (color in hexadecimal format, thickness in pixels)
+- `obj.setWidth(200)` – Sets the width of the rectangle
+- `obj.setHeight(100)` – Sets the height of the rectangle
+- `obj.setCornerRadius(10)` – Sets the corner radius for rounded rectangles
+- `obj.setRoundedCorners(10, true, true, false, false)` – Sets rounded corners with radius. Optional: specify which corners (topLeft, topRight, bottomRight, bottomLeft)
+- `obj.setGradient("linear", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])` – Creates a linear or radial colour gradient. Parameters: type (linear or radial), a list of colour stops, each with offset (0 to 1) and color (#hex), optional angle in degrees for linear gradients
+
+### Circle – Circular graphic element
+`let myCircle = new Circle(50, 0xff0000, 0x000000, 2);`
+Parameters: radius (Radius of the circle); fillColor (Fill color in hexadecimal format); lineColor (Line color in hexadecimal format); lineThickness (Line thickness in pixels)
+Properties: x; y; rotation; visible
+Methods:
+- `obj.setFillColor(0xff0000)` – Sets the fill color of the circle
+- `obj.setLineColor(0x000000)` – Sets the line color of the circle
+- `obj.setBorder(0xff0000, 2)` – Sets a border (color in hexadecimal format, thickness in pixels)
+- `obj.setRadius(100)` – Sets the radius of the circle
+- `obj.setGradient("radial", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])` – Creates a linear or radial colour gradient. Parameters: type (radial), a list of colour stops, each with offset (0 to 1) and color (#hex), optional angle in degrees for linear gradients
+
+### Ellipse – Elliptical graphic element
+`let myEllipse = new Ellipse(80, 50, 0xff0000, 0x000000, 2);`
+Parameters: radiusX (Horizontal radius of the ellipse); radiusY (Vertical radius of the ellipse); fillColor (Fill color in hexadecimal format); lineColor (Line color in hexadecimal format); lineThickness (Line thickness in pixels)
+Properties: x; y; rotation; visible
+Methods:
+- `obj.setFillColor(0xff0000)` – Sets the fill color of the ellipse
+- `obj.setLineColor(0x000000)` – Sets the line color of the ellipse
+- `obj.setBorder(0xff0000, 2)` – Sets a border (color in hexadecimal format, thickness in pixels)
+- `obj.setRadiusX(100)` – Sets the horizontal radius of the ellipse
+- `obj.setRadiusY(60)` – Sets the vertical radius of the ellipse
+- `obj.setGradient("radial", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])` – Creates a linear or radial colour gradient. Parameters: type (linear or radial), a list of colour stops, each with offset (0 to 1) and color (#hex), optional angle in degrees for linear gradients
+
+### Polygon – Polygon graphic element
+`let myPolygon = new Polygon(6, 60, 0x0000ff);`
+Parameters: sides (Number of sides (3 for triangle, 4 for square, etc.)); radius (Radius of the polygon in pixels); color (Color in hexadecimal format (e.g. 0xff0000))
+Properties: x; y; rotation; visible
+Methods:
+- `obj.setFillColor(0xff0000)` – Sets the fill color of the polygon
+- `obj.setBorder(0xff0000, 2)` – Sets a border (color in hexadecimal format, thickness in pixels)
+- `obj.setGradient("radial", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])` – Creates a linear or radial colour gradient. Parameters: type (linear or radial), a list of colour stops, each with offset (0 to 1) and color (#hex), optional angle in degrees for linear gradients
+- `obj.setStartAngle(90)` – Sets the starting angle for drawing the polygon in degrees
+
+### Line – Simple line
+`let myLine = new Line(0, 0, 100, 50, 0xff0000, 2);`
+Parameters: startX (X start); startY (Y start); endX (X end); endY (Y end); color (Color in hexadecimal format); thickness (Line thickness in pixels)
+Properties: x; y; rotation; visible; alpha
+Methods:
+- `obj.setColor(0xff0000)` – Changes the color
+- `obj.setThickness(2)` – Sets line thickness
+- `obj.setStrokeDash([5, 5])` – Creates a dashed line with pattern
+- `obj.setStart(0, 0)` – Sets the start point
+- `obj.setEnd(100, 100)` – Sets the end point
+
+### Arrow – Arrow with line and head
+`let myArrow = new Arrow(0, 0, 100, 100, 0xff0000, 2, 10, 6);`
+Parameters: startX (X start coordinate of the line); startY (Y start coordinate of the line); endX (X end coordinate of the line); endY (Y end coordinate of the line); color (Color of the line in hexadecimal format (e.g. 0xff0000)); thickness (Line thickness in pixels); arrowHeadLength (Length of the arrow head in pixels); arrowHeadWidth (Width of the arrow head in pixels)
+Properties: x; y; rotation; visible; alpha
+Methods:
+- `obj.setColor(0xff0000)` – Changes the color of the line
+- `obj.setThickness(2)` – Sets the line thickness
+- `obj.setStrokeDash([5, 5])` – Creates a dashed line with pattern
+- `obj.setStart(0, 0)` – Sets the start point of the line
+- `obj.setEnd(100, 100)` – Sets the end point of the line
+- `obj.setOutline(0.5, 0xffffff)` – Enables outline with thickness and color
+- `obj.removeOutline()` – Disables the outline
+
+### LinePath – Line path from points
+`let myLinePath = new LinePath([[0,0], [100,50], [200,100]], 0xff0000, 3);`
+Parameters: points (Array of coordinate pairs [[x1,y1], [x2,y2], ...] in pixels); color (Line color in hexadecimal format (e.g. 0xff0000)); thickness (Line thickness in pixels)
+Properties: x; y; visible
+Methods:
+- `obj.setFillColor(0xff0000)` – Sets the fill color of the shape
+- `obj.setPoints([[0,0], [100,50], [200,100]])` – Replaces the entire point array. If the path was closed, it will be automatically closed again.
+- `obj.addPointEnd(150, 75)` – Adds a point at the end of the line
+- `obj.addPointStart(25, 25)` – Adds a point at the beginning of the line
+- `obj.removePointEnd()` – Removes the last point of the line
+- `obj.removePointStart()` – Removes the first point of the line
+- `obj.shiftX(50)` – Shifts the entire line by a delta value in X direction
+- `obj.closePath()` – Closes the path by connecting the first and last point. The path remains closed after setPoints() calls.
+- `obj.openPath()` – Opens a closed path by removing the closing point and disabling auto-close.
+- `obj.setColor(0x00ff00)` – Sets the line color
+- `obj.setThickness(5)` – Sets the line thickness
+- `obj.markAt(100, 0xff0000, 5)` – Marks a point on the path at given x-coordinate
+- `obj.removeMark()` – Removes the marker from the path
+
+### BezierPath – Bezier curve with control points
+`let myBezierPath = new BezierPath([[0,0,10,-10], [100,50,120,30], [200,100,180,120]], 0xff0000, 3);`
+Parameters: points (Array of points with control points [[x, y, cx, cy], ...]); color (Line color in hexadecimal format (e.g. 0xff0000)); thickness (Line thickness in pixels)
+Properties: visible; x; y
+Methods:
+- `obj.setFillColor(0xff0000)` – Sets the fill color for closed bezier shapes
+- `obj.setPoints([[0,0,10,-10], [100,50,120,30], [200,100,180,120]])` – Replaces the entire point array with a new array
+- `obj.addPointEnd(150, 75, 160, 60)` – Adds a point with control point at the end of the bezier path
+- `obj.addPointStart(25, 25, 30, 20)` – Adds a point with control point at the beginning of the bezier path
+- `obj.removePointEnd()` – Removes the last point of the bezier path
+- `obj.removePointStart()` – Removes the first point of the bezier path
+- `obj.shiftX(50)` – Shifts the entire bezier path by a delta value in X direction
+- `obj.setColor(0x00ff00)` – Sets the line color
+- `obj.setThickness(5)` – Sets the line thickness
+- `obj.getY(100)` – Returns the y-coordinate for a given x-coordinate on the curve
+- `obj.getX(150)` – Returns the x-coordinate for a given y-coordinate on the curve
+
+### SplinePath – Spline curve from points
+`let mySplinePath = new SplinePath([[0,0], [100,50], [200,100]], 0xff0000, 3, 0);`
+Parameters: points (Array of points to define the shape); color (Line color in hexadecimal format); thickness (Line thickness in pixels); tension (Tension of the spline curve (0 = smooth, 1 = straight lines))
+Properties: x; y; visible
+Methods:
+- `obj.setFillColor(0xff0000)` – Sets the fill color of the shape
+- `obj.setColor(0x00ff00)` – Sets the line color
+- `obj.setThickness(5)` – Sets the line thickness
+- `obj.setTension(0.5)` – Sets the tension of the spline curve (0 = smooth, 1 = straight lines)
+- `obj.setPoints([[0,0], [100,50], [200,100]])` – Replaces the entire point array
+- `obj.getY(100)` – Returns the y-coordinate for a given x-coordinate on the curve
+- `obj.getX(150)` – Returns the x-coordinate for a given y-coordinate on the curve
+
+### Arc – Circular arc around the origin (centre). With a fill colour a pie slice, with an inner radius a ring segment, with an arrowhead a rotation arrow. Angles in degrees: 0 = right, positive angles clockwise
+`let myArc = new Arc(80, -90, 90, 0x444444, 3);`
+Parameters: radius (Radius in pixels); startAngle (Start angle in degrees (0 = right, 90 = down)); endAngle (End angle in degrees. Larger than the start angle = clockwise, smaller = anticlockwise); lineColor (Line colour in hexadecimal format (e.g. 0x444444)); lineThickness (Line thickness in pixels (0 = no line))
+Properties: x; y; rotation; visible; alpha
+Methods:
+- `obj.setAngles(0, 270)` – Sets start and end angle in degrees
+- `obj.setStartAngle(-90)` – Sets the start angle in degrees
+- `obj.setEndAngle(180)` – Sets the end angle in degrees
+- `obj.setRadius(100)` – Sets the radius in pixels
+- `obj.setInnerRadius(60)` – Inner radius in pixels: turns a pie slice into a ring segment (0 = pie slice)
+- `obj.setFillColor(0xf5b041)` – Fills the arc as a pie slice (or ring segment). null = no fill
+- `obj.setLineColor(0xc0392b)` – Sets the line colour
+- `obj.setLineThickness(3)` – Sets the line thickness (0 = no line)
+- `obj.setArrowhead(true, 14)` – Shows an arrowhead at the end of the arc, for example for a direction of rotation. Optional size in pixels
+
+### Spring – Spring as a zigzag line between two points. The number of coils stays the same: when the spring gets shorter, the coils move closer together
+`let mySpring = new Spring(640, 100, 640, 400, 10, 30, 0x444444, 2);`
+Parameters: x1 (X coordinate of the start point (for example the fixing point)); y1 (Y coordinate of the start point); x2 (X coordinate of the end point (for example the mass)); y2 (Y coordinate of the end point); coils (Number of coils (zigzags)); width (Width of the spring in pixels); lineColor (Line colour in hexadecimal format (e.g. 0x444444)); lineThickness (Line thickness in pixels)
+Properties: visible; alpha
+Methods:
+- `obj.setEnds(640, 100, 640, 450)` – Sets start and end point at once (x1, y1, x2, y2) – the usual way to move a spring in a timer
+- `obj.setStart(640, 100)` – Sets the start point
+- `obj.setEnd(640, 450)` – Sets the end point
+- `obj.setCoils(12)` – Sets the number of coils
+- `obj.setWidth(40)` – Sets the width of the spring in pixels
+- `obj.setLeadLength(20)` – Length of the straight pieces at both ends in pixels (default 12)
+- `obj.setLineColor(0x2e86c1)` – Sets the line colour
+- `obj.setLineThickness(3)` – Sets the line thickness
+- `obj.getLength()` – Returns the distance between start and end point in pixels
+
+### Parallelogram – Parallelogram from two vectors
+`let myParallelogram = new Parallelogram(0, 0, 100, 0, 50, 50, 0x00ff00);`
+Parameters: originX (X coordinate of the origin point); originY (Y coordinate of the origin point); vector1X (X coordinate of the first vector endpoint); vector1Y (Y coordinate of the first vector endpoint); vector2X (X coordinate of the second vector endpoint); vector2Y (Y coordinate of the second vector endpoint); fillColor (Fill color in hexadecimal format (e.g. 0x00ff00))
+Properties: x; y; visible; alpha
+Methods:
+- `obj.setFillColor(0xff0000)` – Sets the fill color of the parallelogram
+- `obj.setOrigin(50, 50)` – Sets the origin point of the parallelogram
+- `obj.setVector1(150, 100)` – Sets the endpoint of the first vector
+- `obj.setVector2(100, 150)` – Sets the endpoint of the second vector
+- `obj.getResultantEndpoint()` – Returns the endpoint of the resultant vector
+- `obj.showVectors(true)` – Shows/hides the vector arrows
+- `obj.showResultant(true)` – Shows/hides the resultant vector arrow
+
+### PointLabel – Label for a point
+`let myPointLabel = new PointLabel(100, 100, "P", 15, -15, "Arial", 16, 0x000000);`
+Parameters: pointX (X coordinate of the reference point); pointY (Y coordinate of the reference point); label (Text to display as label (supports <b>, <i>, <sub> and <sup> tags, also combined and nested)); offsetX (Horizontal offset from the reference point); offsetY (Vertical offset from the reference point); font (Font family for the text); fontSize (Font size for the text); textColor (Color of the text in hexadecimal format); backgroundColor (Background color for the label (optional)); padding (Padding around the text)
+Properties: x; y; visible; alpha
+Methods:
+- `obj.setText("<b>F</b><sub>res</sub> = <i>m</i> · <i>a</i>")` – Changes the text of the label (supports <b>, <i>, <sub> and <sup> tags)
+- `obj.setTextColor(0xff0000)` – Changes the color of the text
+- `obj.setFontSize(16)` – Sets the font size of the text
+- `obj.setPoint(100, 100)` – Sets the reference point position
+- `obj.setOffset(10, -5)` – Sets the offset from the reference point
+- `obj.setBackgroundColor(0xffffff)` – Sets the background color of the label
+- `obj.setPadding(5)` – Sets the padding around the text
+
+### LineLabel – Label for a line segment
+`let myLineLabel = new LineLabel(0, 0, 100, 50, "AB", 15, "Arial", 16, 0x000000);`
+Parameters: startX (X coordinate of the line start point); startY (Y coordinate of the line start point); endX (X coordinate of the line end point); endY (Y coordinate of the line end point); label (Text to display as label (supports <b>, <i>, <sub> and <sup> tags, also combined and nested)); distance (Orthogonal distance from the line to the label); font (Font family for the text); fontSize (Font size for the text); textColor (Color of the text in hexadecimal format); backgroundColor (Background color for the label (optional)); padding (Padding around the text)
+Properties: x; y; visible; alpha
+Methods:
+- `obj.setText("<b>F</b><sub>res</sub> = <i>m</i> · <i>a</i>")` – Changes the text of the label (supports <b>, <i>, <sub> and <sup> tags)
+- `obj.setTextColor(0xff0000)` – Changes the color of the text
+- `obj.setFontSize(16)` – Sets the font size of the text
+- `obj.setDistance(15)` – Sets the orthogonal distance from the line
+- `obj.setStart(100, 100)` – Sets the start point of the line
+- `obj.setEnd(200, 150)` – Sets the end point of the line
+- `obj.setBackgroundColor(0xffffff)` – Sets the background color of the label
+- `obj.setPadding(5)` – Sets the padding around the text
+- `obj.setFlipSide(true)` – Flips the label to the opposite side of the line
+
+### AngleLabel – Angle label with text
+`let myAngleLabel = new AngleLabel(100, 100, 150, 100, 150, 150, 30, "α", "Arial", 16, 0x444444, 1, 0x444444);`
+Parameters: centerX (X coordinate of the arc center); centerY (Y coordinate of the arc center); arm1X (X coordinate of the first arm endpoint); arm1Y (Y coordinate of the first arm endpoint); arm2X (X coordinate of the second arm endpoint); arm2Y (Y coordinate of the second arm endpoint); radius (Radius of the arc); label (Text to display in the arc); font (Font family for the text); fontSize (Font size for the text); textColor (Color of the text in hexadecimal format); lineThickness (Thickness of the arc line); lineColor (Color of the arc line in hexadecimal format)
+Properties: x; y; visible; alpha
+Methods:
+- `obj.setText("90°")` – Changes the text displayed in the arc
+- `obj.setTextColor(0xff0000)` – Changes the color of the text
+- `obj.setFontSize(16)` – Sets the font size of the text
+- `obj.setLineColor(0x0000ff)` – Changes the color of the arc line
+- `obj.setLineThickness(2)` – Sets the thickness of the arc line
+- `obj.setRadius(30)` – Sets the radius of the arc
+- `obj.setCenter(100, 100)` – Sets the center position of the arc
+- `obj.setArm1(150, 100)` – Sets the endpoint of the first arm
+- `obj.setArm2(100, 150)` – Sets the endpoint of the second arm
+- `obj.setLabelDistance(25)` – Sets the distance of the label text from the center point
+- `obj.setArrowheads(true, 12)` – Shows or hides arrowheads at the ends of the arc. Optionally sets the arrowhead size (default 8)
+- `obj.setLongArc(true)` – Sets whether to draw the longer arc (true) or shorter arc (false)
+- `obj.setExternalLabel(true, 15)` – Enables external labeling for small angles. Two small arcs extend beyond the angle arms and the label is placed outside. Optionally sets the arc span in degrees (default 15)
+
+### LengthLabel – Length label (dimension) with dimension line, arrowheads and text
+`let myLengthLabel = new LengthLabel(100, 200, 300, 200, 30, "<i>l</i> = 2 m", "Arial", 16, 0x444444, 1, 0x444444);`
+Parameters: startX (X coordinate of the start point of the measured length); startY (Y coordinate of the start point of the measured length); endX (X coordinate of the end point of the measured length); endY (Y coordinate of the end point of the measured length); offset (Distance of the dimension line from the measured length. Positive and negative values place it on opposite sides (same side as LineLabel for positive values). 0 = directly on the length, without extension lines); label (Text of the label (supports <b>, <i>, <sub> and <sup> tags, also combined and nested)); font (Font family for the text); fontSize (Font size for the text); textColor (Colour of the text in hexadecimal format); lineThickness (Thickness of the dimension line and the extension lines); lineColor (Colour of the lines and arrowheads in hexadecimal format)
+Properties: x; y; visible; alpha
+Methods:
+- `obj.setText("<i>l</i> = 2,5 m")` – Changes the text of the label (supports <b>, <i>, <sub> and <sup> tags)
+- `obj.setTextColor(0xff0000)` – Changes the colour of the text
+- `obj.setFontSize(16)` – Sets the font size of the text
+- `obj.setLineColor(0x0000ff)` – Changes the colour of the lines and arrowheads
+- `obj.setLineThickness(2)` – Sets the thickness of the dimension line and the extension lines
+- `obj.setStart(100, 200)` – Sets the start point of the measured length
+- `obj.setEnd(300, 200)` – Sets the end point of the measured length
+- `obj.setPoints(100, 200, 300, 200)` – Sets the start and end point at once (startX, startY, endX, endY)
+- `obj.setOffset(40)` – Sets the distance of the dimension line from the measured length (negative = other side)
+- `obj.setFlipSide(true)` – Moves the dimension line and the label to the opposite side
+- `obj.setLabelDistance(8)` – Sets the gap between the dimension line and the text (default: automatic)
+- `obj.setArrowheads(true, 12)` – Shows or hides the arrowheads at the ends of the dimension line. Optionally sets the arrowhead size (default 8)
+- `obj.setExtensionLines(true, 6, 3)` – Shows or hides the extension lines. Optionally sets how far they extend beyond the dimension line (default 6) and the gap to the measured points (default 3)
+- `obj.setTextAlongLine(true)` – Turns the text parallel to the dimension line, as in technical drawings (default false = text stays horizontal)
+- `obj.setExternalLabel(true, 20)` – For short lengths: the arrowheads point inwards from outside and the label is placed beyond the end point. There is no line between the arrowheads. Optionally sets the length of the lines outside the points (default 20)
+- `obj.getLength()` – Returns the measured length in pixels
+
+### Ruler – Ruler with ticks
+`let myRuler = new Ruler("right", [0, 10, 20, 30, 40], 50, 0, 0xff0000, 2, 15, 16, 0x000000, true, 1, ".");`
+Parameters: direction (Direction of the ruler (top, bottom, left, right)); values (Array with the values to display); spacing (Distance between tick marks in pixels); spacingOffset (Offset for the first tick mark); color (Color of the tick marks in hexadecimal format (e.g. 0xff0000)); thickness (Line thickness of the tick marks in pixels); tickLength (Length of the tick marks in pixels); fontSize (Font size of the labels); fontColor (Color of the labels in hexadecimal format); positionSwitch (Controls the alignment of tick marks and labels); decimalPlaces (Number of decimal places to display for numerical values); decimalSeparator (Separator for decimal places: point or comma)
+Properties: x; y; visible
+Methods:
+- `obj.setColor(0xff0000)` – Changes the color of the tick marks
+- `obj.setFontColor(0x000000)` – Changes the color of the labels
+- `obj.setThickness(2)` – Sets the line thickness of the tick marks
+- `obj.updateValues(["0", "5", "10"])` – Updates the values to display
+- `obj.setSubTicks(4, 5, 0xff0000, 1)` – Adds sub tick marks between the main labeled ticks. Sub ticks are also drawn in the spacingOffset region between the ruler’s origin and the first main tick. Parameters: count (number of sub ticks between main ticks), length (length of sub ticks in pixels), color (optional, hex color, defaults to main tick color), thickness (optional, line thickness, defaults to main tick thickness)
+
+### CoordinateSystem – Coordinate system with axes
+`let myCoordinateSystem = new CoordinateSystem(100, 100, 100, 100, 0x000000, 10, 6, 1);`
+Parameters: sizeLeft (Size of the left axis); sizeRight (Size of the right axis); sizeTop (Size of the top axis); sizeBottom (Size of the bottom axis); color (Color of the coordinate system in hexadecimal format (e.g. 0xff0000)); arrowLength (Length of the arrow head in pixels); arrowWidth (Width of the arrow head in pixels); thickness (Line thickness in pixels)
+Properties: x; y; rotation; visible
+Methods:
+- `obj.setColor(0xff0000)` – Changes the color of the coordinate system
+- `obj.setThickness(2)` – Sets the line thickness
+- `obj.setArrows(true, true, false, false)` – Shows or hides the arrowheads at the ends of the axes: right, up, left, down (true = arrowhead)
+
+### Plot – Chart with a value range: draws axes with arrows, ticks with numbers, a grid, functions, measured curves and moving points. Curves are given in values, not in pixels
+`let myPlot = new Plot(100, 100, 600, 400, 0, 10, -5, 5);`
+Parameters: x (X coordinate of the top left corner of the chart area in pixels); y (Y coordinate of the top left corner of the chart area in pixels); width (Width of the chart area in pixels (the arrow and the axis title are drawn to the right of it)); height (Height of the chart area in pixels (the arrow and the axis title are drawn above it)); xMin (Smallest value on the horizontal axis); xMax (Largest value on the horizontal axis); yMin (Smallest value on the vertical axis); yMax (Largest value on the vertical axis)
+Properties: x; y; visible; alpha
+Methods:
+- `obj.addFunction(x => Math.sin(x), 0xc0392b, 3)` – Draws a function y = f(x) over the whole range and returns the curve. If the function uses a variable (for example from a slider), call update() after changing it
+- `obj.addCurve(0x2e86c1, 3)` – Creates an empty curve for measured values and returns it. Curve methods: addPoint(x, y), setPoints(list), clear(), setMaxPoints(n), setColor, setThickness, setDashed(true), setFill(color, alpha), setVisible, remove()
+- `obj.addPoint(2, 1, 0xc0392b, 7)` – Draws a point at the values (x | y) and returns it. Move it with dot.setPosition(x, y). Outside the range it is hidden
+- `obj.update()` – Recalculates all functions, for example after a slider has changed a parameter
+- `obj.setRange(0, 20, -10, 10)` – Changes the value range (xMin, xMax, yMin, yMax). Axes, ticks, curves and points follow
+- `obj.setTicks(1, 2)` – Draws ticks with numbers every xStep and yStep. 0 or null switches the ticks of an axis off. Numbers use a decimal comma in German animations
+- `obj.setGrid(true, 0xdddddd)` – Shows or hides grid lines at the ticks. Optional colour
+- `obj.setAxisLabels("<i>t</i> in s", "<i>s</i> in m")` – Sets the axis titles next to the arrowheads (supports <b>, <i>, <sub> and <sup>)
+- `obj.setColor(0x444444)` – Colour of the axes and ticks
+- `obj.setTextColor(0x444444)` – Colour of the numbers and axis titles
+- `obj.setFont("Arial", 18)` – Font family and size of the numbers and axis titles
+- `obj.setArrows(false)` – Shows or hides the arrowheads at the ends of the axes
+- `obj.setSize(600, 400)` – Changes the size of the chart area in pixels
+- `obj.toPixelX(5)` – Returns the x coordinate on the board in pixels for a value, for example to place a text or a picture
+- `obj.toPixelY(2.5)` – Returns the y coordinate on the board in pixels for a value
+- `obj.toValueX(e.x)` – Converts an x coordinate on the board in pixels into a value of the chart
+- `obj.toValueY(300)` – Converts a y coordinate on the board in pixels into a value of the chart
+- `obj.clear()` – Removes all curves and points. Axes and ticks remain
+
+### SimpleSVG – SVG graphic as object
+`let mySVG = new SimpleSVG("<svg>...</svg>");`
+Parameters: svgString (Content of the SVG file)
+Properties: x; y; rotation; visible; maintainStrokeWidth (Strokes maintain their original thickness when scaling); resolution (Rendering resolution (1-4, higher = sharper but more memory))
+Methods:
+- `obj.removeFromParent()` – Removes the element from its parent container
+
+### SimplePNG – PNG image as object
+`let myPNG = new SimplePNG("image.png");`
+Parameters: pngContent (Source of the PNG image (URL or Base64))
+Properties: x; y; visible; alpha
+Methods:
+- `obj.removeFromParent()` – Removes the element from its parent container
+
+### Timer – Timer for animations
+`let myTimer = new Timer(5000, true, false);`
+Parameters: duration (Duration of the animation in milliseconds (leave empty for infinite)); loop (Determines whether the animation repeats endlessly (true/false)); autoStart (Starts the animation automatically upon creation (true/false))
+Methods:
+- `obj.start()` – Starts the timer
+- `obj.stop()` – Stops the timer
+- `obj.pause()` – Pauses the timer
+- `obj.resume()` – Resumes a paused timer
+- `obj.reset()` – Resets the timer to the beginning
+- `obj.addAnimation(myObject, "x", 100, 300)` – Adds an animation: object, property, start value, end value
+- `obj.addKeyframeAnimation(myObject, "alpha", [{time: 0, value: 0}, {time: 0.5, value: 1}, {time: 1, value: 0}])` – Adds a keyframe animation. Parameters: target object, property name as string, list of keyframes, each with time (0 to 1) and value (see example)
+- `obj.setEasing("easeInOut")` – Sets the easing function: linear, easeIn, easeOut, easeInOut, bounce
+- `obj.onComplete(animationFinished)` – Registers a callback function that executes when the animation is finished
+- `obj.onUpdate(handleProgress)` – Registers a callback function that is called on every frame and receives the progress (0 to 1). With an endless timer the progress always stays 0 – use getElapsedTime() instead
+- `obj.setProgress(0.5)` – Sets the animation progress directly (0.0 to 1.0)
+- `obj.getProgress()` – Returns the current progress from 0 to 1 (with an endless timer always 0)
+- `obj.getElapsedTime()` – Returns the elapsed time in milliseconds since the start. Ideal for endless timers
+- `obj.getRemainingTime()` – Returns the remaining time in milliseconds (with an endless timer Infinity)
+- `obj.isRunning()` – Returns true while the timer is running and not paused
+- `obj.isPaused()` – Returns true while the timer is paused
+- `obj.setDuration(3000)` – Changes the duration in milliseconds (null = endless)
+- `obj.setLoop(true)` – Switches repetition on or off (true/false)
+- `obj.clearAnimations()` – Removes all animations and keyframe animations added to the timer
+
+## UI components and helpers
+
+### Text – Text element with formatting. The reference point (x, y) is the TOP-left corner of the text box – not the bottom-left baseline used by many graphics programs. The box has 10 px padding: the text starts at x + 10, and a single line is centred at y + 0.7 × font size + 10. With alignment center, x is the middle; with right, the right edge. With a text box (setSize), the first line starts directly at the top edge.
+`let myText = new Text("Hello World", "Arial", 16, 0x000000, "center");`
+Parameters: text (Text content to display (\n or <br> for line break; <b></b> bold, <i></i> italic, <sub></sub> subscript, <sup></sup> superscript, <span style=color:#c0392b></span> coloured – also combined and nested)); font (Font family of the text); fontSize (Font size in pixels); textColor (Color of the text (e.g. 0x000000)); textAlign (Text alignment: left (x = left edge), center (x = middle) or right (x = right edge))
+Properties: x; y; visible; width (Width of the text box for word wrapping (null to disable). Returns the box width that was set, not the measured text width); height (Height of the text box (null for automatic height))
+Methods:
+- `obj.setText("<b>Note:</b> H<sub>2</sub>O is <i>water</i>, x<sup>2</sup> is a square")` – Changes the text content (supports <b>, <i>, <sub> and <sup> tags)
+- `obj.setFont("Times New Roman")` – Changes the font family
+- `obj.setFontSize(24)` – Changes the font size
+- `obj.setTextColor(0xFF0000)` – Changes the text color
+- `obj.setSize(200, 100)` – Sets the text box dimensions for word wrapping (x, y stay the top-left corner; lines may use width − 20 px). Pass null to disable the box.
+- `obj.setLineHeight(1.5)` – Sets the line height factor (1.0 = single, 1.5 = one-and-a-half, 2.0 = double)
+- `obj.setLetterSpacing(2)` – Sets the letter spacing in pixels
+- `obj.setHyphenation(true, "de")` – Switches automatic hyphenation on or off (only with a text box, see setSize). Language de or en (British); without it, the language of the page. Breaks follow the hyphenation patterns of the language, come after hyphens and at soft hyphens written as &shy; in the text – these take priority. Words under 5 letters are never split. Other languages: only hyphens and &shy;
+- `obj.setVerticalAlign("middle")` – Vertical alignment relative to y: top (default, y = top edge of the text box), middle (y = centre) or bottom. With textAlign center and middle the text is centred on (x, y), e.g. a letter in a circle
+
+### Button – Button with click event
+`let myButton = new Button("Click me", 100, 40);`
+Parameters: label (Label or text of the element (\n or <br> for line break)); width (Width of the element in pixels); height (Height of the element in pixels); font (Font family of the text); fontSize (Font size in pixels)
+Properties: x; y; visible
+Methods:
+- `obj.setText("Neuer Text")` – Sets the label text of the button (\n or <br> for line break)
+
+### PlayButton – Play/pause button: starts, pauses and resumes a timer and shows ▶ Play or ❚❚ Pause (German ▶ Start)
+`let myPlayButton = new PlayButton(myTimer, 130, 40);`
+Parameters: timer (Timer that the button controls. Without a timer (null) the button only switches between play and pause, ask it with isPlaying()); width (Width of the button in pixels); height (Height of the button in pixels); font (Font family of the text); fontSize (Font size in pixels)
+Properties: x; y; visible
+Methods:
+- `obj.onChange(changed)` – Registers a function that is called when the button is clicked. e.value is true when the animation is playing
+- `obj.isPlaying()` – Returns true when the animation is playing
+- `obj.setPlaying(true)` – Starts (true) or pauses (false) the animation from the code. Does not call onChange
+- `obj.setLabels("▶ Los", "❚❚ Halt")` – Sets the two labels: shown while paused and shown while playing
+- `obj.setTimer(myTimer)` – Connects the button to another timer
+
+### ButtonSlider – Slider with draggable button
+`let mySlider = new ButtonSlider(0, 100, 50, 1, 40, 200);`
+Parameters: min (Minimum value of the element); max (Maximum value of the element); value (Current value of the element); step (Step size of the element); height (Height of the button in pixels (recommended: 40, easy to use with a finger)); trackLength (Length of the slider track in pixels); thumbShape (Shape of the thumb: rectangle, circle, triangle-A, triangle-B)
+Properties: x; y; visible; value (Sets the current value)
+Methods:
+- `obj.setValue(25)` – Sets the current value
+- `obj.enableValueDisplay()` – Enables the value display
+- `obj.setValueDisplayFont("Arial", 16)` – Sets font family and size for the value display
+- `obj.setDecimalSeparator(",")` – Sets the decimal separator of the value display: point or comma. Default: comma in German, point in English animations
+- `obj.setThumbShape("triangle-A")` – Sets the shape of the thumb (rectangle, circle, triangle-A, triangle-B)
+- `obj.enableSnap([10, 20, 30])` – Enables snapping to specific values
+- `obj.setRangeMarker(20, 60)` – Sets a semi-transparent green range marker on the track
+- `obj.setVertical()` – Sets the slider to vertical orientation
+- `obj.onChange(handleChange)` – Adds a listener for value changes
+
+### Checkbox – Checkbox with on/off state
+`let myCheckbox = new Checkbox(true, 20, "Select option");`
+Parameters: checked (Indicates whether the element is selected); size (Size of the element (e.g. 20 for 20px)); label (Label or text of the element (\n or <br> for line break, <sub></sub> and <sup></sup> for subscript/superscript possible)); font (Font family of the text); fontSize (Font size in pixels); textColor (Text color of the label (e.g. 0x000000))
+Properties: x; y; visible; checked (Indicates whether the element is selected (true/false))
+Methods:
+- `obj.onChange(handleChange)` – Registers a function that is called when the box is ticked or unticked. e.value is true or false (same as onClick)
+
+### RadioButton – Radio button for group selection
+`let myRadio = new RadioButton("group1", false, 20, "Option 1");`
+Parameters: groupName (Name of the radio button group (radio buttons with the same name belong together)); checked (Indicates whether the element is selected); size (Size of the element (e.g. 20 for 20px)); label (Label or text of the element (\n or <br> for line break, <sub></sub> and <sup></sup> for subscript/superscript possible)); font (Font family of the text); fontSize (Font size in pixels); textColor (Text color of the label (e.g. 0x000000))
+Properties: x; y; visible
+Methods:
+- `obj.onChange(handleChange)` – Registers a function that is called when this option is selected. e.value is true
+
+### NumericStepper – Numeric stepper with plus/minus buttons
+`let myStepper = new NumericStepper(50, 0, 100, 5, 120);`
+Parameters: value (Current value of the element); min (Minimum value of the element); max (Maximum value of the element); step (Step size of the element); width (Width of the element in pixels); font (Font family of the text); fontSize (Font size in pixels); decimalSeparator (Decimal separator: comma or point. Default: comma in German, point in English animations)
+Properties: x; y; visible
+Methods:
+- `obj.setValue(1.5)` – Sets the value (does not call onChange)
+- `obj.setDecimalSeparator(",")` – Sets the decimal separator: point or comma. Default: comma in German, point in English animations
+- `obj.onChange(handleChange)` – Adds an event listener for value changes
+
+### Dropdown – Dropdown menu for selecting from a list of options
+`let myDropdown = new Dropdown(["Option 1", "Option 2"], 200, 40);`
+Parameters: options (Array of options to display in the dropdown); width (Width of the element in pixels); height (Height of the element in pixels); font (Font family of the text); fontSize (Font size in pixels)
+Properties: x; y; visible; selectedIndex (Index of the selected option)
+Methods:
+- `obj.onChange(handleChange)` – Registers a callback that is executed when the selection changes
+- `obj.getSelectedValue()` – Returns the currently selected value
+- `obj.setOptions(["New Option 1", "New Option 2", "New Option 3"])` – Updates the list of available options
+
+### MathForm – Mathematical formula with MathJax rendering
+`let myFormula = new MathForm("x^2 + y^2 = r^2");`
+Parameters: formula (Mathematical formula as LaTeX string or MathJax-formatted string)
+Properties: x; y; visible
+Methods:
+- `obj.setColor("#FF0000")` – Sets the color of the formula
+
+### ParameterTable – Parameter table with editable values
+`let myTable = new ParameterTable([{name: "Speed", value: 50}], 300);`
+Parameters: parameters (Array of parameter objects with name and value (list of objects with name and value, see example). Names support HTML tags: <b>, <i>, <sub>, <sup>); width (Width of the table in pixels); font (Font family of the text); fontSize (Font size in pixels); textColor (Text color (e.g. 0x000000))
+Properties: x; y; visible
+Methods:
+- `obj.setTitle("Configuration");` – Sets the table title/header. Supports HTML tags: <b>, <i>, <sub>, <sup>
+- `obj.setValue("Speed", 50)` – Sets the value of a parameter by name
+- `obj.getValue("Speed")` – Gets the value of a parameter by name
+- `obj.setValueLimits("Speed", 0, 100)` – Sets min/max limits for a parameter value
+- `obj.setDecimalSeparator(",")` – Sets the decimal separator: point or comma. Default: comma in German, point in English animations
+- `obj.setRounding("Speed", 0.01)` – Sets rounding precision for a parameter (e.g. 0.01 for 2 decimals, 1 for integers)
+- `obj.addParameter("New Param", 0);` – Adds a new parameter to the table. Name supports HTML tags: <b>, <i>, <sub>, <sup>
+- `obj.removeParameter("Speed")` – Removes a parameter from the table
+- `obj.onChange(handleChange)` – Adds an event listener for value changes
+
+### HtmlRectangle – Rectangular graphic element (HTML/CSS-based)
+`let myRectangle = new HtmlRectangle(100, 50, 0xff0000, 0x000000, 2);`
+Parameters: width (Width of the rectangle); height (Height of the rectangle); fillColor (Fill color in hexadecimal format (e.g. 0xff0000)); lineColor (Line color in hexadecimal format); lineThickness (Line thickness in pixels)
+Properties: x; y; rotation; visible
+Methods:
+- `obj.setFillColor(0xff0000)` – Sets the fill color of the rectangle
+- `obj.setLineColor(0x000000)` – Sets the line color of the rectangle
+- `obj.setLineThickness(2)` – Sets the line thickness
+- `obj.setBorder(0xff0000, 2)` – Sets a border (color in hexadecimal format, thickness in pixels)
+- `obj.setWidth(200)` – Sets the width of the rectangle
+- `obj.setHeight(100)` – Sets the height of the rectangle
+- `obj.setCornerRadius(10)` – Sets the corner radius for rounded rectangles
+- `obj.setRoundedCorners(10, true, true, false, false)` – Sets rounded corners with radius. Optional: specify which corners (topLeft, topRight, bottomRight, bottomLeft)
+- `obj.setGradient("linear", [{offset:0,color:"#fff"},{offset:1,color:"#000"}])` – Creates a linear or radial colour gradient. Parameters: type (linear or radial), a list of colour stops, each with offset (0 to 1) and color (#hex), optional angle in degrees for linear gradients
+
+### Model3D – 3D model viewer as iframe with postMessage API
+`let myModel = new Model3D("https://example.com/model", 600, 400);`
+Parameters: url (URL of the 3D model viewer to embed); width (Width of the iframe in pixels); height (Height of the iframe in pixels)
+Properties: x; y; visible; width (Width of the iframe in pixels); height (Height of the iframe in pixels)
+Methods:
+- `obj.setProperty("Zahnrad_1", "color", "#ff0000")` – Sets a property of an object in the 3D scene
+- `obj.setCamera({ position: { x: 0, y: 5, z: 10 } })` – Controls the camera in the 3D scene
+- `obj.setMode("wireframe")` – Sets the viewer mode
+- `obj.setBackground("#ffffff")` – Sets the background of the 3D scene
+- `obj.hideObject("Zahnrad_1")` – Hides an object in the 3D scene
+- `obj.showObject("Zahnrad_1")` – Shows a previously hidden object in the 3D scene
+- `obj.selectObject("Zahnrad_1")` – Selects an object in the 3D scene
+- `obj.deselectAll()` – Deselects all objects in the 3D scene
+- `obj.getSceneInfo()` – Requests scene information from the 3D viewer
+- `obj.onMessage((data) => { console.log(data); })` – Registers a callback for messages from the 3D viewer (objectSelected, propertyChanged, etc.)
+- `obj.setLoadingText("Lade Getriebe")` – Text under the loading circle while the 3D scene loads. If the model is created at start, the start screen stays until the scene is ready. Default: One moment, please. Loading 3D models. An empty text shows only the circle
+- `obj.onReady(() => { getSceneInfo(); })` – Registers a callback that fires once the 3D viewer is fully loaded and ready to receive commands.
+- `obj.onObjectSelected((event) => { console.log(event.value); })` – Registers a callback that fires when a clickable object in the 3D scene is clicked. The callback receives an event object with a value property containing the object name.
+- `obj.addMesh("Flügel", { triangles: [{vertices: [[0,0,0],[1,0,0],[0,1,0]], color: "#ff0000"}], edges: true })` – Adds a mesh from an array of triangles (with per-face colors) as a single object to the 3D scene
+- `obj.addSphere("MeineKugel", { color: "#ff0000", radius: 0.5, position: [0, 1, 0] })` – Adds a sphere primitive to the 3D scene
+- `obj.addTriangle("MeinDreieck", { vertices: [[-1,0,0],[1,0,0],[0,1,0]], color: "#00ff00" })` – Adds a triangle primitive to the 3D scene
+- `obj.addCylinder("MeinZylinder", { radiusTop: 0.3, radiusBottom: 0.3, height: 2 })` – Adds a cylinder primitive to the 3D scene
+- `obj.removeObject("MeineKugel")` – Removes an object from the 3D scene by name
+- `obj.setPosition("MeineKugel", 1, 2, 3)` – Sets the position of an object in the 3D scene
+- `obj.setRotation("MeineKugel", 0, 90, 0)` – Sets the rotation of an object in the 3D scene (degrees)
+- `obj.setVisible("MeineKugel", false)` – Sets the visibility of an object in the 3D scene
+- `obj.enableBatching()` – Collects setPosition(), setRotation() and setScale() calls and sends them to the 3D scene once per frame as one message (faster). Switched on automatically as soon as the scene is ready
+- `obj.disableBatching()` – Switches batching off: sends collected commands immediately, then every call is sent on its own
+- `obj.flushBatch()` – Sends the collected commands immediately instead of at the end of the frame
+- `obj.flush().then(() => { console.log("Aufbau fertig"); })` – Returns a Promise that resolves when all previously sent commands have been processed by the 3D editor
+
+### SimpleMP3 – Sound (MP3) as object – noises and short sounds for animations and games
+`let mySound = new SimpleMP3("data:audio/mpeg;base64,...");`
+Parameters: mp3Content (Source of the MP3 sound (Base64 or URL). Easiest: click the green i and select an MP3 file)
+Properties: volume (Volume from 0 (silent) to 1 (full)); loop (Repeat the sound endlessly (true/false)); muted (Mute the sound (true/false) – the sound keeps running silently); playbackRate (Playback speed (1 = normal, 2 = double speed and higher pitch, 0.5 = half speed and lower pitch)); currentTime (Current position in the sound in seconds)
+Methods:
+- `obj.play()` – Plays the sound – after pause() it continues where it stopped. Browsers only play sound after the first click or key press on the page
+- `obj.restart()` – Plays the sound from the beginning, even if it is still playing – good for game sounds
+- `obj.pause()` – Pauses the sound at the current position
+- `obj.stop()` – Stops the sound and goes back to the beginning
+- `obj.onEnded(soundEnded)` – Defines a function to execute when the sound has ended (not with loop = true)
+- `obj.isPlaying()` – Returns true while the sound is playing
+- `obj.getDuration()` – Returns the length of the sound in seconds (0 while it is still loading)
+
+### Calc – Helper functions for numbers and colours: format numbers with the right decimal separator, limit, convert and blend values. Call without new, for example Calc.format(3.14159, 2)
+`let text = Calc.format(9.81, 2, "m/s²");`
+Methods:
+- `Calc.format(3.14159, 2, "m")` – Returns a number as text with the given number of decimal places and an optional unit. German animations get a decimal comma, English ones a decimal point. Negative numbers get a real minus sign, between number and unit there is a non-breaking space (not for ° and, in English, not for %)
+- `Calc.setLanguage("de")` – Sets the language for Calc.format: de (decimal comma) or en (decimal point). Without this call the language of the animation is used
+- `Calc.getLanguage()` – Returns the language used by Calc.format (de or en)
+- `Calc.round(2.345, 1)` – Rounds a number to the given number of decimal places
+- `Calc.clamp(value, 0, 100)` – Limits a value to the range from min to max
+- `Calc.lerp(100, 300, 0.5)` – Linear interpolation: returns the value between a and b for t from 0 to 1 (t = 0.5 is the middle)
+- `Calc.map(temperature, 0, 100, 600, 100)` – Converts a value from one range to another, for example a temperature from 0 to 100 °C into a height from 600 to 100 pixels
+- `Math.sin(Calc.rad(30))` – Converts degrees to radians (for Math.sin and Math.cos)
+- `Calc.deg(Math.PI)` – Converts radians to degrees
+- `Calc.mixColor(0x3366cc, 0xcc3333, 0.5)` – Blends two colours: t = 0 gives the first, t = 1 the second colour, t = 0.5 the mixture. Returns a colour such as 0x7f007f

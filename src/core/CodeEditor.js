@@ -87,8 +87,128 @@ function replaceAfterNew(code, word, ns) {
   return code.replace(regex, `$1${ns}.$2`);
 }
 
+// 4.4.0: Schutz vor Endlosschleifen beim Ausführen im Lab (nicht im Export).
+// In jeden Schleifenrumpf kommt ein Aufruf __oalLoop(Zeile); läuft eine Schleife
+// länger als 4 s am Stück, bricht sie mit einer Meldung ab, statt den Browser
+// einzufrieren. Eingefügt wird ohne neue Zeilen – Zeilennummern bleiben gleich.
+function addLoopGuards(code) {
+  if (typeof acorn === "undefined") return code;
+  let ast;
+  try {
+    ast = acorn.parse(code, { ecmaVersion: 2020, locations: true });
+  } catch (e) {
+    return code;
+  }
+  const inserts = [];
+  const loopTypes = {
+    ForStatement: 1,
+    WhileStatement: 1,
+    DoWhileStatement: 1,
+    ForInStatement: 1,
+    ForOfStatement: 1,
+  };
+  (function walk(node) {
+    if (!node || typeof node.type !== "string") return;
+    if (loopTypes[node.type] && node.body) {
+      const call = "__oalLoop(" + node.loc.start.line + ");";
+      if (node.body.type === "BlockStatement") {
+        inserts.push({ pos: node.body.start + 1, text: call });
+      } else {
+        inserts.push({ pos: node.body.start, text: "{" + call });
+        inserts.push({ pos: node.body.end, text: "}" });
+      }
+    }
+    for (const key in node) {
+      if (key === "loc") continue;
+      const v = node[key];
+      if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === "object" && typeof v.type === "string") walk(v);
+    }
+  })(ast);
+  inserts.sort((a, b) => b.pos - a.pos);
+  for (const ins of inserts) {
+    code = code.slice(0, ins.pos) + ins.text + code.slice(ins.pos);
+  }
+  return code;
+}
+
+// 4.4.0: Zeichenketten vor dem Ersetzen schützen. Sonst wurde aus dem Text
+// "Timer(0): " im Bild "SvgJSEdu.Timer(0): ". Kommentare bleiben wie bisher
+// (Exporte älterer Animationen bleiben byte-gleich). Regex-Literale werden
+// grob erkannt, damit ein Anführungszeichen darin keinen String eröffnet.
+function maskStringLiterals(code) {
+  const strings = [];
+  let out = "";
+  let i = 0;
+  let prev = ""; // letztes bedeutsames Zeichen außerhalb von Strings/Kommentaren
+  const n = code.length;
+  while (i < n) {
+    const ch = code[i];
+    const nx = code[i + 1];
+    if (ch === "/" && nx === "/") {
+      const end = code.indexOf("\n", i);
+      const stop = end === -1 ? n : end;
+      out += code.slice(i, stop);
+      i = stop;
+      continue;
+    }
+    if (ch === "/" && nx === "*") {
+      const end = code.indexOf("*/", i + 2);
+      const stop = end === -1 ? n : end + 2;
+      out += code.slice(i, stop);
+      i = stop;
+      continue;
+    }
+    if (ch === "/" && (prev === "" || "(,=:[!&|?{};+-*%<>~^".includes(prev))) {
+      // Regex-Literal
+      let j = i + 1;
+      let inClass = false;
+      while (j < n && code[j] !== "\n") {
+        if (code[j] === "\\") { j += 2; continue; }
+        if (code[j] === "[") inClass = true;
+        else if (code[j] === "]") inClass = false;
+        else if (code[j] === "/" && !inClass) break;
+        j++;
+      }
+      if (j < n && code[j] === "/") {
+        out += code.slice(i, j + 1);
+        i = j + 1;
+        prev = "/";
+        continue;
+      }
+    }
+    if (ch === "'" || ch === '"' || ch === "`") {
+      let j = i + 1;
+      while (j < n && code[j] !== ch) {
+        if (code[j] === "\\") j++;
+        else if (ch !== "`" && code[j] === "\n") break;
+        j++;
+      }
+      const lit = code.slice(i, Math.min(j + 1, n));
+      out += "\u0000" + strings.length + "\u0000";
+      strings.push(lit);
+      i = j + 1;
+      prev = "a";
+      continue;
+    }
+    if (!/\s/.test(ch)) prev = ch;
+    out += ch;
+    i++;
+  }
+  return { code: out, strings };
+}
+
+function unmaskStringLiterals(code, strings) {
+  return code.replace(/\u0000(\d+)\u0000/g, (m, k) => strings[Number(k)]);
+}
+
 // Replace bare class names with their fully qualified namespace equivalents
 function replacer(code) {
+  const masked = maskStringLiterals(code);
+  return unmaskStringLiterals(replaceClassNames(masked.code), masked.strings);
+}
+
+function replaceClassNames(code) {
   const rendererType = getActiveRendererType();
   const graphicsNs = getActiveGraphicsNamespace();
   const graphicsNsName = rendererType === "svg" ? "SvgJSEdu" : "PixiJSEdu";
@@ -847,7 +967,7 @@ function runCode() {
     try {
       if (isSafe(code)) {
         const injected = injectNames(code);
-        let userCode = injected.code;
+        let userCode = addLoopGuards(injected.code);
         const lineMap = injected.lineMap;
 
         // Build the wrapper prefix (everything before user code).
@@ -856,6 +976,8 @@ function runCode() {
 var __maxMsgs = 10;
 var __msgCount = 0;
 var __limitReached = false;
+var __oalLoopN = 0, __oalLoopT0 = 0;
+function __oalLoop(line) { if (++__oalLoopN % 20000 !== 0) return; var now = Date.now(); if (!__oalLoopT0) { __oalLoopT0 = now; setTimeout(function () { __oalLoopT0 = 0; }, 0); return; } if (now - __oalLoopT0 > 4000) { __oalLoopT0 = 0; throw new Error(window.oalLoopMessage ? window.oalLoopMessage(line) : 'Endless loop?'); } }
 var console = {
 log: function() { var args = [].slice.call(arguments); if (__limitReached) return; __msgCount++; if (__msgCount > __maxMsgs) { __limitReached = true; window.logEvalMessage('Limit erreicht: Nur die letzten ' + __maxMsgs + ' console.log-Meldungen werden angezeigt. Weitere Aufrufe werden ignoriert.', 'info'); return; } window.logEvalMessage(args.join(' '), 'log'); },
 error: function() { var args = [].slice.call(arguments); window.logEvalMessage(args.join(' '), 'error'); },
