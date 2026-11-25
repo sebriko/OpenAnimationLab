@@ -1753,3 +1753,147 @@ form {
     padding: 4px 10px;
   }
 }
+
+/* ==============================================
+   NEUTRALE KNÖPFE (v4.4.1, 25.11.2026, Sebastian)
+   Keine Farbfüllung mehr: hell = weiß, dunkel = dunkelgrau.
+   Eckradius 4 px -> 6 px.
+   ============================================== */
+
+body {
+  --btn-bg: #ffffff;
+  --btn-bg-hover: #f2f2f2;
+  --btn-bg-active: #e6e6e6;
+  --btn-text: #333333;
+  --btn-border: #c4c4c4;
+  --btn-border-hover: #8c8c8c;
+  --btn-radius: 6px;
+}
+
+/* Dunkler Modus: das OAL setzt data-theme="dark" (die Klasse bleibt „light-theme“) */
+body[data-theme="dark"] {
+  --btn-bg: #3a3a3a;
+  --btn-bg-hover: #464646;
+  --btn-bg-active: #525252;
+  --btn-text: #e8e8e8;
+  --btn-border: #5c5c5c;
+  --btn-border-hover: #8a8a8a;
+}
+
+.regular-button,
+.file-label,
+.show-button,
+.toggle-button,
+.language-button,
+.renderer-button,
+.form-back-button,
+.control-button,
+.class-info-controls button,
+.tip-nav-button,
+.sa-button,
+.info-action-button,
+.selected,
+.dropdown-options {
+  background: var(--btn-bg) !important;
+  color: var(--btn-text) !important;
+  border: 1px solid var(--btn-border) !important;
+  border-radius: var(--btn-radius) !important;
+  box-shadow: none !important;
+}
+
+.regular-button:hover,
+.file-label:hover,
+.show-button:hover,
+.toggle-button:hover,
+.language-button:hover,
+.renderer-button:hover,
+.form-back-button:hover,
+.control-button:hover,
+.class-info-controls button:hover,
+.tip-nav-button:hover,
+.sa-button:hover,
+.info-action-button:hover,
+.selected:hover {
+  background: var(--btn-bg-hover) !important;
+  border-color: var(--btn-border-hover) !important;
+}
+
+.toggle-button.active,
+.show-button.active,
+.language-button.active,
+.renderer-button.active,
+#toggle-replace-btn.active,
+.regular-button:active,
+.show-button:active {
+  background: var(--btn-bg-active) !important;
+  color: var(--btn-text) !important;
+}
+
+/* Menüs: gewählter und überfahrener Eintrag grau statt grün */
+.dropdown-options li {
+  color: var(--btn-text) !important;
+}
+.dropdown-options li:hover,
+.dropdown-options li.highlight,
+.publish-menu button:hover,
+.language-option.active,
+.language-option.active:hover,
+.renderer-option.active,
+.renderer-option.active:hover {
+  background: var(--btn-bg-active) !important;
+  color: var(--btn-text) !important;
+}
+
+/* Knopfgruppe „Veröffentlichen | ▼“: innen keine Rundung */
+.publish-main-btn {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+.publish-arrow-btn {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: none !important;
+}
+
+/* Runder Schließen-Knopf bleibt rund, aber neutral */
+.close-button {
+  background: var(--btn-bg) !important;
+  color: var(--btn-text) !important;
+  border: 1px solid var(--btn-border) !important;
+}
+.close-button:hover {
+  background: var(--btn-bg-hover) !important;
+  color: var(--btn-text) !important;
+  border-color: var(--btn-border-hover) !important;
+}
+
+/* Gut sichtbarer Tastatur-Fokus (ersetzt die Farbe als Signal) */
+.regular-button:focus-visible,
+.show-button:focus-visible,
+.toggle-button:focus-visible,
+.language-button:focus-visible,
+.renderer-button:focus-visible {
+  outline: 2px solid var(--btn-border-hover) !important;
+  outline-offset: 2px;
+}
+
+/* Übrige Bedienelemente: Radius +2 */
+.form-input,
+.publish-menu,
+.floating-search,
+.group-header,
+.matrix-input,
+.copy-button,
+.form-button,
+.template-action-button,
+.language-dropdown,
+.renderer-dropdown,
+.sa-link-field,
+.sa-idea {
+  border-radius: 6px !important;
+}
+.search-btn,
+#search-input,
+#replace-input {
+  border-radius: 5px !important;
+}
