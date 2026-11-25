@@ -1898,10 +1898,12 @@ body[data-theme="dark"] {
   border-radius: 5px !important;
 }
 
+
+
 /* ==============================================
-   DEZENTE SYMBOLE WIE IM 3D-EDITOR (v4.4.2, 25.11.2026, Sebastian)
+   DEZENTE SYMBOLE WIE IM 3D-EDITOR (v4.4.2–4.4.4, 25.11.2026, Sebastian)
    Umrisssymbole (Material Icons Outlined, gleiche Version 1.13.12),
-   18 px, in Grau statt Schwarz. Sprache als „DE | EN“-Umschalter.
+   18 px, in Grau statt Schwarz. (v4.4.3: Sprache wieder als Aufklappmenü.)
    ============================================== */
 
 @font-face {
@@ -1944,60 +1946,98 @@ body[data-theme="dark"] {
   gap: 3px;
 }
 
-/* Sprache: „DE | EN“ wie im 3D-Editor statt Auswahlliste */
-.language-button {
-  display: none !important;
-}
-.language-selector .language-dropdown {
-  display: flex !important;
-  position: static !important;
-  min-width: 0 !important;
-  height: 32px;
+/* ==============================================
+   VORLAGENVERZEICHNIS UND FORMULARE IM KNOPF-DESIGN (v4.4.3)
+   Aufklapp-Überschriften, Vorlagen-Kacheln und Knöpfe darunter
+   wie alle anderen Knöpfe: weiß/dunkelgrau, grauer Rand, 6 px.
+   ============================================== */
+
+.group-header {
   box-sizing: border-box;
-  margin: 0 !important;
-  padding: 0 !important;
+  min-height: 36px;
+  padding: 0 12px;
   background: var(--btn-bg) !important;
-  border: 1px solid var(--btn-border) !important;
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
   border-radius: 6px !important;
-  box-shadow: none !important;
-  overflow: hidden;
+  transition: background-color var(--transition-normal) var(--transition-easing),
+    border-color var(--transition-normal) var(--transition-easing);
 }
-.language-selector .language-option {
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 0 12px !important;
-  margin: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  color: var(--btn-text) !important;
+.group-header:hover {
+  background: var(--btn-bg-hover) !important;
+  border-color: var(--btn-border-hover);
+}
+.group-header h3 {
   font-family: Arial, sans-serif;
   font-size: 14px;
-  cursor: pointer;
+  color: var(--btn-text);
 }
-.language-selector .language-option[data-lang="de"] {
-  order: 0;
+.group-header-icon {
+  font-size: 10px;
+  color: var(--btn-icon);
 }
-.language-selector .language-option[data-lang="en"] {
-  order: 1;
-  border-left: 1px solid var(--btn-border) !important;
+
+.form-button,
+.template-action-button,
+.copy-button {
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 15px !important;
+  background: var(--btn-bg) !important;
+  color: var(--btn-text) !important;
+  border: 1px solid var(--btn-border) !important;
+  border-radius: 6px !important;
+  font-family: Arial, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  box-shadow: none !important;
 }
-.language-selector .language-option > span {
-  display: none !important;
+.form-button:hover,
+.template-action-button:hover,
+.copy-button:hover {
+  background: var(--btn-bg-hover) !important;
+  border-color: var(--btn-border-hover) !important;
 }
-.language-selector .language-option::after {
-  content: attr(data-lang);
-  text-transform: uppercase;
+
+/* Vorlagen-Kacheln: Rahmen und Beschriftung wie ein Knopf */
+.enhanced-template-item {
+  border: 1px solid var(--btn-border);
+  border-radius: 6px !important;
+  background: var(--btn-bg);
 }
-.language-selector .language-option:hover {
+.enhanced-template-item:hover {
+  border-color: var(--btn-border-hover);
+}
+.enhanced-template-item > div {
+  background: var(--btn-bg) !important;
+  color: var(--btn-text) !important;
+  opacity: 1 !important;
+  font-family: Arial, sans-serif;
+  font-weight: 400 !important;
+  border-top: 1px solid var(--btn-border) !important;
+}
+.enhanced-template-item:hover > div {
   background: var(--btn-bg-hover) !important;
 }
-.language-selector .language-option.active {
-  background: var(--btn-bg-active) !important;
-  cursor: default;
+
+/* Verzeichnis links: nicht ganz weiß (v4.4.4, Sebastian) – der graue Hintergrund
+   (#f0f0f0) lässt reines Weiß dort heller wirken als die Knöpfe oben (#f8f8f8). */
+body {
+  --dir-bg: #f8f8f8;
+  --dir-bg-hover: #eeeeee;
 }
-.language-selector .language-option:focus-visible {
-  outline: 2px solid var(--btn-border-hover);
-  outline-offset: -2px;
+body[data-theme="dark"] {
+  --dir-bg: var(--btn-bg);
+  --dir-bg-hover: var(--btn-bg-hover);
+}
+.group-header,
+.enhanced-template-item,
+.enhanced-template-item > div,
+.template-action-button {
+  background: var(--dir-bg) !important;
+}
+.group-header:hover,
+.enhanced-template-item:hover > div,
+.template-action-button:hover {
+  background: var(--dir-bg-hover) !important;
 }
