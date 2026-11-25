@@ -1284,6 +1284,32 @@ function umschalten(event) {
 // Hinweis: Browser spielen Ton erst nach dem ersten Klick auf der Seite.
 // Darum den Ton am besten über einen Button starten.`,
         },
+        {
+          image: "model3d.png",
+          title: "3D-Szene (Model3D)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Eigene 3D-Szene – ohne Anmeldung, alles bleibt in Ihrem Browser.
+// 1. Klicken Sie unten im Code auf „3D-Editor“ (hinter "local:Meine Szene").
+// 2. Im 3D-Editor: Modelle hinzufügen (GLB, OBJ, STL …), anordnen, färben.
+// 3. „Zurück ins Lab“ – die Szene erscheint hier.
+// Speichern im Lab: Code und Szene kommen zusammen in ein ZIP.
+// Veröffentlichen: Die Szene kommt mit in die Datei – sie läuft auch offline.
+
+let modell = new Model3D("local:Meine Szene", 1280, 720);
+
+// Sobald die Szene geladen ist, lassen sich Objekte über ihren Namen steuern:
+modell.onReady(() => {
+  // modell.setRotation("Würfel", 0, 45, 0);
+  // modell.setProperty("Würfel", "color", "#4a90d9");
+});
+
+// Klick auf ein Objekt, das im 3D-Editor „anklickbar“ ist:
+modell.onObjectSelected((e) => {
+  // e.value ist der Name des Objekts
+});`,
+        },
       ],
     },
     {

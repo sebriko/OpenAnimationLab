@@ -313,6 +313,11 @@ function isVariableName(value) {
 }
 
 function inferDataTypeFromName(paramName) {
+  // Model3D: Szenen-Adresse mit Knopf zum 3D-Editor (4.5.0)
+  if (paramName === "url") {
+    return "scene3d";
+  }
+
   if (paramName.includes("points") || paramName.includes("vertices")) {
     return "matrix";
   }
@@ -1421,6 +1426,8 @@ class InputFactory {
         return this._createX3dInput();
       case "glb":
         return this._createGlbInput();
+      case "scene3d":
+        return this._createScene3dInput();
       case "png":
         return this._createPngInput();
       case "mp3":
@@ -1451,6 +1458,33 @@ class InputFactory {
   _createGlbInput() {
     const { key, fieldValue, isVariableValue, group } = this.fieldBuilder;
     return createGlbInput(key, isVariableValue ? "" : fieldValue, group);
+  }
+
+  // Model3D-Adresse + Knopf "3D-Editor" (4.5.0, src/scene3d.js): leer → neue
+  // eigene Szene, local:… → Szene öffnen, Adresse der Website → Kopie/online
+  _createScene3dInput() {
+    const { key, fieldValue, isVariableValue, group } = this.fieldBuilder;
+    const input = createTextInput(key, isVariableValue ? "" : String(fieldValue ?? ""), group);
+    if (!window.OAL3D) return input;
+    const container = document.createElement("div");
+    container.className = "scene3d-input-container flex-column-gap";
+    const row = document.createElement("div");
+    row.className = "input-row";
+    row.appendChild(input);
+    const de = window.i18n && window.i18n.getCurrentLanguage && window.i18n.getCurrentLanguage() === "de";
+    const button = UIComponents.createButton(de ? "3D-Editor" : "3D editor");
+    button.title = de ? "Szene im 3D-Editor bearbeiten (leer: neue Szene)" : "Edit the scene in the 3D editor (empty: new scene)";
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      window.OAL3D.editScene(input.value, (newValue) => {
+        input.value = newValue;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
+    row.appendChild(button);
+    container.appendChild(row);
+    return container;
   }
 
   _createPngInput() {

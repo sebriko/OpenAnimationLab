@@ -140,6 +140,13 @@ function saveCode() {
 
   let code = editor.getValue();
 
+  // Eigene 3D-Szenen (new Model3D("local:…"), 4.5.0): Code und Szenen
+  // zusammen als ZIP – angemeldet wahlweise Szene online (src/scene3d.js)
+  if (window.OAL3D && window.OAL3D.hasLocalScenes(code)) {
+    window.OAL3D.saveProject(tabName, code);
+    return;
+  }
+
   const blob = new Blob([code], { type: "text/javascript" }); // Blob aus dem Code erstellen
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -763,9 +770,20 @@ function exportAlert(messageDe, messageEn) {
   );
 }
 
+// Eigene 3D-Szenen (local:…, 4.5.0) und den Offline-Viewer in den Export
+// legen – ohne sie gibt es die Szene nirgends. Ohne lokale Szene bleibt die
+// HTML unverändert. Rückgabe: HTML oder null (Abbruch).
+async function embedLocalScenesInExport(htmlContent) {
+  const code = editor.getValue();
+  if (!window.OAL3D || !window.OAL3D.hasLocalScenes(code)) return htmlContent;
+  return window.OAL3D.embedScenes(htmlContent, code);
+}
+
 async function publishCode(exportTitle) {
   const { htmlContent, tabName } = await buildExportHtml(exportTitle);
-  const finalHtml = await protectExportHtml(htmlContent);
+  let finalHtml = await protectExportHtml(htmlContent);
+  if (finalHtml === null) return;
+  finalHtml = await embedLocalScenesInExport(finalHtml);
   if (finalHtml === null) return;
   // Dateiname: Titel, sonst Tab-Name (3.20.2)
   downloadExportHtml(finalHtml, `${exportFileBase(exportTitle, tabName)}.html`);
@@ -823,7 +841,9 @@ async function publishCodeOffline(exportTitle) {
   const { htmlContent, tabName } = await buildExportHtml(exportTitle);
   const protectedHtml = await protectExportHtml(htmlContent);
   if (protectedHtml === null) return;
-  const offlineHtml = await embedExportScripts(protectedHtml);
+  let offlineHtml = await embedExportScripts(protectedHtml);
+  if (offlineHtml === null) return;
+  offlineHtml = await embedLocalScenesInExport(offlineHtml);
   if (offlineHtml === null) return;
   downloadExportHtml(
     offlineHtml,
@@ -1200,6 +1220,8 @@ async function publishH5P(exportTitle, options = {}) {
     htmlContent = await embedExportScripts(htmlContent);
     if (htmlContent === null) return;
   }
+  htmlContent = await embedLocalScenesInExport(htmlContent);
+  if (htmlContent === null) return;
 
   const v = H5P_LIBRARY_VERSION;
   const libDir = `H5P.OALAnimation-${v.major}.${v.minor}`;

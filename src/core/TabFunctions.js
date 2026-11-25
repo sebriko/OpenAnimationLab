@@ -1386,6 +1386,23 @@ function saveCurrentTemplates() {
 
 function loadCode(event) {
   const file = event.target.files[0];
+  // Projekt-ZIP mit eigenen 3D-Szenen (4.5.0, src/scene3d.js)
+  if (file && /\.zip$/i.test(file.name) && window.OAL3D) {
+    event.target.value = "";
+    window.OAL3D.loadProjectZip(file).then((code) => {
+      if (code === null) return;
+      const activeTab = document.querySelector(".tab.active");
+      const activeTabName = activeTab ? activeTab.getAttribute("data-tab") : null;
+      if (activeTabName) {
+        if (tabObjects[activeTabName]) {
+          tabObjects[activeTabName].showPreview = false;
+          tabObjects[activeTabName].formOpen = false;
+        }
+        loadTemplateCode(activeTabName, code);
+      }
+    });
+    return;
+  }
   if (file) {
     const reader = new FileReader();
     reader.onload = (e) => {

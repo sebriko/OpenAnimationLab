@@ -6065,8 +6065,8 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
       url: {
         name: "url",
         info: {
-          en: "URL of the 3D model viewer to embed",
-          de: "URL des einzubettenden 3D-Modell-Viewers",
+          en: "Address of a 3D scene on the website, or local:Name for a scene of your own (open it with the 3D editor button). Your own scenes are saved with the code as a ZIP and go into the export, which then also runs offline",
+          de: "Adresse einer 3D-Szene der Website oder local:Name für eine eigene Szene (öffnen mit dem Knopf 3D-Editor). Eigene Szenen werden mit dem Code als ZIP gespeichert und kommen in den Export, der dann auch offline läuft",
         },
       },
       width: {
@@ -6390,7 +6390,19 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     });
     // embed=oal: Der 3D-Scene-Editor blendet seinen eigenen Ladebalken aus,
     // stattdessen zeigt Model3D den Ladekreis des OAL (bis zum Einblenden).
-    iframe.src = HtmlSvgEdu.Model3D._embedUrl(this._url);
+    // "local:Name" (4.5.0): eigene Szene aus dem Browser bzw. aus dem Export –
+    // der Editor fragt mit "needScene" danach (siehe _sendLocalScene).
+    this._localName = HtmlSvgEdu.Model3D._localName(this._url);
+    if (this._localName !== null) {
+      const embedded = HtmlSvgEdu.Model3D._embeddedData();
+      if (embedded && embedded.viewer) {
+        iframe.srcdoc = embedded.viewer; // Offline-Viewer aus dem Export
+      } else {
+        iframe.src = HtmlSvgEdu.Model3D._localViewerUrl();
+      }
+    } else {
+      iframe.src = HtmlSvgEdu.Model3D._embedUrl(this._url);
+    }
     if (window.logEvalMessage) window.logEvalMessage("[Model3D] iframe src gesetzt: " + iframe.src, "log");
     // Läuft der Start-Ladekreis des OAL noch (Modell gleich beim Start
     // erzeugt), bleibt er stehen, bis die Szene eingeblendet ist – dann
@@ -6404,6 +6416,12 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
   _handleMessage(event) {
     const data = event.data;
     if (!data || data.type !== "sceneEditor") return;
+    if (data.action === "needScene") {
+      if (this._localName !== null && this._element && event.source === this._element.contentWindow) {
+        this._sendLocalScene();
+      }
+      return;
+    }
     if (data.action === "ready") {
       this._isReady = true;
       // Gepufferte Nachrichten absenden
@@ -6441,6 +6459,71 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
   }
 
   // Hängt embed=oal an Adressen des 3D-Scene-Editors (andere Adressen bleiben).
+  // "local:Name" → "Name", sonst null (4.5.0)
+  static _localName(url) {
+    if (typeof url !== "string" || url.indexOf("local:") !== 0) return null;
+    return url.slice(6);
+  }
+
+  // Im Export: Szenen und Offline-Viewer stehen in <script id="oal3d-data">
+  static _embeddedData() {
+    if (HtmlSvgEdu.Model3D._embeddedCache !== undefined) return HtmlSvgEdu.Model3D._embeddedCache;
+    let data = null;
+    try {
+      const el = typeof document !== "undefined" && document.getElementById("oal3d-data");
+      if (el) data = JSON.parse(el.textContent);
+    } catch (e) {
+      console.warn("[Model3D] Eingebettete 3D-Szenen nicht lesbar:", e.message);
+    }
+    HtmlSvgEdu.Model3D._embeddedCache = data;
+    return data;
+  }
+
+  // Im Lab: Editor auf derselben Website im Ansichtsmodus, Szene per postMessage
+  static _localViewerUrl() {
+    const lang = HtmlSvgEdu.SimpleMP3._lang() === "de" ? "de" : "en";
+    const params = "mode=view&embed=oal&inline=1&lang=" + lang;
+    if (typeof window !== "undefined" && window.OAL3D && typeof window.OAL3D.editorUrl === "function") {
+      return window.OAL3D.editorUrl(params);
+    }
+    return "https://www.educational-animation.org/3d-scene-editor/index.html?" + params;
+  }
+
+  static _base64ToBytes(b64) {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  // Szene an den Editor im iframe schicken (Antwort auf "needScene")
+  async _sendLocalScene() {
+    const name = this._localName;
+    let pkg = null;
+    const embedded = HtmlSvgEdu.Model3D._embeddedData();
+    if (embedded && embedded.scenes && embedded.scenes[name]) {
+      const src = embedded.scenes[name];
+      const files = {};
+      for (const path of Object.keys(src.files || {})) {
+        files[path] = HtmlSvgEdu.Model3D._base64ToBytes(src.files[path]);
+      }
+      pkg = { scene: src.scene, files };
+    } else if (typeof window !== "undefined" && window.OAL3D && typeof window.OAL3D.getPackage === "function") {
+      try {
+        pkg = await window.OAL3D.getPackage(name);
+      } catch (e) {
+        console.warn("[Model3D] Szene nicht lesbar:", e.message);
+      }
+    }
+    if (!pkg) {
+      if (window.logEvalMessage) window.logEvalMessage("[Model3D] 3D-Szene fehlt: " + name, "error");
+      pkg = { scene: { name, objects: [], poses: [] }, files: {} };
+    }
+    if (this._element && this._element.contentWindow) {
+      this._element.contentWindow.postMessage({ action: "loadPackage", scene: pkg.scene, files: pkg.files }, "*");
+    }
+  }
+
   static _embedUrl(url) {
     if (typeof url !== "string" || url.indexOf("3d-scene-editor") === -1) return url;
     if (/[?&]embed=/.test(url)) return url;

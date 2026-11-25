@@ -1282,6 +1282,32 @@ function toggleSound(event) {
 // Note: browsers only play sound after the first click on the page.
 // So it is best to start the sound with a button.`,
         },
+        {
+          image: "model3d.png",
+          title: "3D scene (Model3D)",
+          code: `// Created with Open Animation Lab
+let board = new Board(1280, 720);
+
+// Your own 3D scene – no login, everything stays in your browser.
+// 1. Click "3D editor" in the code below (behind "local:My scene").
+// 2. In the 3D editor: add models (GLB, OBJ, STL …), arrange and colour them.
+// 3. "Back to the Lab" – the scene appears here.
+// Saving in the Lab puts code and scene together into one ZIP.
+// Publishing puts the scene into the file – it also runs offline.
+
+let model = new Model3D("local:My scene", 1280, 720);
+
+// As soon as the scene has loaded, control objects by their name:
+model.onReady(() => {
+  // model.setRotation("Cube", 0, 45, 0);
+  // model.setProperty("Cube", "color", "#4a90d9");
+});
+
+// Click on an object that is "clickable" in the 3D editor:
+model.onObjectSelected((e) => {
+  // e.value is the name of the object
+});`,
+        },
       ],
     },
     {

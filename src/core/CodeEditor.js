@@ -2165,6 +2165,11 @@ document.addEventListener("DOMContentLoaded", () => {
         window.contentMarks.push(mark);
       }
 
+      // 5. Model3D: Knopf "3D-Editor" hinter der Szenen-Adresse (4.5.0, src/scene3d.js)
+      if (window.OAL3D && code.indexOf("Model3D") !== -1) {
+        window.OAL3D.decorateEditor(editor, window.contentMarks);
+      }
+
       // Refresh editor so scrollbar reflects collapsed content size
       setTimeout(() => editor.refresh(), 0);
     });
