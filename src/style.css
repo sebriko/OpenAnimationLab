@@ -1897,3 +1897,107 @@ body[data-theme="dark"] {
 #replace-input {
   border-radius: 5px !important;
 }
+
+/* ==============================================
+   DEZENTE SYMBOLE WIE IM 3D-EDITOR (v4.4.2, 25.11.2026, Sebastian)
+   Umrisssymbole (Material Icons Outlined, gleiche Version 1.13.12),
+   18 px, in Grau statt Schwarz. Sprache als „DE | EN“-Umschalter.
+   ============================================== */
+
+@font-face {
+  font-family: "Material Icons Outlined";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../lib/material-icons/1.13.12/material-icons-outlined.woff2") format("woff2");
+}
+
+body {
+  --btn-icon: #666666;
+}
+body[data-theme="dark"] {
+  --btn-icon: #b0b0b0;
+}
+
+.material-icons {
+  font-family: "Material Icons Outlined", "Material Icons";
+}
+
+.regular-button .material-icons,
+.show-button .material-icons,
+.file-label .material-icons,
+.toggle-button .material-icons {
+  font-size: 18px !important;
+  color: var(--btn-icon) !important;
+}
+
+/* Hell/Dunkel-Knopf: wie alle anderen Knöpfe (war dauerhaft „aktiv“ = grau) */
+#theme-toggle.active {
+  background: var(--btn-bg) !important;
+}
+#theme-toggle.active:hover {
+  background: var(--btn-bg-hover) !important;
+}
+
+/* „KI“-Knopf: Wort in Schriftfarbe, Symbol grau */
+.sa-ai-button {
+  gap: 3px;
+}
+
+/* Sprache: „DE | EN“ wie im 3D-Editor statt Auswahlliste */
+.language-button {
+  display: none !important;
+}
+.language-selector .language-dropdown {
+  display: flex !important;
+  position: static !important;
+  min-width: 0 !important;
+  height: 32px;
+  box-sizing: border-box;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: var(--btn-bg) !important;
+  border: 1px solid var(--btn-border) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+.language-selector .language-option {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 12px !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--btn-text) !important;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+}
+.language-selector .language-option[data-lang="de"] {
+  order: 0;
+}
+.language-selector .language-option[data-lang="en"] {
+  order: 1;
+  border-left: 1px solid var(--btn-border) !important;
+}
+.language-selector .language-option > span {
+  display: none !important;
+}
+.language-selector .language-option::after {
+  content: attr(data-lang);
+  text-transform: uppercase;
+}
+.language-selector .language-option:hover {
+  background: var(--btn-bg-hover) !important;
+}
+.language-selector .language-option.active {
+  background: var(--btn-bg-active) !important;
+  cursor: default;
+}
+.language-selector .language-option:focus-visible {
+  outline: 2px solid var(--btn-border-hover);
+  outline-offset: -2px;
+}

@@ -35,6 +35,16 @@ function createLanguageSelector() {
     option.className = "language-option";
     option.dataset.lang = lang.code;
     option.innerHTML = `<span class="language-flag">${lang.flag}</span><span class="language-name">${lang.name}</span>`;
+    // Bedienbar per Tastatur und als Knopf erkennbar (Umschalter „DE | EN“, v4.4.2)
+    option.tabIndex = 0;
+    option.setAttribute("role", "button");
+    option.title = lang.name;
+    option.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        option.click();
+      }
+    });
 
     option.addEventListener("click", function () {
       const currentLanguage = window.i18n
