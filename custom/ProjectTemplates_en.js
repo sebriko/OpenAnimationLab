@@ -1289,7 +1289,7 @@ function toggleSound(event) {
 let board = new Board(1280, 720);
 
 // Your own 3D scene – no login, everything stays in your browser.
-// 1. Click "3D editor" in the code below (behind "local:My scene").
+// 1. Click the "3D editor" button further down (behind "local:My scene").
 // 2. In the 3D editor: add models (GLB, OBJ, STL …), arrange and colour them.
 // 3. "Back to the Lab" – the scene appears here.
 // Saving in the Lab puts code and scene together into one ZIP.
@@ -1297,7 +1297,8 @@ let board = new Board(1280, 720);
 
 let model = new Model3D("local:My scene", 1280, 720);
 
-// As soon as the scene has loaded, control objects by their name:
+// As soon as the scene has loaded, control objects by their name.
+// You can find the names in the list on the left of the 3D editor – "Cube" is just an example.
 model.onReady(() => {
   // model.setRotation("Cube", 0, 45, 0);
   // model.setProperty("Cube", "color", "#4a90d9");

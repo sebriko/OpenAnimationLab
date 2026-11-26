@@ -773,10 +773,14 @@ function exportAlert(messageDe, messageEn) {
 // Eigene 3D-Szenen (local:…, 4.5.0) und den Offline-Viewer in den Export
 // legen – ohne sie gibt es die Szene nirgends. Ohne lokale Szene bleibt die
 // HTML unverändert. Rückgabe: HTML oder null (Abbruch).
-async function embedLocalScenesInExport(htmlContent) {
+// offline = true: auch die Blanko-Szene (new Model3D(1280, 720), 4.5.2) bekommt
+// den Viewer, damit der Offline-Export ohne Internet läuft.
+async function embedLocalScenesInExport(htmlContent, offline) {
   const code = editor.getValue();
-  if (!window.OAL3D || !window.OAL3D.hasLocalScenes(code)) return htmlContent;
-  return window.OAL3D.embedScenes(htmlContent, code);
+  if (!window.OAL3D) return htmlContent;
+  const blank = offline === true && window.OAL3D.hasBlankScene(code);
+  if (!window.OAL3D.hasLocalScenes(code) && !blank) return htmlContent;
+  return window.OAL3D.embedScenes(htmlContent, code, { blank });
 }
 
 async function publishCode(exportTitle) {
@@ -843,7 +847,7 @@ async function publishCodeOffline(exportTitle) {
   if (protectedHtml === null) return;
   let offlineHtml = await embedExportScripts(protectedHtml);
   if (offlineHtml === null) return;
-  offlineHtml = await embedLocalScenesInExport(offlineHtml);
+  offlineHtml = await embedLocalScenesInExport(offlineHtml, true);
   if (offlineHtml === null) return;
   downloadExportHtml(
     offlineHtml,
@@ -1220,7 +1224,7 @@ async function publishH5P(exportTitle, options = {}) {
     htmlContent = await embedExportScripts(htmlContent);
     if (htmlContent === null) return;
   }
-  htmlContent = await embedLocalScenesInExport(htmlContent);
+  htmlContent = await embedLocalScenesInExport(htmlContent, offline);
   if (htmlContent === null) return;
 
   const v = H5P_LIBRARY_VERSION;

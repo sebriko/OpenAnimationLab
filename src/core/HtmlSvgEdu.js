@@ -6060,13 +6060,13 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
       en: "https://www.educational-animation.org",
     },
     example:
-      'let myModel = new Model3D("https://example.com/model", 600, 400);',
+      'let myModel = new Model3D(1280, 720);',
     constructor: {
       url: {
         name: "url",
         info: {
-          en: "Address of a 3D scene on the website, or local:Name for a scene of your own (open it with the 3D editor button). Your own scenes are saved with the code as a ZIP and go into the export, which then also runs offline",
-          de: "Adresse einer 3D-Szene der Website oder local:Name für eine eigene Szene (öffnen mit dem Knopf 3D-Editor). Eigene Szenen werden mit dem Code als ZIP gespeichert und kommen in den Export, der dann auch offline läuft",
+          en: "Optional. Without an address: an empty scene (blank scene) for objects created in the code with addMesh, addSphere and so on. Otherwise the address of a 3D scene on the website, or local:Name for a scene of your own (open it with the 3D editor button). Your own scenes are saved with the code as a ZIP and go into the export, which then also runs offline",
+          de: "Optional. Ohne Adresse: eine leere Szene (Blanko-Szene) für Objekte, die der Code mit addMesh, addSphere usw. selbst baut. Sonst die Adresse einer 3D-Szene der Website oder local:Name für eine eigene Szene (öffnen mit dem Knopf 3D-Editor). Eigene Szenen werden mit dem Code als ZIP gespeichert und kommen in den Export, der dann auch offline läuft",
         },
       },
       width: {
@@ -6142,6 +6142,14 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
           de: "Setzt eine Eigenschaft eines Objekts in der 3D-Szene",
         },
         example: 'setProperty("Zahnrad_1", "color", "#ff0000")',
+      },
+      setSceneSettings: {
+        name: "setSceneSettings",
+        info: {
+          en: "Changes the look of the 3D scene: edgeColor, edgeOpacity, edgeThickness, edgeQuality (soft, clear, sharp, ultra), glossiness (0 to 100), backgroundColor, clickableHighlightColor. Only the values given change. Useful for the blank scene",
+          de: "Ändert das Aussehen der 3D-Szene: edgeColor, edgeOpacity, edgeThickness, edgeQuality (soft, clear, sharp, ultra), glossiness (0 bis 100), backgroundColor, clickableHighlightColor. Nur die angegebenen Werte ändern sich. Nützlich für die Blanko-Szene",
+        },
+        example: 'setSceneSettings({ edgeColor: "#999999", edgeThickness: 1.5 })',
       },
       setCamera: {
         name: "setCamera",
@@ -6348,6 +6356,18 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
 
   constructor(url, width = 600, height = 400) {
     super();
+    // Ohne Adresse (4.5.2): new Model3D(1280, 720) oder new Model3D() bzw. ""
+    // = Blanko-Szene – leere Szene mit festen Einstellungen, die Objekte baut
+    // der Code selbst (addMesh …). Braucht keine Szene auf dem Server.
+    if (typeof url === "number") {
+      height = typeof width === "number" ? width : 400;
+      width = url;
+      url = "";
+    } else if (url === undefined || url === null) {
+      url = "";
+    }
+    this._blank = url === "";
+    this._sceneSettings = null;       // setSceneSettings() vor dem Laden
     this._url = url;
     this._width = width;
     this._height = height;
@@ -6393,7 +6413,7 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     // "local:Name" (4.5.0): eigene Szene aus dem Browser bzw. aus dem Export –
     // der Editor fragt mit "needScene" danach (siehe _sendLocalScene).
     this._localName = HtmlSvgEdu.Model3D._localName(this._url);
-    if (this._localName !== null) {
+    if (this._localName !== null || this._blank) {
       const embedded = HtmlSvgEdu.Model3D._embeddedData();
       if (embedded && embedded.viewer) {
         iframe.srcdoc = embedded.viewer; // Offline-Viewer aus dem Export
@@ -6417,7 +6437,7 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     const data = event.data;
     if (!data || data.type !== "sceneEditor") return;
     if (data.action === "needScene") {
-      if (this._localName !== null && this._element && event.source === this._element.contentWindow) {
+      if ((this._localName !== null || this._blank) && this._element && event.source === this._element.contentWindow) {
         this._sendLocalScene();
       }
       return;
@@ -6452,6 +6472,16 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     }
     if (this._messageCallback) {
       this._messageCallback(data);
+    }
+    // 4.5.1: unbekannter Objektname (Tippfehler) – im Lab als Hinweis, sonst Konsole
+    if (data.action === "unknownObject" && data.data) {
+      if (!this._element || event.source !== this._element.contentWindow) return;
+      if (typeof window !== "undefined" && window.OAL3D && window.OAL3D.unknownObject) {
+        window.OAL3D.unknownObject(data.data.name, data.data.available);
+      } else {
+        console.warn("[Model3D] Objekt nicht gefunden: " + data.data.name);
+      }
+      return;
     }
     if (this._objectSelectedCallback && data.action === "objectSelected") {
       this._objectSelectedCallback({ value: data.data.name });
@@ -6496,12 +6526,45 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     return bytes;
   }
 
+  // Blanko-Szene (4.5.2): Einstellungen wie die bisherigen leeren Szenen
+  // der Website, Kamera wie eine neue Szene im 3D-Editor
+  static _blankScene() {
+    return {
+      name: "Blanko",
+      settings: {
+        backgroundColor: "#ffffff",
+        edgeColor: "#555555",
+        edgeOpacity: 1,
+        edgeThickness: 0.5,
+        glossiness: 35,
+        showGrid: false,
+        gridSize: 20,
+        clickableHighlightColor: "#b9f8cf",
+        defaultScale: 1,
+        edgeQuality: "ultra",
+      },
+      camera: { position: [5, 4, 8], target: [0, 0, 0], fov: 50 },
+      objects: [],
+      poses: [],
+    };
+  }
+
+  // Aussehen der Szene ändern (4.5.2). Vor dem Laden fließt es in die Szene
+  // ein (kein Aufblitzen), danach geht es als Befehl an den Editor.
+  setSceneSettings(settings) {
+    if (!settings || typeof settings !== "object") return;
+    this._sceneSettings = Object.assign(this._sceneSettings || {}, settings);
+    this._postMessage({ action: "setSettings", settings });
+  }
+
   // Szene an den Editor im iframe schicken (Antwort auf "needScene")
   async _sendLocalScene() {
     const name = this._localName;
     let pkg = null;
     const embedded = HtmlSvgEdu.Model3D._embeddedData();
-    if (embedded && embedded.scenes && embedded.scenes[name]) {
+    if (this._blank) {
+      pkg = { scene: HtmlSvgEdu.Model3D._blankScene(), files: {} };
+    } else if (embedded && embedded.scenes && embedded.scenes[name]) {
       const src = embedded.scenes[name];
       const files = {};
       for (const path of Object.keys(src.files || {})) {
@@ -6518,6 +6581,11 @@ HtmlSvgEdu.Model3D = class Model3D extends HtmlSvgEdu.Component {
     if (!pkg) {
       if (window.logEvalMessage) window.logEvalMessage("[Model3D] 3D-Szene fehlt: " + name, "error");
       pkg = { scene: { name, objects: [], poses: [] }, files: {} };
+    }
+    if (this._sceneSettings) {
+      pkg.scene = Object.assign({}, pkg.scene, {
+        settings: Object.assign({}, pkg.scene.settings || {}, this._sceneSettings),
+      });
     }
     if (this._element && this._element.contentWindow) {
       this._element.contentWindow.postMessage({ action: "loadPackage", scene: pkg.scene, files: pkg.files }, "*");

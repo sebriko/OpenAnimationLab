@@ -2041,3 +2041,22 @@ body[data-theme="dark"] {
 .template-action-button:hover {
   background: var(--dir-bg-hover) !important;
 }
+
+/* ==============================================
+   OBERE LEISTE GLEICH IN OAL, 3D-EDITOR UND H5P-VIEWER (25.11.2026, Sebastian)
+   40 px hoch (mit 1 px Linie), hell #f8f8f8 / dunkel #3a3a3a, Linie #ccc / #444,
+   Knöpfe 32 px (oben und unten 4 px Luft), Abstand 6 px, Außenabstand 8 px.
+   ============================================== */
+.header {
+  box-sizing: border-box;
+  height: 40px;
+  padding-right: 8px;
+}
+#filebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#filebar > * {
+  margin: 0 !important;
+}

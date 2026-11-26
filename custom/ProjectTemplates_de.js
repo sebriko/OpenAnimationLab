@@ -1291,7 +1291,7 @@ function umschalten(event) {
 let board = new Board(1280, 720);
 
 // Eigene 3D-Szene – ohne Anmeldung, alles bleibt in Ihrem Browser.
-// 1. Klicken Sie unten im Code auf „3D-Editor“ (hinter "local:Meine Szene").
+// 1. Klicken Sie weiter unten auf den Knopf „3D-Editor“ (hinter "local:Meine Szene").
 // 2. Im 3D-Editor: Modelle hinzufügen (GLB, OBJ, STL …), anordnen, färben.
 // 3. „Zurück ins Lab“ – die Szene erscheint hier.
 // Speichern im Lab: Code und Szene kommen zusammen in ein ZIP.
@@ -1299,7 +1299,8 @@ let board = new Board(1280, 720);
 
 let modell = new Model3D("local:Meine Szene", 1280, 720);
 
-// Sobald die Szene geladen ist, lassen sich Objekte über ihren Namen steuern:
+// Sobald die Szene geladen ist, lassen sich Objekte über ihren Namen steuern.
+// Die Namen stehen im 3D-Editor links in der Liste – „Würfel“ ist nur ein Beispiel.
 modell.onReady(() => {
   // modell.setRotation("Würfel", 0, 45, 0);
   // modell.setProperty("Würfel", "color", "#4a90d9");

@@ -34,7 +34,7 @@
   const STORE = "scenes";
   const CHANNEL = "oal-3d";
   const PREFIX = "local:";
-  const VIEWER_VERSION = "20261125-1"; // bei neuem viewer.html erhöhen
+  const VIEWER_VERSION = "20261126-2"; // bei neuem viewer.html erhöhen
   const BIG_EXPORT_MB = 25;
 
   // ── Texte ──────────────────────────────────────────────────────────────
@@ -60,6 +60,8 @@
       saveOnlineNote: "Die Szene kommt auf den Server, der Code verweist darauf und wird als .js gespeichert.",
       saveZip: "Als ZIP speichern",
       saveZipNote: "Code und Szene zusammen in einer Datei auf diesem Rechner. Mit „Öffnen“ laden Sie beides wieder.",
+      saveJs: "Nur Code (.js)",
+      saveJsNote: "Ohne 3D-Szene – sie bleibt nur in diesem Browser.",
       savedZip: "Gespeichert als ZIP: Code und 3D-Szene in einer Datei. Mit „Öffnen“ laden Sie beides wieder.",
       publishing: "Lade 3D-Szene „{name}“ hoch …",
       published: "3D-Szene „{name}“ liegt jetzt online. Der Code verweist darauf.",
@@ -73,6 +75,8 @@
       bigExport: "Die Datei wird etwa {mb} MB groß (3D-Modelle). Trotzdem exportieren?",
       updated: "3D-Szene „{name}“ übernommen – die Animation startet neu.",
       popupBlocked: "Der Browser hat das neue Fenster blockiert. Bitte Pop-ups für diese Seite erlauben.",
+      unknownObject: "In der 3D-Szene gibt es kein Objekt „{name}“. Vorhanden: {list}. Die Namen stehen im 3D-Editor links in der Liste.",
+      unknownObjectEmpty: "In der 3D-Szene gibt es kein Objekt „{name}“ – die Szene ist noch leer. Fügen Sie im 3D-Editor ein Modell hinzu.",
     },
     en: {
       btn: "3D editor",
@@ -95,6 +99,8 @@
       saveOnlineNote: "The scene goes to the server, the code points to it and is saved as a .js file.",
       saveZip: "Save as ZIP",
       saveZipNote: "Code and scene together in one file on this computer. Open it again with “Open”.",
+      saveJs: "Code only (.js)",
+      saveJsNote: "Without the 3D scene – it stays in this browser only.",
       savedZip: "Saved as ZIP: code and 3D scene in one file. Open both again with “Open”.",
       publishing: "Uploading 3D scene “{name}” …",
       published: "3D scene “{name}” is now online. The code points to it.",
@@ -108,6 +114,8 @@
       bigExport: "The file will be about {mb} MB (3D models). Export anyway?",
       updated: "3D scene “{name}” updated – the animation restarts.",
       popupBlocked: "The browser blocked the new window. Please allow pop-ups for this site.",
+      unknownObject: "The 3D scene has no object “{name}”. Available: {list}. You can find the names in the list on the left of the 3D editor.",
+      unknownObjectEmpty: "The 3D scene has no object “{name}” – the scene is still empty. Add a model in the 3D editor.",
     },
   };
 
@@ -245,6 +253,12 @@
 
   function hasLocalScenes(code) {
     return localRefs(code).length > 0;
+  }
+
+  // Blanko-Szene (4.5.2): new Model3D() ohne Adresse – erstes Argument keine
+  // Zeichenkette (z. B. new Model3D(1280, 720)) oder leere Zeichenkette
+  function hasBlankScene(code) {
+    return /new\s+Model3D\s*\(\s*(?:\)|["'`]{2}|[^"'`\s)])/.test(String(code || ""));
   }
 
   function siteUrl(path) {
@@ -501,6 +515,7 @@
       while ((m = re.exec(text))) {
         const value = m[2];
         const quote = m[1];
+        if (value === "") continue; // Blanko-Szene: nichts zu bearbeiten
         const endCh = m.index + m[0].length;
         const startCh = endCh - value.length - 1; // Position nach dem öffnenden Zeichen
         const btn = document.createElement("span");
@@ -579,9 +594,11 @@
   }
 
   // Szenen + Viewer in die Export-HTML. Rückgabe: HTML oder null (Abbruch).
-  async function embedScenes(html, code) {
+  // opts.blank: Viewer auch für die Blanko-Szene einbetten (Offline-Export)
+  async function embedScenes(html, code, opts) {
     const names = localRefs(code);
-    if (!names.length) return html;
+    const blank = !!(opts && opts.blank) && hasBlankScene(code);
+    if (!names.length && !blank) return html;
     const scenes = {};
     let bytes = 0;
     for (const name of names) {
@@ -711,9 +728,15 @@
       const names = localRefs(code);
       if (await isAdmin()) {
         const choice = await ask(t("saveTitle"), t("saveText", { names: names.map((n) => "„" + n + "“").join(", ") }), [
-          { id: "online", label: t("saveOnline"), note: t("saveOnlineNote"), icon: "cloud_upload", primary: true },
-          { id: "zip", label: t("saveZip"), note: t("saveZipNote"), icon: "folder_zip" },
+          { id: "zip", label: t("saveZip"), note: t("saveZipNote"), icon: "folder_zip", primary: true },
+          { id: "js", label: t("saveJs"), note: t("saveJsNote"), icon: "description" },
+          { id: "online", label: t("saveOnline"), note: t("saveOnlineNote"), icon: "cloud_upload" },
         ]);
+        // Angemeldet (Admin) wird immer gefragt: ZIP, nur Code oder online (Sebastian 26.11.)
+        if (choice === "js") {
+          download(new Blob([code], { type: "text/javascript" }), tabName + ".js");
+          return;
+        }
         if (choice === "online") {
           let newCode = code;
           for (const name of names) {
@@ -861,10 +884,19 @@
     document.head.appendChild(style);
   }
 
+  // Hinweis aus dem 3D-Editor: Objektname aus dem Code gibt es nicht (4.5.1)
+  function unknownObject(name, available) {
+    const q = lang() === "de" ? ["„", "“"] : ["“", "”"];
+    const list = (available || []).map((n) => q[0] + n + q[1]).join(", ");
+    say(list ? t("unknownObject", { name, list }) : t("unknownObjectEmpty", { name }), "error");
+  }
+
   window.OAL3D = {
     PREFIX,
+    unknownObject,
     localRefs,
     hasLocalScenes,
+    hasBlankScene,
     getPackage,
     editorUrl,
     editScene,

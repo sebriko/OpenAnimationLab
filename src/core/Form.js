@@ -552,6 +552,15 @@ function processConstructorArgs(
   variableName,
 ) {
   const args = parseConstructorArgs(constructorArgs);
+  // Model3D ohne Adresse (Blanko-Szene, 4.5.2): new Model3D(1280, 720)
+  if (
+    className === "Model3D" &&
+    args.length > 0 &&
+    args.length < 3 &&
+    !/^["'`]/.test(String(args[0].raw != null ? args[0].raw : args[0].value).trim())
+  ) {
+    args.unshift({ value: "", raw: '""', isExpression: false });
+  }
   const resultJson = { constructor: {} };
   const constructorParams = Object.keys(serializationMap.constructor);
 
